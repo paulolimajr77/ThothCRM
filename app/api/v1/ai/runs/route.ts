@@ -38,6 +38,8 @@ export const dynamic = "force-dynamic";
  * antes de a tela existir.
  */
 const O_QUE_FAZER: Record<string, string> = {
+  historico_invalido:
+    "O histórico da conversa continha formato que o provedor recusou (ex.: ferramenta sem resposta). A chamada foi corrigida automaticamente na sequência.",
   credencial_recusada:
     "O provedor não aceitou a chave. Confira se ela ainda é válida em Credenciais — chaves são revogadas ou expiram.",
   modelo_inexistente:

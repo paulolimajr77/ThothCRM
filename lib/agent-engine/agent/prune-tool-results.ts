@@ -20,6 +20,7 @@
  */
 import type { ModelMessage } from '../edge/llm/run-model-call';
 import { countPayloadTokens } from '../edge/crm/get-lead-context';
+import { sanitizeMessages } from '../edge/llm/sanitize-messages';
 
 /** Knobs do pruning (env PRUNE_TOOL_RESULTS_*; defaults conservadores no .env.example). */
 export interface PruneToolResultsKnobs {
@@ -60,7 +61,10 @@ function buildStub(toolName: string, args: unknown, resultText: string): string 
 export function pruneToolResults(messages: ModelMessage[], knobs: PruneToolResultsKnobs): ModelMessage[] {
   // toolCallId → args (dos tool-call parts das mensagens do assistant), p/ o resumo do stub.
   const argsById = new Map<string, unknown>();
-  for (const m of messages) {
+  // Normaliza o histórico recebido para fechar pares incompletos antes da poda.
+  const limpo = sanitizeMessages(messages);
+
+  for (const m of limpo) {
     if (m.role === 'assistant' && Array.isArray(m.content)) {
       for (const part of m.content) {
         if (part.type === 'tool-call') {
@@ -70,11 +74,11 @@ export function pruneToolResults(messages: ModelMessage[], knobs: PruneToolResul
     }
   }
 
-  const totalToolMsgs = messages.reduce((n, m) => (m.role === 'tool' ? n + 1 : n), 0);
+  const totalToolMsgs = limpo.reduce((n, m) => (m.role === 'tool' ? n + 1 : n), 0);
   const firstKeptRound = totalToolMsgs - knobs.windowTurns; // rodadas com índice < isto são podadas
   let roundIndex = 0;
 
-  return messages.map((m) => {
+  const podadas = limpo.map((m) => {
     if (m.role !== 'tool') {
       return m;
     }
@@ -111,4 +115,7 @@ export function pruneToolResults(messages: ModelMessage[], knobs: PruneToolResul
     });
     return { ...m, content };
   });
+
+  // Sanitização final: a poda não pode devolver um par que o provedor recusa.
+  return sanitizeMessages(podadas);
 }

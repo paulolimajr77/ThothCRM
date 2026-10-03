@@ -51,6 +51,8 @@ import {
 // (o seam é a única porta). `tool` idem: é como o agente define ToolSet sem
 // tocar no SDK.
 export { tool } from 'ai';
+export { sanitizeMessages } from './sanitize-messages';
+import { sanitizeMessages } from './sanitize-messages';
 export type { ModelMessage, ToolSet } from 'ai';
 export type { LlmEdgeConfig } from './credentials';
 export { llmEdgeConfigFromEnv, LlmNotConfiguredError } from './credentials';
@@ -695,7 +697,7 @@ export async function runModelCall(db: pg.Pool, cfg: LlmEdgeConfig, input: RunMo
       // publicado nele alcança o mesmo gateway que a tela testou ao salvar.
       model: factory(config.apiKey, model, decisao.baseUrl ?? config.baseUrl ?? undefined),
       system: prefix.system,
-      messages: input.messages,
+      messages: sanitizeMessages(input.messages),
       abortSignal: input.abortSignal,
       tools: guardServiceTools(prefix.tools),
       stopWhen:
@@ -880,6 +882,12 @@ export function normalizarErro(err: unknown): {
     codigo = 'limite_ou_saldo';
   } else if ((status !== null && status >= 500) || /timeout|ECONNREFUSED|fetch failed|network/i.test(bruto)) {
     codigo = 'provedor_indisponivel';
+  } else if (/model output must contain|output text or tool calls|messages\.\d+.*must contain/i.test(bruto)) {
+    // ANTES da regra de ferramentas: esta frase contém "tool", e a regra
+    // abaixo casa com qualquer "tool" — o histórico quebrado seria rotulado
+    // como modelo que não sabe usar ferramentas, e a dica mandaria trocar de
+    // modelo por um defeito que não é do modelo.
+    codigo = 'historico_invalido';
   } else if (/tool|function.?call/i.test(bruto)) {
     codigo = 'modelo_sem_ferramentas';
   }
