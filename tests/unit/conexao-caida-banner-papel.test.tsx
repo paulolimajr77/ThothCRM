@@ -21,7 +21,7 @@ const support: NonNullable<AuthUser["support"]> = {
   previous_organization_id: null, expires_at: "2030-01-01T00:00:00Z", name: "Organização",
   locale: "pt-BR", access_mode: "support_readonly", status: "active",
 };
-function view(role: Role, locale: "pt-BR" | "es", who = baseUser, caidas: ConexaoCaida[] = [{ id: "channel", apelido: "Vendas", status: "SCAN_QR_CODE" }]) {
+function view(role: Role, locale: "pt-BR" | "es", who = baseUser, caidas: ConexaoCaida[] = [{ id: "channel", apelido: "Vendas", status: "SCAN_QR_CODE", prefixo: "WhatsApp", aba: "numeros" }]) {
   return <AuthProvider user={who} activeOrg={{ orgId: "org", name: "Organização", role }}>
     <IdiomaProvider locale={locale}><ConexaoCaidaBanner caidas={caidas} /></IdiomaProvider>
   </AuthProvider>;
@@ -42,8 +42,16 @@ describe.each(["pt-BR", "es"] as const)("alerta de conexão em %s", locale => {
     expect(alert).toHaveTextContent("Vendas");
     expect(within(alert).getByRole("link", { name: copy[locale].qr })).toHaveAttribute("href", "/app/connections");
     expect(within(alert).queryByText(copy[locale].help)).toBeNull();
-    mounted.rerender(view(role, locale, who, [{ id: "channel", apelido: "Vendas", status: "FAILED" }]));
+    mounted.rerender(view(role, locale, who, [{ id: "channel", apelido: "Vendas", status: "FAILED", prefixo: "WhatsApp", aba: "numeros" }]));
     expect(within(screen.getByRole("alert")).getByRole("link", { name: copy[locale].connections })).toHaveAttribute("href", "/app/connections");
+  });
+
+  it("conta social caída não se anuncia como WhatsApp e leva à aba de redes sociais", () => {
+    render(view("admin", "pt-BR", baseUser, [{ id: "chan-social", apelido: "instagram · conta", status: "FAILED", prefixo: "Rede social", aba: "sociais" }]));
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Rede social");
+    expect(alert).not.toHaveTextContent("WhatsApp");
+    expect(within(alert).getByRole("link", { name: "Ver conexões" })).toHaveAttribute("href", "/app/connections?aba=sociais");
   });
 
   it.each([

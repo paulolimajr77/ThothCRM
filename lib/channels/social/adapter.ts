@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { zernioAdapter } from "../adapters/zernio";
 import { zernioCredsForAccountId } from "../zernio/credentials";
 import { socialMessageId, SOCIAL_PROVIDER } from "./catalog";
-import { socialRequest } from "./client";
+import { SocialError, socialRequest } from "./client";
 import type { ChannelAdapter } from "../types";
 
 export const socialAdapter: ChannelAdapter = {
@@ -45,7 +45,15 @@ export const socialAdapter: ChannelAdapter = {
       return result.status === "healthy"
         ? { reachable: true, status: "WORKING", detail: null }
         : { reachable: true, status: "FAILED", detail: "conta_requer_atencao" };
-    } catch {
+    } catch (e) {
+      // Chave recusada (401/403 no provedor) é queda, não oscilação: `reachable:
+      // false` virava `warn` genérico e o `status` velho no banco mantinha a
+      // faixa para sempre sem episódio novo que dissesse a causa. O detalhe é
+      // PRÓPRIO daqui de propósito — o `credencial_recusada_pelo_transporte` do
+      // seam descreve a chave do serviço de WhatsApp e mandaria conferir
+      // `WAHA_API_KEY`, que não tem nada a ver com esta conta.
+      if (e instanceof SocialError && e.message.includes("Acesso recusado"))
+        return { reachable: true, status: "FAILED", detail: "credencial_recusada" };
       return { reachable: false, status: null, detail: "provedor_indisponivel" };
     }
   },

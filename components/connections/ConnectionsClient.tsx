@@ -625,14 +625,29 @@ export function frasesDoImpacto(
  * que agora chega no preflight. O desfecho vem da MESMA função que o DELETE usa
  * para decidir, antes do clique.
  */
-function ExcluirCanalDialog({
+export function ExcluirCanalDialog({
   canal,
   onCancel,
   onDeleted,
+  fraseDeSaida,
 }: {
-  canal: ChannelSession;
+  /**
+   * O mínimo que o diálogo lê: `id` (preflight + DELETE) e o nome
+   * (`channelLabel`). Sem a sessão do transporte: ela só existe na aba de QR,
+   * e escrevê-la aqui nomearia provider fora do seam (`lint:channels`).
+   */
+  canal: Pick<ChannelSession, "id" | "display_name"> & {
+    phone_number?: string | null;
+  };
   onCancel: () => void;
   onDeleted: () => void;
+  /**
+   * O que acontece do lado de fora ao confirmar. O padrão descreve o canal por
+   * QR; quem reutiliza para outro canal (ex.: conta social órfã) informa a
+   * frase dele — texto fixo aqui prometeria "desconectar do WhatsApp" para uma
+   * conta que nunca passou por aparelho nenhum.
+   */
+  fraseDeSaida?: string;
 }) {
   const t = useT();
   const [excluindo, setExcluindo] = useState(false);
@@ -684,7 +699,7 @@ function ExcluirCanalDialog({
           </DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-2">
-              <p>{t("O número será desconectado do WhatsApp e sai desta lista.")}</p>
+              <p>{fraseDeSaida ?? t("O número será desconectado do WhatsApp e sai desta lista.")}</p>
               {isPending ? (
                 <p>{t("Verificando o que está ligado a este número…")}</p>
               ) : isError || !impact ? (

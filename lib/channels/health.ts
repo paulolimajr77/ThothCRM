@@ -160,6 +160,41 @@ export interface ConexaoCaida {
   id: string;
   apelido: string;
   status: string;
+  /**
+   * Como a faixa CHAMA este canal e para onde o botão leva — resolvidos aqui, no
+   * seam, e não na tela.
+   *
+   * ─── Por que os dois moram aqui ──────────────────────────────────────────
+   * A faixa dizia `WhatsApp <apelido>` fixo e levava a `/app/connections` (aba
+   * de QR): uma conta social órfã (ex.: `instagram · conta`, provider
+   * `zernio_social`) aparecia como "WhatsApp" e o botão caía na aba errada, que
+   * nem lista o canal (ela filtra o social fora). `prefixo` usa o CONCEITO que o
+   * usuário reconhece ("WhatsApp", "Rede social"), nunca marca de provider
+   * (`lint:channels`); `aba` é o `?aba=` do `ConexoesShell`.
+   */
+  prefixo: string;
+  aba: string;
+}
+
+/**
+ * Para onde a faixa leva e como ela chama cada provider de mensagem. `default`
+ * é o canal por QR — e também o que responde por provider desconhecido ou
+ * ausente, que é o erro barato: a aba de números é a porta de entrada de
+ * Conexões.
+ */
+export function destinoDaConexaoCaida(provider: string | null): { prefixo: string; aba: string } {
+  switch (provider) {
+    case "zernio_social":
+      return { prefixo: "Rede social", aba: "sociais" };
+    case "meta_cloud":
+      return { prefixo: "WhatsApp", aba: "oficial" };
+    case "zernio":
+      return { prefixo: "WhatsApp", aba: "parceiro" };
+    case "datafy":
+      return { prefixo: "WhatsApp", aba: "graph" };
+    default:
+      return { prefixo: "WhatsApp", aba: "numeros" };
+  }
 }
 
 /**
@@ -181,7 +216,7 @@ export async function listarConexoesCaidas(
 ): Promise<ConexaoCaida[]> {
   const { data } = await admin
     .from("channel_sessions")
-    .select("id, display_name, phone_number, status, waha_session_name")
+    .select("id, provider, display_name, phone_number, status, waha_session_name")
     .eq("organization_id", organizationId)
     .is("archived_at", null)
     // A faixa diz "nenhuma mensagem entra nem sai por esta conexão" e leva a
@@ -202,6 +237,7 @@ export async function listarConexoesCaidas(
     id: s.id as string,
     apelido: (s.display_name as string | null) ?? (s.phone_number as string | null) ?? "sem nome",
     status: (s.status as string | null) ?? "",
+    ...destinoDaConexaoCaida(s.provider as string | null),
   }));
 }
 

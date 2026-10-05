@@ -50,6 +50,32 @@ it("requires admin and never returns the stored key", async () => {
   expect(h.read).toHaveBeenCalledWith({}, "trusted");
   expect(h.role).toHaveBeenCalledWith("admin", expect.anything());
 });
+it("lists channels missing from the provider as orphans instead of hiding them", async () => {
+  h.channels.mockResolvedValue([
+    {
+      id: "chan-orfa",
+      accountId: "sumida",
+      display_name: "instagram · sumida",
+      status: "FAILED",
+      metadata: {},
+      updated_at: "2026-10-05T00:00:00Z",
+    },
+  ]);
+  const corpo = (await (await GET()).json()) as {
+    data: { accounts: unknown[]; orphaned_channels: { id: string; account_id: string }[] };
+  };
+  expect(corpo.data.accounts).toHaveLength(1);
+  expect(corpo.data.orphaned_channels).toEqual([
+    {
+      id: "chan-orfa",
+      account_id: "sumida",
+      display_name: "instagram · sumida",
+      status: "FAILED",
+      metadata: {},
+      updated_at: "2026-10-05T00:00:00Z",
+    },
+  ]);
+});
 it("refuses foreign organization injection", async () => {
   expect(
     (

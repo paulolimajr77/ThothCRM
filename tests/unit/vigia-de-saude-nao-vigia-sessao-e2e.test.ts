@@ -205,7 +205,14 @@ describe("o vigia de saúde ignora a sessão de seed (#1032)", () => {
     const conexoes = await listarConexoesCaidas(duble.admin as never, "org-1");
 
     expect(conexoes).toEqual([
-      { id: "sess-real", apelido: "Comercial", status: "STOPPED" },
+      { id: "sess-real", apelido: "Comercial", status: "STOPPED", prefixo: "WhatsApp", aba: "numeros" },
     ]);
+  });
+
+  it("conta social caída anuncia Rede social e leva à aba de redes sociais", async () => {
+    const { destinoDaConexaoCaida } = await import("@/lib/channels/health");
+    expect(destinoDaConexaoCaida("zernio_social")).toEqual({ prefixo: "Rede social", aba: "sociais" });
+    expect(destinoDaConexaoCaida("waha")).toEqual({ prefixo: "WhatsApp", aba: "numeros" });
+    expect(destinoDaConexaoCaida(null)).toEqual({ prefixo: "WhatsApp", aba: "numeros" });
   });
 });

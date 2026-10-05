@@ -68,22 +68,40 @@ export async function GET() {
     const config = await readSocialIntegration(db, auth.org.orgId);
     const channels = await socialChannels(db, auth.org.orgId);
     const accounts = config ? await listSocialAccounts(config.key, config.profileId) : [];
+    const vivos = accounts.filter((a) => SOCIAL_NETWORKS.some((n) => n.id === a.platform));
     return ok(
       {
         label: SOCIAL_PROVIDER_LABEL,
         configured: !!config,
         profile_id: config?.profileId ?? null,
         networks: SOCIAL_NETWORKS,
-        accounts: accounts
-          .filter((a) => SOCIAL_NETWORKS.some((n) => n.id === a.platform))
-          .map((a) => ({
-            id: a._id,
-            platform: a.platform,
-            username: a.username ?? a.displayName ?? a._id,
-            display_name: a.displayName,
-            active: a.isActive,
-            inbox_supported: inboxSupported(a.platform),
-            channel: channels.find((c) => c.accountId === a._id) ?? null,
+        accounts: vivos.map((a) => ({
+          id: a._id,
+          platform: a.platform,
+          username: a.username ?? a.displayName ?? a._id,
+          display_name: a.displayName,
+          active: a.isActive,
+          inbox_supported: inboxSupported(a.platform),
+          channel: channels.find((c) => c.accountId === a._id) ?? null,
+        })),
+        /**
+         * Canais ÓRFÃOS: a linha existe no banco (e o vigia de saúde a vê — é
+         * ela que mantém a faixa de "desconectado" no topo), mas a conta não
+         * está mais na lista do provedor (desfeita por lá, outro perfil, conta
+         * removida). A UI derivava TUDO de `accounts`, então o canal sumia da
+         * tela sem sumir do banco: sem card, sem Pausar, sem Excluir — o alarme
+         * permanente que ninguém consegue desligar. Órfã se remove ou se
+         * reconecta; nunca se esconde.
+         */
+        orphaned_channels: channels
+          .filter((c) => !accounts.some((a) => a._id === c.accountId))
+          .map((c) => ({
+            id: c.id,
+            account_id: c.accountId,
+            display_name: c.display_name,
+            status: c.status,
+            metadata: c.metadata,
+            updated_at: c.updated_at,
           })),
       },
       { requestId, headers },

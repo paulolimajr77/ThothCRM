@@ -13,6 +13,7 @@ import { apiClient } from "@/lib/api/client";
 import { canalDesativado } from "@/lib/channels/desativado";
 import { useT } from "@/hooks/i18n/useT";
 import { ChannelAiAccess } from "./ChannelAiAccess";
+import { ExcluirCanalDialog } from "./ConnectionsClient";
 
 type Account = {
   id: string;
@@ -22,11 +23,20 @@ type Account = {
   inbox_supported: boolean;
   channel: { id: string; status: string; metadata?: Record<string, unknown> | null } | null;
 };
+type OrphanedChannel = {
+  id: string;
+  account_id: string;
+  display_name: string | null;
+  status: string;
+  metadata?: Record<string, unknown> | null;
+  updated_at: string;
+};
 type State = {
   label: string;
   configured: boolean;
   networks: { id: string; label: string; inbox: boolean }[];
   accounts: Account[];
+  orphaned_channels?: OrphanedChannel[];
 };
 export function RedesSociaisClient() {
   const t = useT();
@@ -44,14 +54,18 @@ export function RedesSociaisClient() {
   const [platform, setPlatform] = useState("instagram");
   const [editing, setEditing] = useState(false);
   const [health, setHealth] = useState<Record<string, string>>({});
+  const [excluirOrfa, setExcluirOrfa] = useState<OrphanedChannel | null>(null);
   const load = () => query.refetch();
   async function togglePausado(account: Account) {
     if (!account.channel) return;
-    const desligar = !canalDesativado(account.channel.metadata);
-    setBusy(account.id);
+    await alternarPausado(account.channel.id, account.channel.metadata);
+  }
+  async function alternarPausado(canalId: string, metadata?: Record<string, unknown> | null) {
+    const desligar = !canalDesativado(metadata);
+    setBusy(canalId);
     setError(null);
     try {
-      await apiClient.patch(`/api/v1/channel-sessions/${account.channel.id}/disabled`, {
+      await apiClient.patch(`/api/v1/channel-sessions/${canalId}/disabled`, {
         disabled: desligar,
       });
       toast.success(t(desligar ? "Canal pausado." : "Canal reativado."));
@@ -316,6 +330,53 @@ export function RedesSociaisClient() {
             {t("Alterar credencial")}
           </Button>
         </>
+      )}
+      {(state?.orphaned_channels ?? []).length > 0 && (
+        <Card className="space-y-3 border-warning/40 bg-warning-bg p-4">
+          <div>
+            <h3 className="font-semibold">{t("Conexões sem conta no provedor")}</h3>
+            <p className="text-sm text-muted-foreground">
+              {t(
+                "Estas conexões existem no CRM mas a conta não está mais no provedor — removida por lá ou de outro perfil. É daqui que vem o aviso de erro no topo. Exclua para encerrar o aviso, ou autorize a conta de novo para voltar a atender.",
+              )}
+            </p>
+          </div>
+          {(state?.orphaned_channels ?? []).map((orfa) => (
+            <div key={orfa.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
+              <div>
+                <p className="font-medium">{orfa.display_name ?? orfa.account_id}</p>
+                <p className="text-xs text-muted-foreground">{orfa.status}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  disabled={!!busy}
+                  onClick={() => void alternarPausado(orfa.id, orfa.metadata)}
+                >
+                  {canalDesativado(orfa.metadata) ? t("Retomar") : t("Pausar")}
+                </Button>
+                <Button variant="destructive" disabled={!!busy} onClick={() => setExcluirOrfa(orfa)}>
+                  {t("Excluir")}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+      {excluirOrfa && (
+        <ExcluirCanalDialog
+          canal={{
+            id: excluirOrfa.id,
+            display_name: excluirOrfa.display_name,
+            phone_number: null,
+          }}
+          fraseDeSaida={t("A conta sai desta lista e o aviso de erro é encerrado.")}
+          onCancel={() => setExcluirOrfa(null)}
+          onDeleted={() => {
+            setExcluirOrfa(null);
+            void load();
+          }}
+        />
       )}
     </div>
   );

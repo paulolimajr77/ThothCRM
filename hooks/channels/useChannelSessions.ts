@@ -35,7 +35,10 @@ export type ConnectionHealth = "connected" | "connecting" | "down" | "none" | "u
  * rendia uma opção em branco no seletor.
  */
 export function channelLabel(
-  c: Pick<ChannelSession, "display_name" | "phone_number" | "waha_session_name">,
+  c: Pick<ChannelSession, "display_name"> & {
+    phone_number?: string | null;
+    waha_session_name?: string | null;
+  },
   t: (texto: string) => string = (texto) => texto,
 ): string {
   return c.display_name || c.phone_number || c.waha_session_name || t("Número sem nome");
