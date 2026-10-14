@@ -1,3 +1,10 @@
+/**
+ * Métrica `evolucao_da_ia` — papel manager, `GET /api/v1/ai/evolution`. Dias em UTC, `to`
+ * INCLUSIVO; mais de 90 dias é recusado ANTES de chamar a rota. Não sai `learned.timeline`
+ * (títulos de texto livre que podem citar cliente). `handoff_rate` vira null sem mensagens
+ * recebidas; fonte interna fora do ar aparece zerada (aviso fixo em todo resultado).
+ */
+
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -120,7 +127,7 @@ export const metricaEvolucaoDaIa: DefinicaoDeMetrica<ParametrosDeEvolucaoDaIa> =
       projetado.dados.learned.memory_entries === 0 &&
       projetado.dados.learned.proposals_applied === 0 &&
       projetado.dados.learned.skills_installed === 0 &&
-      Object.keys(projetado.dados.activity.series).every((k) => somatorioSeries(projetado.dados.activity.series[k]) === 0);
+      Object.values(projetado.dados.activity.series).every((serie) => somatorioSeries(serie) === 0);
     if (tudoZero) {
       return { ok: true, metrica: ID, periodo, regua: REGUA, dados: null, avisos: avisos.concat(["Sem atividade de IA no período."]) };
     }

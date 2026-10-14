@@ -3,9 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 
 import { metricaFunilConversao, sobreporHandlerDeFunilConversao } from "@/lib/assistente/metricas";
 import { consultarMetrica } from "@/lib/assistente/metricas/registro";
-import type { HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
+import type { HandlerDeRota, ResultadoDeMetrica } from "@/lib/assistente/metricas/chamar-rota";
 import type { ContextoDeConsulta } from "@/lib/assistente/metricas/tipos";
 import { resolverPeriodo } from "../periodo";
+
+function dadosDe<T>(r: ResultadoDeMetrica): T {
+  if (!r.ok || r.dados === null || r.dados === undefined) throw new Error("esperava dados");
+  return r.dados as T;
+}
 
 const CTX_AGENT: ContextoDeConsulta = {
   orgId: "org-1",
@@ -13,7 +18,7 @@ const CTX_AGENT: ContextoDeConsulta = {
   idioma: "pt-BR",
   fuso: "America/Sao_Paulo",
   agoraIso: "2026-10-14T09:00:00-03:00",
-  bancoDosModulos: {},
+  bancoDosModulos: {} as ContextoDeConsulta["bancoDosModulos"],
 };
 
 function handlerDe(status: number, corpo: unknown, captura?: { url?: string }): HandlerDeRota {
@@ -31,8 +36,8 @@ const payloadCompleto = () => ({
       {
         pipeline_id: "11111111-2222-3333-4444-555555555555",
         funil: "Vendas",
-        etapa: { id: "etapa1", nome: "Novo", posicao: 1.5 },
-        proxima: { id: "etapa2", nome: "Proposta", posicao: 2 },
+        etapa: { id: "aaaaaaaa-0000-4000-8000-000000000001", nome: "Novo", posicao: 1.5 },
+        proxima: { id: "aaaaaaaa-0000-4000-8000-000000000002", nome: "Proposta", posicao: 2 },
         entraram: 10,
         passaram: 4,
         taxa: 0.4,
@@ -79,13 +84,14 @@ describe("funil_conversao — adapter", () => {
     sobreporHandlerDeFunilConversao(handlerDe(200, { data: payloadCompleto() }));
     const r = await metricaFunilConversao.executar(CTX_AGENT, {});
     expect(r.ok).toBe(true);
-    if (r.ok && r.dados) {
-      expect(r.dados.conversao?.etapas?.[0]?.taxa).toBe(0.4);
-      const s = JSON.stringify(r.dados);
-      expect(s).not.toContain("11111111-2222-3333-4444-555555555555".slice(0, 8)); // parte do UUID não aparece como id de etapa
-      expect(s).toContain("Vendas");
-      expect(s).toContain("pipeline_id");
-    }
+    const d = dadosDe<{ conversao: { etapas: { taxa: number }[] } }>(r);
+    expect(d.conversao.etapas[0]?.taxa).toBe(0.4);
+    const s = JSON.stringify(d);
+    expect(s).not.toContain("aaaaaaaa-0000-4000-8000-000000000001");
+    expect(s).not.toContain("aaaaaaaa-0000-4000-8000-000000000002");
+    expect(s).toContain("11111111-2222-3333-4444-555555555555");
+    expect(s).toContain("Vendas");
+    expect(s).toContain("pipeline_id");
   });
 
   it("contra_metrica.nota com mensagem de erro do banco → texto do erro não sai", async () => {
@@ -133,7 +139,9 @@ describe("funil_conversao — adapter", () => {
   it("amostra zero (conversao.amostra=0) sem vazio → dados null + aviso exato", async () => {
     const payload = {
       ...payloadCompleto(),
-      conversao: { ...payloadCompleto().conversao, etapas: [], amostra: 0, notas: [] },
+      conversao: { etapas: [], amostra: 0, notas: [] },
+      origem: { linhas: [], valor_por_moeda: true },
+      dias_ate_fechar: { ...payloadCompleto().dias_ate_fechar, mediana: null, p25: null, p75: null, amostra: 0, por_funil: [] },
     };
     sobreporHandlerDeFunilConversao(handlerDe(200, { data: payload }));
     const r = await metricaFunilConversao.executar(CTX_AGENT, {});

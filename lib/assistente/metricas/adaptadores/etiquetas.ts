@@ -1,3 +1,10 @@
+/**
+ * Métrica `etiquetas` — papel viewer, `GET /api/v1/reports/tags`. Janela por fuso civil
+ * (`de`/`ate` em AAAA-MM-DD, `ate` INCLUSIVO; mais de 90 dias é recusado ANTES de chamar a rota).
+ * A etiqueta é texto livre da equipe (cortado em 60 caracteres). Não saem `motivo` nem
+ * `sem_dados` (lidos do bruto só para escolher o aviso). Sem etiqueta/conversa → `dados: null`.
+ */
+
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { textoAte } from "./saneamento";

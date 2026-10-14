@@ -3,9 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 
 import { metricaEtiquetas, sobreporHandlerDeEtiquetas } from "@/lib/assistente/metricas";
 import { consultarMetrica } from "@/lib/assistente/metricas/registro";
-import type { HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
+import type { HandlerDeRota, ResultadoDeMetrica } from "@/lib/assistente/metricas/chamar-rota";
 import type { ContextoDeConsulta } from "@/lib/assistente/metricas/tipos";
 import { resolverPeriodo } from "../periodo";
+
+function dadosDe<T>(r: ResultadoDeMetrica): T {
+  if (!r.ok || r.dados === null || r.dados === undefined) throw new Error("esperava dados");
+  return r.dados as T;
+}
 
 const CTX_VIEWER: ContextoDeConsulta = {
   orgId: "org-1",
@@ -13,7 +18,7 @@ const CTX_VIEWER: ContextoDeConsulta = {
   idioma: "pt-BR",
   fuso: "America/Sao_Paulo",
   agoraIso: "2026-10-14T09:00:00-03:00",
-  bancoDosModulos: {},
+  bancoDosModulos: {} as ContextoDeConsulta["bancoDosModulos"],
 };
 
 function handlerDe(status: number, corpo: unknown, captura?: { url?: string }): HandlerDeRota {
@@ -116,9 +121,8 @@ describe("etiquetas — adapter", () => {
     );
     const r = await metricaEtiquetas.executar(CTX_VIEWER, {});
     expect(r.ok).toBe(true);
-    if (r.ok && r.dados?.linhas?.[0]) {
-      expect(r.dados.linhas[0].etiqueta).toBe("a".repeat(60));
-    }
+    const d = dadosDe<{ linhas: { etiqueta: string }[] }>(r);
+    expect(d.linhas[0]?.etiqueta).toBe("a".repeat(60));
   });
 
   it("formato inesperado → indisponivel", async () => {

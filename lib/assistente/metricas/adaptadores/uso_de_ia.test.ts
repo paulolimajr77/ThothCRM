@@ -3,9 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 
 import { metricaUsoDeIa, sobreporHandlerDeUsoDeIa } from "@/lib/assistente/metricas";
 import { consultarMetrica } from "@/lib/assistente/metricas/registro";
-import type { HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
+import type { HandlerDeRota, ResultadoDeMetrica } from "@/lib/assistente/metricas/chamar-rota";
 import type { ContextoDeConsulta } from "@/lib/assistente/metricas/tipos";
 import { resolverPeriodo } from "../periodo";
+
+function dadosDe<T>(r: ResultadoDeMetrica): T {
+  if (!r.ok || r.dados === null || r.dados === undefined) throw new Error("esperava dados");
+  return r.dados as T;
+}
 
 const CTX_MANAGER: ContextoDeConsulta = {
   orgId: "org-1",
@@ -13,7 +18,7 @@ const CTX_MANAGER: ContextoDeConsulta = {
   idioma: "pt-BR",
   fuso: "America/Sao_Paulo",
   agoraIso: "2026-10-14T09:00:00-03:00",
-  bancoDosModulos: {},
+  bancoDosModulos: {} as ContextoDeConsulta["bancoDosModulos"],
 };
 
 function handlerDe(status: number, corpo: unknown, captura?: { url?: string }): HandlerDeRota {
@@ -48,9 +53,8 @@ describe("uso_de_ia — adapter", () => {
     sobreporHandlerDeUsoDeIa(handlerDe(200, { data: payloadValido() }));
     const r = await metricaUsoDeIa.executar(CTX_MANAGER, {});
     expect(r.ok).toBe(true);
-    if (r.ok && r.dados) {
-      expect(r.dados.totals.cache_hit_rate).toBe(0.5);
-    }
+    const d = dadosDe<{ totals: { cache_hit_rate: number | null }; series: Record<string, unknown>; by_kind: Record<string, number> }>(r);
+    expect(d.totals.cache_hit_rate).toBe(0.5);
   });
 
   it("input_tokens: 0 → cache_hit_rate null", async () => {
@@ -58,9 +62,8 @@ describe("uso_de_ia — adapter", () => {
     sobreporHandlerDeUsoDeIa(handlerDe(200, { data: payload }));
     const r = await metricaUsoDeIa.executar(CTX_MANAGER, {});
     expect(r.ok).toBe(true);
-    if (r.ok && r.dados) {
-      expect(r.dados.totals.cache_hit_rate).toBeNull();
-    }
+    const d = dadosDe<{ totals: { cache_hit_rate: number | null }; series: Record<string, unknown>; by_kind: Record<string, number> }>(r);
+    expect(d.totals.cache_hit_rate).toBeNull();
   });
 
   it("handoff_rate em totals não sai em JSON.stringify(dados)", async () => {
@@ -89,9 +92,8 @@ describe("uso_de_ia — adapter", () => {
     sobreporHandlerDeUsoDeIa(handlerDe(200, { data: payload }));
     const r = await metricaUsoDeIa.executar(CTX_MANAGER, {});
     expect(r.ok).toBe(true);
-    if (r.ok && r.dados) {
-      expect(Object.keys(r.dados.series ?? {})).toEqual(["cost_cents", "total_tokens"]);
-    }
+    const d = dadosDe<{ totals: { cache_hit_rate: number | null }; series: Record<string, unknown>; by_kind: Record<string, number> }>(r);
+    expect(Object.keys(d.series)).toEqual(["cost_cents", "total_tokens"]);
   });
 
   it("URL capturada: from === de, to === ateInclusivo", async () => {
@@ -121,9 +123,8 @@ describe("uso_de_ia — adapter", () => {
     sobreporHandlerDeUsoDeIa(handlerDe(200, { data: payload }));
     const r = await metricaUsoDeIa.executar(CTX_MANAGER, {});
     expect(r.ok).toBe(true);
-    if (r.ok && r.dados) {
-      expect(Object.keys(r.dados.by_kind ?? {})).toEqual(["turns"]);
-    }
+    const d = dadosDe<{ totals: { cache_hit_rate: number | null }; series: Record<string, unknown>; by_kind: Record<string, number> }>(r);
+    expect(Object.keys(d.by_kind)).toEqual(["turns"]);
   });
 
   it("recusa >90 dias SEM chamar rota", async () => {

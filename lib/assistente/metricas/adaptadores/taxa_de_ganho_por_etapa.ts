@@ -1,3 +1,11 @@
+/**
+ * Métrica `taxa_de_ganho_por_etapa` — papel manager. Duas chamadas por dentro:
+ * `GET /api/v1/pipelines/[id]/stages/win-rates` (taxas e tempo na etapa, por `etapa_id`) e
+ * `GET /api/v1/pipelines/[id]/stages` (nome e posição). A junção troca o id pelo nome; linha
+ * cuja etapa não está na lista é descartada e nenhum id de etapa sai. Janela `[agora - dias, agora]`
+ * (`periodo: null`; a janela vai em `dados.janela`). Percentual e sugestão vão de 0 a 100.
+ */
+
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 

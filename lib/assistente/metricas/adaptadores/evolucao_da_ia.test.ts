@@ -3,9 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 
 import { metricaEvolucaoDaIa, sobreporHandlerDeEvolucaoDaIa } from "@/lib/assistente/metricas";
 import { consultarMetrica } from "@/lib/assistente/metricas/registro";
-import type { HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
+import type { HandlerDeRota, ResultadoDeMetrica } from "@/lib/assistente/metricas/chamar-rota";
 import type { ContextoDeConsulta } from "@/lib/assistente/metricas/tipos";
 import { resolverPeriodo } from "../periodo";
+
+function dadosDe<T>(r: ResultadoDeMetrica): T {
+  if (!r.ok || r.dados === null || r.dados === undefined) throw new Error("esperava dados");
+  return r.dados as T;
+}
 
 const CTX_MANAGER: ContextoDeConsulta = {
   orgId: "org-1",
@@ -13,7 +18,7 @@ const CTX_MANAGER: ContextoDeConsulta = {
   idioma: "pt-BR",
   fuso: "America/Sao_Paulo",
   agoraIso: "2026-10-14T09:00:00-03:00",
-  bancoDosModulos: {},
+  bancoDosModulos: {} as ContextoDeConsulta["bancoDosModulos"],
 };
 
 function handlerDe(status: number, corpo: unknown, captura?: { url?: string }): HandlerDeRota {
@@ -93,9 +98,8 @@ describe("evolucao_da_ia — adapter", () => {
     sobreporHandlerDeEvolucaoDaIa(handlerDe(200, { data: payload }));
     const r = await metricaEvolucaoDaIa.executar(CTX_MANAGER, {});
     expect(r.ok).toBe(true);
-    if (r.ok && r.dados) {
-      expect(r.dados.outcome.handoff_rate).toBeNull();
-    }
+    const d = dadosDe<{ outcome: { handoff_rate: number | null }; activity: { by_skill: Record<string, number> } }>(r);
+    expect(d.outcome.handoff_rate).toBeNull();
     expect(r.avisos).toContain("Sem mensagens de clientes no período; a taxa de passagem para humano não se aplica.");
   });
 
@@ -124,10 +128,9 @@ describe("evolucao_da_ia — adapter", () => {
     sobreporHandlerDeEvolucaoDaIa(handlerDe(200, { data: payload }));
     const r = await metricaEvolucaoDaIa.executar(CTX_MANAGER, {});
     expect(r.ok).toBe(true);
-    if (r.ok && r.dados) {
-      expect(Object.keys(r.dados.activity.by_skill)).toEqual(["busca"]);
-      expect(Object.getPrototypeOf(r.dados.activity.by_skill)).toBe(Object.prototype);
-    }
+    const d = dadosDe<{ outcome: { handoff_rate: number | null }; activity: { by_skill: Record<string, number> } }>(r);
+    expect(Object.keys(d.activity.by_skill)).toEqual(["busca"]);
+    expect(Object.getPrototypeOf(d.activity.by_skill)).toBe(Object.prototype);
   });
 
   it("todo resultado ok traz aviso fixo sobre fonte fora do ar", async () => {

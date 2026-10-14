@@ -1,3 +1,10 @@
+/**
+ * Métrica `uso_de_ia` — papel manager, `GET /api/v1/ai/usage`. Dias em UTC, `to` INCLUSIVO;
+ * mais de 90 dias é recusado ANTES de chamar a rota (a rota corta em silêncio). Não saem
+ * `handoff_rate` (a rota devolve 0 quando não há dado) nem as séries de latência e de handoff;
+ * `cache_hit_rate` é calculado aqui (null sem tokens de entrada). Custo é mínimo e pode ter fração.
+ */
+
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
