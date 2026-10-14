@@ -1,5 +1,11 @@
+/**
+ * Métrica `funil_conversao` — papel agent, `GET /api/v1/metrics/funil`. Fim EXCLUSIVO
+ * (`to` exclusivo). Não sai `vazio` (tem `motivo` proibido), não sai `etapa.id`/proxima.id;
+ * `base` é texto; `contra_metrica` tem denominadores de texto; `posicao` é fracionado.
+ */
 import type { NextRequest } from "next/server";
 import { z } from "zod";
+import { textoAte } from "./saneamento";
 
 import { logger } from "@/lib/logger";
 
@@ -13,12 +19,12 @@ const ID = "funil_conversao";
 const parametros = z.strictObject({ periodo: PeriodoSolicitado.optional() });
 export type ParametrosDeFunilConversao = z.infer<typeof parametros>;
 
-const etapa = z.object({ nome: z.string().max(80), posicao: z.number().int() });
+const etapa = z.object({ nome: z.string().max(80), posicao: z.number() });
 const porMoeda = z.object({ moeda: z.string().max(8), quantidade: z.number().int().min(0), valor_cents: z.number().int() });
 
 const esquema = z.object({
   janela: z.object({ from: z.string().max(64), to: z.string().max(64) }),
-  base: z.number().int().min(0),
+  base: textoAte(300),
   conversao: z.object({
     etapas: z.array(z.object({
       pipeline_id: z.string().uuid(),
@@ -50,10 +56,10 @@ const esquema = z.object({
     valor_por_moeda: z.boolean(),
   }),
   contra_metrica: z.object({
-    turnos: z.object({ p50: z.number(), p90: z.number(), denominador: z.number().int().min(0) }).nullable(),
-    opt_outs: z.object({ quantidade: z.number().int().min(0), denominador: z.number().int().min(0) }).nullable(),
-    fonte: z.string().max(200),
-    nota: z.string().max(500),
+    turnos: z.object({ p50: z.number(), p90: z.number(), denominador: textoAte(100) }).nullable(),
+    opt_outs: z.object({ quantidade: z.number().int().min(0), denominador: textoAte(100) }).nullable(),
+    fonte: textoAte(200),
+    nota: textoAte(500).transform((s) => s.startsWith("Contra-métrica não medida nesta resposta:") ? "Contra-métrica não medida nesta resposta." : s.slice(0, 500)),
   }),
   truncado: z.boolean(),
 });

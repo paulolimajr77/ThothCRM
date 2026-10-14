@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
+import { textoAte } from "./saneamento";
 
 import { logger } from "@/lib/logger";
 
@@ -14,7 +15,7 @@ const parametros = z.strictObject({ periodo: PeriodoSolicitado.optional() });
 export type ParametrosDeEtiquetas = z.infer<typeof parametros>;
 
 const linhaProjeto = z.object({
-  etiqueta: z.string().max(60),
+  etiqueta: textoAte(60),
   conversas: z.number().int().min(0),
   abertas: z.number().int().min(0),
   resolvidas: z.number().int().min(0),
@@ -104,4 +105,3 @@ export const metricaEtiquetas: DefinicaoDeMetrica<ParametrosDeEtiquetas> = {
     return { ok: true, metrica: ID, periodo, regua: REGUA, dados: projetado.dados, avisos };
   },
 };
-PY

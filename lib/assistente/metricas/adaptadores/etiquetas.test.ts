@@ -61,4 +61,3 @@ describe("etiquetas — adapter", () => {
     expect(r).toMatchObject({ ok: false, motivo: "sem_permissao" });
   });
 });
-PY
