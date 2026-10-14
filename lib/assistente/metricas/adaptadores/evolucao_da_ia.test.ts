@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { metricaEvolucaoDaIa, sobreporHandlerDeEvolucaoDaIa } from "@/lib/assistente/metricas";
 import { consultarMetrica } from "@/lib/assistente/metricas/registro";
-import type { HandlerDeRota, ResultadoDeMetrica } from "@/lib/assistente/metricas/chamar-rota";
-import type { ContextoDeConsulta } from "@/lib/assistente/metricas/tipos";
+import type { HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
+import type { ContextoDeConsulta, ResultadoDeMetrica } from "@/lib/assistente/metricas/tipos";
 import { resolverPeriodo } from "../periodo";
 
 function dadosDe<T>(r: ResultadoDeMetrica): T {
@@ -98,6 +98,7 @@ describe("evolucao_da_ia — adapter", () => {
     sobreporHandlerDeEvolucaoDaIa(handlerDe(200, { data: payload }));
     const r = await metricaEvolucaoDaIa.executar(CTX_MANAGER, {});
     expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error("esperava ok");
     const d = dadosDe<{ outcome: { handoff_rate: number | null }; activity: { by_skill: Record<string, number> } }>(r);
     expect(d.outcome.handoff_rate).toBeNull();
     expect(r.avisos).toContain("Sem mensagens de clientes no período; a taxa de passagem para humano não se aplica.");

@@ -1,10 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
-import { metricaTaxaDeGanhoPorEtapa, sobreporHandlersDeTaxaDeGanho, comParametros } from "@/lib/assistente/metricas";
+import { metricaTaxaDeGanhoPorEtapa, sobreporHandlersDeTaxaDeGanho } from "@/lib/assistente/metricas";
 import { consultarMetrica } from "@/lib/assistente/metricas/registro";
-import type { HandlerDeRota, ResultadoDeMetrica } from "@/lib/assistente/metricas/chamar-rota";
-import type { ContextoDeConsulta } from "@/lib/assistente/metricas/tipos";
+import { comParametros } from "@/lib/assistente/metricas/adaptadores/taxa_de_ganho_por_etapa";
+import type { HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
+import type { ContextoDeConsulta, ResultadoDeMetrica } from "@/lib/assistente/metricas/tipos";
 import { NextRequest } from "next/server";
 
 function dadosDe<T>(r: ResultadoDeMetrica): T {

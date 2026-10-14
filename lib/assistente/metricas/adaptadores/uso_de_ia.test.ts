@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { metricaUsoDeIa, sobreporHandlerDeUsoDeIa } from "@/lib/assistente/metricas";
 import { consultarMetrica } from "@/lib/assistente/metricas/registro";
-import type { HandlerDeRota, ResultadoDeMetrica } from "@/lib/assistente/metricas/chamar-rota";
-import type { ContextoDeConsulta } from "@/lib/assistente/metricas/tipos";
+import type { HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
+import type { ContextoDeConsulta, ResultadoDeMetrica } from "@/lib/assistente/metricas/tipos";
 import { resolverPeriodo } from "../periodo";
 
 function dadosDe<T>(r: ResultadoDeMetrica): T {
