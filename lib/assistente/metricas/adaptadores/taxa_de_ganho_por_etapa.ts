@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 
 import { chamarRotaPorDentro, traduzirResposta } from "../chamar-rota";
 import { chavesProibidasEm, projetar } from "../projecao";
-import type { ContextoDeConsulta, DefinicaoDeMetrica, ResultadoDeMetrica } from "../tipos";
+import type { DefinicaoDeMetrica } from "../tipos";
 
 const ID = "taxa_de_ganho_por_etapa";
 
@@ -17,12 +17,13 @@ export type ParametrosDeTaxaDeGanhoPorEtapa = z.infer<typeof parametros>;
 
 const schemaWin = z.object({
   minimo_de_casos: z.number().int().min(0),
+  truncado: z.boolean(),
   taxas: z.array(z.object({
     etapa_id: z.string().uuid(),
     total: z.number().int().min(0),
     ganhos: z.number().int().min(0),
-    percentual: z.number().nullable(),
-    sugestao: z.string().max(800).nullable(),
+    percentual: z.number().int().min(0).max(100).nullable(),
+    sugestao: z.number().nullable(),
   })),
   tempo_na_etapa: z.object({
     medida: z.string().max(80),
@@ -45,15 +46,15 @@ const schemaWin = z.object({
 const schemaStages = z.array(z.object({
   id: z.string().uuid(),
   name: z.string().max(120),
-  position: z.number().int(),
+  position: z.number(),
   is_won: z.boolean(),
   is_lost: z.boolean(),
   expected_duration_hours: z.number().nullable(),
 }));
 
 const REGUA =
-  "Fonte /api/v1/pipelines/[id]/stages/win-rates + stages, papel manager. " +
-  "Janela [agora - dias, agora]; sugestão calculada pelo sistema, nada aplicado. " +
+  "Fonte /api/v1/pipelines/[id]/stages/win-rates + /stages, papel manager. " +
+  "Janela [agora - dias, agora]; percentual e sugestao vão de 0 a 100. " +
   "'tempo_na_etapa' é outra população (quem está na etapa AGORA, fora da janela); não some com as taxas. " +
   "null em percentual/sugestao = amostra pequena (menos de minimo_de_casos) ou zero. " +
   "Funil de outra organização aparece como não encontrado (mesma frase).";
@@ -66,15 +67,19 @@ export function sobreporHandlersDeTaxaDeGanho(sobreposicao: Sobreposicao | null)
   sobrep = sobreposicao;
 }
 
+export function comParametros(rota: (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => Promise<Response>, id: string): Handler {
+  return (req) => rota(req, { params: Promise.resolve({ id }) });
+}
+
 async function handlerTaxas(id: string): Promise<Handler> {
   if (sobrep?.taxas) return sobrep.taxas;
   const modulo = await import("@/app/api/v1/pipelines/[id]/stages/win-rates/route");
-  return (req) => modulo.GET(req, { params: Promise.resolve({ id }) } as any);
+  return comParametros(modulo.GET, id);
 }
 async function handlerEtapas(id: string): Promise<Handler> {
   if (sobrep?.etapas) return sobrep.etapas;
   const modulo = await import("@/app/api/v1/pipelines/[id]/stages/route");
-  return (req) => (modulo as any).GET(req, { params: Promise.resolve({ id }) });
+  return comParametros(modulo.GET, id);
 }
 
 export const metricaTaxaDeGanhoPorEtapa: DefinicaoDeMetrica<ParametrosDeTaxaDeGanhoPorEtapa> = {
@@ -99,7 +104,7 @@ export const metricaTaxaDeGanhoPorEtapa: DefinicaoDeMetrica<ParametrosDeTaxaDeGa
     const h2 = await handlerEtapas(id);
     const r2 = await chamarRotaPorDentro(h2, urlSt, {});
     const v2 = traduzirResposta(r2, "manager");
-    if (!v2.ok) return { ok: false, metrica: ID, motivo: "indisponivel", detalhe: "a rota respondeu erro interno" };
+    if (!v2.ok) return { metrica: ID, ...v2 };
 
     const p1 = projetar(schemaWin, v1.dados);
     const p2 = projetar(schemaStages, v2.dados);
@@ -123,26 +128,31 @@ export const metricaTaxaDeGanhoPorEtapa: DefinicaoDeMetrica<ParametrosDeTaxaDeGa
       return { ok: true, metrica: ID, periodo: null, regua: REGUA, dados: null, avisos: ["Nenhum negócio encerrado passou pelas etapas deste funil no período."] };
     }
 
-    const taxas = win.taxas.map((t) => {
-      const st = mapStage.get(t.etapa_id);
-      return {
-        nome: st ? st.name : "(etapa arquivada)",
-        posicao: st ? st.position : Number.MAX_SAFE_INTEGER,
-        final: st ? (st.is_won ? "ganho" : st.is_lost ? "perda" : null) : null,
-        total: t.total,
-        ganhos: t.ganhos,
-        percentual: t.percentual,
-        sugestao: t.sugestao,
-      };
-    }).sort((a, b) => a.posicao - b.posicao);
+    const taxas = win.taxas
+      .map((t) => {
+        const st = mapStage.get(t.etapa_id);
+        return st ? { nome: st.name, posicao: st.position, total: t.total, ganhos: t.ganhos, percentual: t.percentual, sugestao: t.sugestao } : null;
+      })
+      .filter((x) => x !== null)
+      .sort((a, b) => a!.posicao - b!.posicao);
+
+    const tempoNaEtapa = {
+      ...win.tempo_na_etapa,
+      etapas: win.tempo_na_etapa.etapas
+        .map((e) => {
+          const st = mapStage.get(e.etapa_id);
+          return st ? { nome: st.name, posicao: st.position, quantidade: e.quantidade, horas_media: e.horas_media, horas_mediana: e.horas_mediana, com_carimbo: e.com_carimbo, sem_carimbo: e.sem_carimbo } : null;
+        })
+        .filter((x) => x !== null),
+    };
 
     const janela = { dias, ate: "agora" };
-    const dados = {
-      janela,
-      minimo_de_casos: win.minimo_de_casos,
-      taxas,
-      tempo_na_etapa: win.tempo_na_etapa,
-    };
-    return { ok: true, metrica: ID, periodo: null, regua: REGUA, dados, avisos: [`Janela dos últimos ${dias} dias terminando agora.`] };
+    const avisos: string[] = [];
+    if (win.truncado) avisos.push("O histórico de etapas atingiu o limite de leitura; as taxas podem estar incompletas.");
+    if (tempoNaEtapa.truncado) avisos.push("Há mais negócios nas etapas do que a leitura alcança (limite de 1000); o tempo na etapa é do trecho lido.");
+    avisos.push(`Janela dos últimos ${dias} dias terminando agora.`);
+
+    const dados = { janela, minimo_de_casos: win.minimo_de_casos, taxas, tempo_na_etapa: tempoNaEtapa };
+    return { ok: true, metrica: ID, periodo: null, regua: REGUA, dados, avisos };
   },
 };

@@ -12,7 +12,7 @@ import { logger } from "@/lib/logger";
 import { chamarRotaPorDentro, traduzirResposta } from "../chamar-rota";
 import { chavesProibidasEm, projetar } from "../projecao";
 import { PeriodoSolicitado, resolverPeriodo } from "../periodo";
-import type { ContextoDeConsulta, DefinicaoDeMetrica, ResultadoDeMetrica } from "../tipos";
+import type { DefinicaoDeMetrica } from "../tipos";
 
 const ID = "funil_conversao";
 
@@ -74,7 +74,7 @@ const brutoSchema = z.object({
 
 const REGUA =
   "Fonte /api/v1/metrics/funil, papel agent, janela com to EXCLUSIVO. " +
-  "Taxa é de quem entrou na etapa NA janela (quem já morava antes não entra). " +
+  "Taxa é fração de 0 a 1 (0,4 = 40%) de quem entrou na etapa NA janela. " +
   "'dias até fechar' é MEDIANA. A contra-métrica (turnos e descadastros) vem junto por design: não apresente a taxa sem ela.";
 
 type Handler = (req: NextRequest) => Promise<Response>;

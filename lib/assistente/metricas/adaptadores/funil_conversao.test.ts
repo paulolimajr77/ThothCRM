@@ -1,49 +1,170 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { metricaFunilConversao, sobreporHandlerDeFunilConversao } from "@/lib/assistente/metricas";
+import { consultarMetrica } from "@/lib/assistente/metricas/registro";
 import type { HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
 import type { ContextoDeConsulta } from "@/lib/assistente/metricas/tipos";
+import { resolverPeriodo } from "../periodo";
 
-const CTX_AGENT: ContextoDeConsulta = { orgId: "org-1", papel: "agent", idioma: "pt-BR", fuso: "America/Sao_Paulo", agoraIso: "2026-10-14T09:00:00-03:00", bancoDosModulos: {} as any };
+const CTX_AGENT: ContextoDeConsulta = {
+  orgId: "org-1",
+  papel: "agent",
+  idioma: "pt-BR",
+  fuso: "America/Sao_Paulo",
+  agoraIso: "2026-10-14T09:00:00-03:00",
+  bancoDosModulos: {},
+};
 
-describe("funil_conversao", () => {
-  it("ids de etapa não saem; pipeline_id sai", async () => {
-    const payload = {
-      janela: { from: "2026-10-07", to: "2026-10-14T00:00:00Z" },
-      base: 1,
-      conversao: { etapas: [{ pipeline_id: "11111111-2222-3333-4444-555555555555", funil: "Funil", etapa: { id: "et1", nome: "Lead", posicao: 1 }, proxima: { id: "et2", nome: "Won", posicao: 2 }, entraram: 2, passaram: 1, taxa: 0.5, amostra: 2, saidas_sem_entrada_na_janela: 0, desvios: 0 }], amostra: 2, notas: ["x"] },
-      dias_ate_fechar: { medida: "mediana", mediana: 1, p25: 1, p75: 1, amostra: 1, ignorados: 0, exclui: "", por_funil: [] },
-      origem: { linhas: [], valor_por_moeda: true },
-      contra_metrica: { turnos: null, opt_outs: null, fonte: "x", nota: "y" },
-      truncado: false,
-    };
-    const h = async () => new Response(JSON.stringify({ data: payload }), { status: 200, headers: { "content-type": "application/json" } });
-    sobreporHandlerDeFunilConversao(h);
+function handlerDe(status: number, corpo: unknown, captura?: { url?: string }): HandlerDeRota {
+  return async (req) => {
+    if (captura) captura.url = req.url;
+    return new Response(JSON.stringify(corpo), { status, headers: { "content-type": "application/json" } });
+  };
+}
+
+const payloadCompleto = () => ({
+  janela: { from: "2026-10-05T03:00:00.000Z", to: "2026-10-12T03:00:00.000Z" },
+  base: "Negócios criados OU encerrados na janela; passagens de etapa registradas na janela.",
+  conversao: {
+    etapas: [
+      {
+        pipeline_id: "11111111-2222-3333-4444-555555555555",
+        funil: "Vendas",
+        etapa: { id: "etapa1", nome: "Novo", posicao: 1.5 },
+        proxima: { id: "etapa2", nome: "Proposta", posicao: 2 },
+        entraram: 10,
+        passaram: 4,
+        taxa: 0.4,
+        amostra: 10,
+        saidas_sem_entrada_na_janela: 1,
+        desvios: 0,
+      },
+    ],
+    amostra: 10,
+    notas: ["Nota do período"],
+  },
+  dias_ate_fechar: {
+    medida: "mediana",
+    mediana: 3,
+    p25: 1,
+    p75: 6,
+    amostra: 4,
+    ignorados: 0,
+    exclui: "Só ganhos com fechamento na janela: abertos e perdidos ficam de fora.",
+    por_funil: [{ pipeline_id: "11111111-2222-3333-4444-555555555555", funil: "Vendas", mediana: 3, p25: 1, p75: 6, amostra: 4 }],
+  },
+  origem: {
+    linhas: [
+      {
+        origem: "whatsapp",
+        status: "won",
+        quantidade: 2,
+        por_moeda: [{ moeda: "BRL", valor_cents: 150000, quantidade: 2 }],
+      },
+    ],
+    valor_por_moeda: true,
+  },
+  contra_metrica: {
+    turnos: { p50: 3, p90: 8, denominador: "demandas encerradas na janela" },
+    opt_outs: { quantidade: 2, denominador: "contatos bloqueados na janela" },
+    fonte: "fn_atrito_metrics (mesma janela; ...)",
+    nota: "Doutrina §3.3: ...",
+  },
+  truncado: false,
+});
+
+describe("funil_conversao — adapter", () => {
+  it("payload completo com posicao 1.5 → ok, taxa 0.4, sem UUIDs de etapa em dados, pipeline_id presente", async () => {
+    sobreporHandlerDeFunilConversao(handlerDe(200, { data: payloadCompleto() }));
     const r = await metricaFunilConversao.executar(CTX_AGENT, {});
     expect(r.ok).toBe(true);
-    if (r.ok) {
-      const t = JSON.stringify(r.dados);
-      expect(t).not.toContain("\"id\":\"et1\"");
-      expect(t).toContain("pipeline_id");
+    if (r.ok && r.dados) {
+      expect(r.dados.conversao?.etapas?.[0]?.taxa).toBe(0.4);
+      const s = JSON.stringify(r.dados);
+      expect(s).not.toContain("11111111-2222-3333-4444-555555555555".slice(0, 8)); // parte do UUID não aparece como id de etapa
+      expect(s).toContain("Vendas");
+      expect(s).toContain("pipeline_id");
     }
   });
 
-  it("vazio (motivo) → dados null + aviso", async () => {
+  it("contra_metrica.nota com mensagem de erro do banco → texto do erro não sai", async () => {
     const payload = {
-      janela: { from: "2026-10-07", to: "2026-10-14T00:00:00Z" },
-      base: 0,
-      conversao: { etapas: [], amostra: 0, notas: [] },
-      dias_ate_fechar: { medida: "mediana", mediana: null, p25: null, p75: null, amostra: 0, ignorados: 0, exclui: "", por_funil: [] },
-      origem: { linhas: [], valor_por_moeda: true },
-      contra_metrica: { turnos: null, opt_outs: null, fonte: "x", nota: "y" },
-      truncado: false,
-      vazio: { motivo: "sem" },
+      ...payloadCompleto(),
+      contra_metrica: {
+        ...payloadCompleto().contra_metrica,
+        nota: "Contra-métrica não medida nesta resposta: erro no banco",
+      },
     };
-    const h = async () => new Response(JSON.stringify({ data: payload }), { status: 200, headers: { "content-type": "application/json" } });
-    sobreporHandlerDeFunilConversao(h);
+    sobreporHandlerDeFunilConversao(handlerDe(200, { data: payload }));
     const r = await metricaFunilConversao.executar(CTX_AGENT, {});
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.dados).toBeNull();
+    if (r.ok && r.dados) {
+      const s = JSON.stringify(r.dados);
+      expect(s).not.toContain("erro no banco");
+    }
+  });
+
+  it("URL capturada com `from` e `to` (exclusivo) → from=deInstante, to=ateInstanteExclusivo", async () => {
+    const captura: { url?: string } = {};
+    sobreporHandlerDeFunilConversao(handlerDe(200, { data: payloadCompleto() }, captura));
+    await metricaFunilConversao.executar(CTX_AGENT, {});
+    const u = new URL(captura.url ?? "");
+    const esperado = resolverPeriodo({ tipo: "semana_passada" }, CTX_AGENT.agoraIso, CTX_AGENT.fuso, CTX_AGENT.idioma);
+    expect(u.searchParams.get("from")).toBe(esperado.deInstante);
+    expect(u.searchParams.get("to")).toBe(esperado.ateInstanteExclusivo);
+  });
+
+  it("vazio: { motivo } → dados null + aviso exato", async () => {
+    const payload = {
+      ...payloadCompleto(),
+      conversao: { ...payloadCompleto().conversao, etapas: [], amostra: 0, notas: [] },
+      vazio: { motivo: "motivo_qualquer" },
+    };
+    sobreporHandlerDeFunilConversao(handlerDe(200, { data: payload }));
+    const r = await metricaFunilConversao.executar(CTX_AGENT, {});
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.dados).toBeNull();
+      expect(r.avisos).toContain("Sem negócios movimentados no funil neste período.");
+    }
+  });
+
+  it("amostra zero (conversao.amostra=0) sem vazio → dados null + aviso exato", async () => {
+    const payload = {
+      ...payloadCompleto(),
+      conversao: { ...payloadCompleto().conversao, etapas: [], amostra: 0, notas: [] },
+    };
+    sobreporHandlerDeFunilConversao(handlerDe(200, { data: payload }));
+    const r = await metricaFunilConversao.executar(CTX_AGENT, {});
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.dados).toBeNull();
+      expect(r.avisos).toContain("Sem negócios movimentados no funil neste período.");
+    }
+  });
+
+  it("truncado: true → aviso exato", async () => {
+    sobreporHandlerDeFunilConversao(handlerDe(200, { data: { ...payloadCompleto(), truncado: true } }));
+    const r = await metricaFunilConversao.executar(CTX_AGENT, {});
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.avisos).toContain("A leitura atingiu o limite e o trecho mais antigo do período pode estar fora.");
+    }
+  });
+
+  it("403 → sem_permissao", async () => {
+    sobreporHandlerDeFunilConversao(handlerDe(403, {}));
+    const r = await metricaFunilConversao.executar(CTX_AGENT, {});
+    expect(r).toMatchObject({ ok: false, motivo: "sem_permissao" });
+  });
+
+  it("corpo com conversao inválido → indisponivel sem ecoar conteúdo", async () => {
+    sobreporHandlerDeFunilConversao(handlerDe(200, { data: { ...payloadCompleto(), conversao: "x" } }));
+    const r = await metricaFunilConversao.executar(CTX_AGENT, {});
+    expect(r).toMatchObject({ ok: false, motivo: "indisponivel" });
+    if (!r.ok) {
+      expect(r.detalhe).not.toContain("conversao");
+    }
   });
 });

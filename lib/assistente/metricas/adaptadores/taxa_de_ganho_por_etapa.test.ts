@@ -1,58 +1,141 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { metricaTaxaDeGanhoPorEtapa, sobreporHandlersDeTaxaDeGanho } from "@/lib/assistente/metricas";
+import { metricaTaxaDeGanhoPorEtapa, sobreporHandlersDeTaxaDeGanho, comParametros } from "@/lib/assistente/metricas";
+import type { HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
 import type { ContextoDeConsulta } from "@/lib/assistente/metricas/tipos";
 
-const CTX_MANAGER: ContextoDeConsulta = { orgId: "org-1", papel: "manager", idioma: "pt-BR", fuso: "America/Sao_Paulo", agoraIso: "2026-10-14T09:00:00-03:00", bancoDosModulos: {} as any };
+const CTX_MANAGER: ContextoDeConsulta = {
+  orgId: "org-1",
+  papel: "manager",
+  idioma: "pt-BR",
+  fuso: "America/Sao_Paulo",
+  agoraIso: "2026-10-14T09:00:00-03:00",
+  bancoDosModulos: {},
+};
 
 const stageId = "11111111-2222-3333-4444-555555555555";
 const pipelineId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 
-describe("taxa_de_ganho_por_etapa", () => {
-  it("junção por nome e sem etapa_id", async () => {
-    const taxasPayload = { minimo_de_casos: 5, taxas: [{ etapa_id: stageId, total: 2, ganhos: 1, percentual: 0.5, sugestao: null }], tempo_na_etapa: { medida: "etapa atual", ancora: "x", base: "y", amostra: 0, limite: 0, truncado: false, etapas: [] } };
-    const stagesPayload = [{ id: stageId, name: "Lead", position: 1, is_won: false, is_lost: false, expected_duration_hours: null }];
-    const hTaxas = async () => new Response(JSON.stringify({ data: taxasPayload }), { status: 200, headers: { "content-type": "application/json" } });
-    const hEtapas = async () => new Response(JSON.stringify({ data: stagesPayload }), { status: 200, headers: { "content-type": "application/json" } });
-    sobreporHandlersDeTaxaDeGanho({ taxas: hTaxas, etapas: hEtapas });
+function handlerDe(status: number, corpo: unknown): HandlerDeRota {
+  return async () => new Response(JSON.stringify(corpo), { status, headers: { "content-type": "application/json" } });
+}
+
+const payloadTaxas = () => ({
+  minimo_de_casos: 5,
+  truncado: false,
+  taxas: [{ etapa_id: stageId, total: 8, ganhos: 3, percentual: 38, sugestao: 38 }],
+  tempo_na_etapa: {
+    medida: "etapa atual",
+    ancora: "x",
+    base: "y",
+    amostra: 12,
+    limite: 1000,
+    truncado: false,
+    etapas: [{ etapa_id: stageId, quantidade: 4, horas_media: 30.5, horas_mediana: 26, com_carimbo: 4, sem_carimbo: 0 }],
+  },
+});
+
+const payloadStages = () => [{ id: stageId, name: "Novo", position: 1.5, is_won: false, is_lost: false, expected_duration_hours: null }];
+
+describe("taxa_de_ganho_por_etapa — adapter", () => {
+  it("payload completo com posicao 1.5 → ok, sem UUIDs de etapa em dados, nome presente", async () => {
+    sobreporHandlersDeTaxaDeGanho({ taxas: handlerDe(200, { data: payloadTaxas() }), etapas: handlerDe(200, { data: payloadStages() }) });
     const r = await metricaTaxaDeGanhoPorEtapa.executar(CTX_MANAGER, { pipeline_id: pipelineId, dias: 30 });
     expect(r.ok).toBe(true);
-    if (r.ok) {
-      const t = JSON.stringify(r.dados);
-      expect(t).toContain("Lead");
-      expect(t).not.toContain(stageId);
-      expect((r.dados as any).taxas[0].nome).toBe("Lead");
+    if (r.ok && r.dados) {
+      const s = JSON.stringify(r.dados);
+      expect(s).not.toContain(stageId);
+      expect(s).toContain("Novo");
+      expect(r.dados.taxas[0]?.nome).toBe("Novo");
     }
   });
 
-  it("etapa arquivada recebe nome", async () => {
-    const taxasPayload = { minimo_de_casos: 5, taxas: [{ etapa_id: stageId, total: 1, ganhos: 0, percentual: null, sugestao: null }], tempo_na_etapa: { medida: "etapa atual", ancora: "x", base: "y", amostra: 0, limite: 0, truncado: false, etapas: [] } };
-    const hTaxas = async () => new Response(JSON.stringify({ data: taxasPayload }), { status: 200, headers: { "content-type": "application/json" } });
-    const hEtapas = async () => new Response(JSON.stringify({ data: [] }), { status: 200, headers: { "content-type": "application/json" } });
-    sobreporHandlersDeTaxaDeGanho({ taxas: hTaxas, etapas: hEtapas });
+  it("etapa_id fora do mapa → a linha some", async () => {
+    const payload = { ...payloadTaxas(), taxas: [{ etapa_id: "99999999-9999-9999-9999-999999999999", total: 8, ganhos: 3, percentual: 38, sugestao: 38 }] };
+    sobreporHandlersDeTaxaDeGanho({ taxas: handlerDe(200, { data: payload }), etapas: handlerDe(200, { data: payloadStages() }) });
     const r = await metricaTaxaDeGanhoPorEtapa.executar(CTX_MANAGER, { pipeline_id: pipelineId, dias: 30 });
     expect(r.ok).toBe(true);
-    if (r.ok) expect((r.dados as any).taxas[0].nome).toBe("(etapa arquivada)");
+    if (r.ok && r.dados) {
+      expect(r.dados.taxas.length).toBe(0);
+    }
   });
 
-  it("amostra zero → dados null + aviso", async () => {
-    const taxasPayload = { minimo_de_casos: 5, taxas: [{ etapa_id: stageId, total: 0, ganhos: 0, percentual: null, sugestao: null }], tempo_na_etapa: { medida: "etapa atual", ancora: "x", base: "y", amostra: 0, limite: 0, truncado: false, etapas: [] } };
-    const stagesPayload = [{ id: stageId, name: "Lead", position: 1, is_won: false, is_lost: false, expected_duration_hours: null }];
-    const hTaxas = async () => new Response(JSON.stringify({ data: taxasPayload }), { status: 200, headers: { "content-type": "application/json" } });
-    const hEtapas = async () => new Response(JSON.stringify({ data: stagesPayload }), { status: 200, headers: { "content-type": "application/json" } });
-    sobreporHandlersDeTaxaDeGanho({ taxas: hTaxas, etapas: hEtapas });
+  it("truncado: true (ambos) → avisos exatos", async () => {
+    const payload = {
+      ...payloadTaxas(),
+      truncado: true,
+      tempo_na_etapa: { ...payloadTaxas().tempo_na_etapa, truncado: true },
+    };
+    sobreporHandlersDeTaxaDeGanho({ taxas: handlerDe(200, { data: payload }), etapas: handlerDe(200, { data: payloadStages() }) });
     const r = await metricaTaxaDeGanhoPorEtapa.executar(CTX_MANAGER, { pipeline_id: pipelineId, dias: 30 });
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.dados).toBeNull();
+    if (r.ok) {
+      expect(r.avisos).toContain("O histórico de etapas atingiu o limite de leitura; as taxas podem estar incompletas.");
+      expect(r.avisos).toContain("Há mais negócios nas etapas do que a leitura alcança (limite de 1000); o tempo na etapa é do trecho lido.");
+    }
   });
 
-  it("funil vazio → aviso de não encontrado", async () => {
-    const hTaxas = async () => new Response(JSON.stringify({ data: { minimo_de_casos: 5, taxas: [], tempo_na_etapa: { medida: "etapa atual", ancora: "x", base: "y", amostra: 0, limite: 0, truncado: false, etapas: [] } } }), { status: 200, headers: { "content-type": "application/json" } });
-    const hEtapas = async () => new Response(JSON.stringify({ data: [] }), { status: 200, headers: { "content-type": "application/json" } });
+  it("comParametros: rota chamada com id correto", async () => {
+    const mockRota = vi.fn(handlerDe(200, { data: payloadTaxas() }));
+    const handler = comParametros(mockRota, pipelineId);
+    await handler(new Request("http://test"));
+    expect(mockRota).toHaveBeenCalled();
+    const call = mockRota.mock.calls[0];
+    if (call && call[1]?.params) {
+      const params = await call[1].params;
+      expect(params.id).toBe(pipelineId);
+    }
+  });
+
+  it("dias e pipeline_id válidos → chamadas corretas", async () => {
+    const hTaxas = vi.fn(handlerDe(200, { data: payloadTaxas() }));
+    const hEtapas = vi.fn(handlerDe(200, { data: payloadStages() }));
     sobreporHandlersDeTaxaDeGanho({ taxas: hTaxas, etapas: hEtapas });
+    await metricaTaxaDeGanhoPorEtapa.executar(CTX_MANAGER, { pipeline_id: pipelineId, dias: 30 });
+    expect(hTaxas).toHaveBeenCalled();
+    expect(hEtapas).toHaveBeenCalled();
+  });
+
+  it("dias inválido > 3650 → parametro_invalido SEM chamar handlers", async () => {
+    const hTaxas = vi.fn(handlerDe(200, { data: payloadTaxas() }));
+    sobreporHandlersDeTaxaDeGanho({ taxas: hTaxas, etapas: handlerDe(200, { data: payloadStages() }) });
+    const r = await metricaTaxaDeGanhoPorEtapa.executar(CTX_MANAGER, { pipeline_id: pipelineId, dias: 3651 });
+    expect(r).toMatchObject({ ok: false, motivo: "parametro_invalido" });
+    expect(hTaxas).not.toHaveBeenCalled();
+  });
+
+  it("403 em taxas → sem_permissao", async () => {
+    sobreporHandlersDeTaxaDeGanho({ taxas: handlerDe(403, {}), etapas: handlerDe(200, { data: payloadStages() }) });
+    const r = await metricaTaxaDeGanhoPorEtapa.executar(CTX_MANAGER, { pipeline_id: pipelineId, dias: 30 });
+    expect(r).toMatchObject({ ok: false, motivo: "sem_permissao" });
+  });
+
+  it("403 em etapas → sem_permissao", async () => {
+    sobreporHandlersDeTaxaDeGanho({ taxas: handlerDe(200, { data: payloadTaxas() }), etapas: handlerDe(403, {}) });
+    const r = await metricaTaxaDeGanhoPorEtapa.executar(CTX_MANAGER, { pipeline_id: pipelineId, dias: 30 });
+    expect(r).toMatchObject({ ok: false, motivo: "sem_permissao" });
+  });
+
+  it("amostra zero → dados null + aviso exato", async () => {
+    const payload = { ...payloadTaxas(), taxas: [] };
+    sobreporHandlersDeTaxaDeGanho({ taxas: handlerDe(200, { data: payload }), etapas: handlerDe(200, { data: payloadStages() }) });
     const r = await metricaTaxaDeGanhoPorEtapa.executar(CTX_MANAGER, { pipeline_id: pipelineId, dias: 30 });
     expect(r.ok).toBe(true);
-    if (r.ok) { expect(r.dados).toBeNull(); expect(r.avisos.join()).toContain("Funil não encontrado ou sem etapas."); }
+    if (r.ok) {
+      expect(r.dados).toBeNull();
+      expect(r.avisos).toContain("Nenhum negócio encerrado passou pelas etapas deste funil no período.");
+    }
+  });
+
+  it("funil vazio → dados null + aviso exato", async () => {
+    const payload = { ...payloadTaxas(), taxas: [] };
+    sobreporHandlersDeTaxaDeGanho({ taxas: handlerDe(200, { data: payload }), etapas: handlerDe(200, { data: [] }) });
+    const r = await metricaTaxaDeGanhoPorEtapa.executar(CTX_MANAGER, { pipeline_id: pipelineId, dias: 30 });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.dados).toBeNull();
+      expect(r.avisos).toContain("Funil não encontrado ou sem etapas.");
+    }
   });
 });

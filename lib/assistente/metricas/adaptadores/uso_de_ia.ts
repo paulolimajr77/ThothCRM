@@ -7,14 +7,16 @@ import { chamarRotaPorDentro, traduzirResposta } from "../chamar-rota";
 import { chavesProibidasEm, projetar } from "../projecao";
 import { diasInclusive, PeriodoSolicitado, resolverPeriodo } from "../periodo";
 import { AVISO_TZ_UTC_USO, acimaDe90 } from "./datas-utc";
-import type { ContextoDeConsulta, DefinicaoDeMetrica, ResultadoDeMetrica } from "../tipos";
+import { semChavesPerigosas } from "./saneamento";
+import type { DefinicaoDeMetrica } from "../tipos";
 
 const ID = "uso_de_ia";
 
 const parametros = z.strictObject({ periodo: PeriodoSolicitado.optional() });
 export type ParametrosDeUsoDeIa = z.infer<typeof parametros>;
 
-const serie = z.array(z.object({ day: z.string(), value: z.number().int().min(0) }));
+const serieCusto = z.array(z.object({ day: z.string(), value: z.number().min(0) }));
+const serieTokens = z.array(z.object({ day: z.string(), value: z.number().int().min(0) }));
 
 const esquema = z.object({
   range: z.object({ from: z.string(), to: z.string() }),
@@ -29,14 +31,14 @@ const esquema = z.object({
     p50_latency_ms: z.number().min(0).nullable(),
     p95_latency_ms: z.number().min(0).nullable(),
   }),
-  series: z.object({ cost_cents: serie, total_tokens: serie }),
+  series: z.object({ cost_cents: serieCusto, total_tokens: serieTokens }),
   by_kind: z.record(z.string().max(64), z.number().int().min(0)),
 });
 
 const REGUA =
-  "Fonte ?/api/v1/ai/usage, papel manager; dias em UTC, data final INCLUSIVA, teto 90 dias. " +
-  "cost_cents é em centavos da moeda de preço do provedor e é MÍNIMO (chamada sem preço não soma). " +
-  "cache_hit_rate vira null sem tokens de entrada. Taxa de passagem para humano não é desta fonte (evolucao_da_ia).";
+  "Fonte /api/v1/ai/usage, papel manager; dias em UTC, data final INCLUSIVA, teto 90 dias. " +
+  "cost_cents é em centavos da moeda do provedor, PODE TER FRAÇÃO e é MÍNIMO (chamada sem preço não soma). " +
+  "cache_hit_rate é fração 0–1 calculada aqui, null sem tokens de entrada. Taxa de passagem para humano não é desta fonte (evolucao_da_ia).";
 
 type Handler = (req: NextRequest) => Promise<Response>;
 let handlerSobreposto: Handler | null = null;
@@ -82,6 +84,11 @@ export const metricaUsoDeIa: DefinicaoDeMetrica<ParametrosDeUsoDeIa> = {
     if (projetado.dados.totals.invocations === 0) {
       return { ok: true, metrica: ID, periodo, regua: REGUA, dados: null, avisos: avisos.concat(["Sem chamadas de IA no período."]) };
     }
-    return { ok: true, metrica: ID, periodo, regua: REGUA, dados: projetado.dados, avisos };
+    const cacheHitRate = projetado.dados.totals.input_tokens > 0
+      ? Number((projetado.dados.totals.cache_read_tokens / projetado.dados.totals.input_tokens).toFixed(4))
+      : null;
+    const byKindSaneado = semChavesPerigosas(projetado.dados.by_kind);
+    const dados = { ...projetado.dados, totals: { ...projetado.dados.totals, cache_hit_rate: cacheHitRate }, by_kind: byKindSaneado };
+    return { ok: true, metrica: ID, periodo, regua: REGUA, dados, avisos };
   },
 };

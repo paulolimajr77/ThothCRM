@@ -12,4 +12,3 @@ describe("saneamento", () => {
     expect(Object.getPrototypeOf(r) === Object.prototype).toBe(true);
   });
 });
-PY

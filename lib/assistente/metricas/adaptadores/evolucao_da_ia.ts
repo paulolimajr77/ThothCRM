@@ -7,14 +7,13 @@ import { chamarRotaPorDentro, traduzirResposta } from "../chamar-rota";
 import { chavesProibidasEm, projetar } from "../projecao";
 import { diasInclusive, PeriodoSolicitado, resolverPeriodo } from "../periodo";
 import { AVISO_TZ_UTC_USO, acimaDe90 } from "./datas-utc";
-import type { ContextoDeConsulta, DefinicaoDeMetrica, ResultadoDeMetrica } from "../tipos";
+import { semChavesPerigosas } from "./saneamento";
+import type { DefinicaoDeMetrica } from "../tipos";
 
 const ID = "evolucao_da_ia";
 
 const parametros = z.strictObject({ periodo: PeriodoSolicitado.optional() });
 export type ParametrosDeEvolucaoDaIa = z.infer<typeof parametros>;
-
-const ponto = z.array(z.object({ day: z.string(), value: z.number().int().min(0) })).default([]);
 
 const esquema = z.object({
   range: z.object({ from: z.string(), to: z.string() }),
@@ -54,7 +53,8 @@ const esquema = z.object({
 const REGUA =
   "Fonte /api/v1/ai/evolution, papel manager; dias em UTC, final INCLUSIVO, teto 90. " +
   "cost_cents pode ser > 0 sem atendimento (rotinas internas). " +
-  "Fonte fora do ar aparece zerada: confira a tela antes de concluir."
+  "handoff_rate é fração de 0 a 1. " +
+  "Fonte fora do ar aparece zerada: confira a tela antes de concluir.";
 
 type Handler = (req: NextRequest) => Promise<Response>;
 let handlerSobreposto: Handler | null = null;
@@ -97,30 +97,33 @@ export const metricaEvolucaoDaIa: DefinicaoDeMetrica<ParametrosDeEvolucaoDaIa> =
     }
 
     const avisos: string[] = [AVISO_TZ_UTC_USO, "Se uma fonte interna estiver fora do ar, o bloco dela aparece zerado nesta rota; confira na tela Evolução da IA antes de concluir que não houve atividade."];
-    const dadosRaw = { ...projetado.dados };
-    const outcome = dadosRaw.outcome as { handoff_rate: number | null; messages_received: number };
-    if (outcome.messages_received === 0) {
-      outcome.handoff_rate = null;
+    const semMensagens = projetado.dados.outcome.messages_received === 0;
+    const bySkillSaneado = semChavesPerigosas(projetado.dados.activity.by_skill);
+    const byIntentSaneado = semChavesPerigosas(projetado.dados.activity.by_intent);
+    const dados = {
+      ...projetado.dados,
+      outcome: { ...projetado.dados.outcome, handoff_rate: semMensagens ? null : projetado.dados.outcome.handoff_rate },
+      activity: { ...projetado.dados.activity, by_skill: bySkillSaneado, by_intent: byIntentSaneado },
+    };
+
+    if (semMensagens) {
       avisos.push("Sem mensagens de clientes no período; a taxa de passagem para humano não se aplica.");
     }
 
     const somatorioSeries = (arr: { value: number }[]) => arr.reduce((s, x) => s + x.value, 0);
-    const activity = dadosRaw.activity as { series: Record<string, { value: number }[]> };
-    const learned = dadosRaw.learned as { memory_entries: number; proposals_applied: number; skills_installed: number };
-    const outcomeR = dadosRaw.outcome as { stage_transitions: number; won: number; lost: number; cost_cents: number; messages_received: number };
     const tudoZero =
-      outcomeR.messages_received === 0 &&
-      outcomeR.stage_transitions === 0 &&
-      outcomeR.cost_cents === 0 &&
-      outcomeR.won === 0 &&
-      outcomeR.lost === 0 &&
-      learned.memory_entries === 0 &&
-      learned.proposals_applied === 0 &&
-      learned.skills_installed === 0 &&
-      Object.keys(activity.series).every((k) => somatorioSeries(activity.series[k]) === 0);
+      projetado.dados.outcome.messages_received === 0 &&
+      projetado.dados.outcome.stage_transitions === 0 &&
+      projetado.dados.outcome.cost_cents === 0 &&
+      projetado.dados.outcome.won === 0 &&
+      projetado.dados.outcome.lost === 0 &&
+      projetado.dados.learned.memory_entries === 0 &&
+      projetado.dados.learned.proposals_applied === 0 &&
+      projetado.dados.learned.skills_installed === 0 &&
+      Object.keys(projetado.dados.activity.series).every((k) => somatorioSeries(projetado.dados.activity.series[k]) === 0);
     if (tudoZero) {
       return { ok: true, metrica: ID, periodo, regua: REGUA, dados: null, avisos: avisos.concat(["Sem atividade de IA no período."]) };
     }
-    return { ok: true, metrica: ID, periodo, regua: REGUA, dados: dadosRaw, avisos };
+    return { ok: true, metrica: ID, periodo, regua: REGUA, dados, avisos };
   },
 };
