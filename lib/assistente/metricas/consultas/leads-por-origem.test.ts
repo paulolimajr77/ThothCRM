@@ -42,4 +42,17 @@ describe("lerLeadsPorOrigem", () => {
     const r = await lerLeadsPorOrigem(banco.client, ORG, JANELA);
     expect(r.ok).toBe(false);
   });
+  it("2300 negócios: o falso registra 3 páginas e o total exato sai inteiro (sem truncar)", async () => {
+    const muitos = [];
+    for (let i = 0; i < 2300; i += 1) {
+      muitos.push({ organization_id: ORG, source: "site", created_at: "2026-10-07", status: "open" });
+    }
+    const banco = criarBancoFalso({ crm_leads: muitos });
+    const r = await lerLeadsPorOrigem(banco.client, ORG, JANELA);
+    if (!r.ok) throw new Error("ok");
+    expect(r.dados.total_criados).toBe(2300);
+    expect(r.dados.truncado).toBe(false);
+    const faixas = banco.consultas.filter((c) => c.tabela === "crm_leads").flatMap((c) => c.faixas);
+    expect(faixas.length).toBe(3);
+  });
 });
