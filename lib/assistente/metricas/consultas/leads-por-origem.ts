@@ -49,7 +49,8 @@ interface Acumulado {
 
 function chaveDaOrigem(source: string | null): string {
   const aparada = (source ?? "").trim().toLowerCase();
-  return aparada.length === 0 ? SEM_ORIGEM : aparada;
+  const cortada = aparada.slice(0, 60);
+  return cortada.length === 0 ? SEM_ORIGEM : cortada;
 }
 
 export async function lerLeadsPorOrigem(
