@@ -52,12 +52,12 @@ const esquema = z.object({
     por_funil: z.array(z.object({ pipeline_id: z.string().uuid(), funil: z.string().max(120), mediana: z.number().min(0).nullable(), p25: z.number().min(0).nullable(), p75: z.number().min(0).nullable(), amostra: z.number().int().min(0) })),
   }),
   origem: z.object({
-    linhas: z.array(z.object({ origem: z.string().max(60), status: z.enum(["won","lost","open"]), quantidade: z.number().int().min(0), por_moeda: z.array(porMoeda) })),
+    linhas: z.array(z.object({ origem: textoAte(60), status: z.enum(["won","lost","open"]), quantidade: z.number().int().min(0), por_moeda: z.array(porMoeda) })),
     valor_por_moeda: z.boolean(),
   }),
   contra_metrica: z.object({
-    turnos: z.object({ p50: z.number(), p90: z.number(), denominador: textoAte(100) }).nullable(),
-    opt_outs: z.object({ quantidade: z.number().int().min(0), denominador: textoAte(100) }).nullable(),
+    turnos: z.object({ p50: z.number().nullable(), p90: z.number().nullable(), denominador: textoAte(100) }).nullable(),
+    opt_outs: z.object({ quantidade: z.number().nullable(), denominador: textoAte(100) }).nullable(),
     fonte: textoAte(200),
     nota: textoAte(500).transform((s) => s.startsWith("Contra-métrica não medida nesta resposta:") ? "Contra-métrica não medida nesta resposta." : s.slice(0, 500)),
   }),

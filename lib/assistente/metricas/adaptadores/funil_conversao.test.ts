@@ -160,6 +160,38 @@ describe("funil_conversao — adapter", () => {
     }
   });
 
+  it("contra_metrica com p50/p90/quantidade nulos → ainda ok (sem demanda encerrada)", async () => {
+    const payload = {
+      ...payloadCompleto(),
+      contra_metrica: {
+        ...payloadCompleto().contra_metrica,
+        turnos: { p50: null, p90: null, denominador: "demandas encerradas na janela" },
+        opt_outs: { quantidade: null, denominador: "contatos bloqueados na janela" },
+      },
+    };
+    sobreporHandlerDeFunilConversao(handlerDe(200, { data: payload }));
+    const r = await metricaFunilConversao.executar(CTX_AGENT, {});
+    expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error("esperava ok");
+    const d = dadosDe<{ contra_metrica: { turnos: { p50: number | null } } }>(r);
+    expect(d.contra_metrica.turnos.p50).toBeNull();
+  });
+
+  it("origem com mais de 60 caracteres é cortada, não derruba o relatório", async () => {
+    const payload = {
+      ...payloadCompleto(),
+      origem: {
+        linhas: [{ origem: "x".repeat(80), status: "won", quantidade: 1, por_moeda: [] }],
+        valor_por_moeda: true,
+      },
+    };
+    sobreporHandlerDeFunilConversao(handlerDe(200, { data: payload }));
+    const r = await metricaFunilConversao.executar(CTX_AGENT, {});
+    expect(r.ok).toBe(true);
+    const d = dadosDe<{ origem: { linhas: { origem: string }[] } }>(r);
+    expect(d.origem.linhas[0]?.origem).toBe("x".repeat(60));
+  });
+
   it("403 → sem_permissao", async () => {
     sobreporHandlerDeFunilConversao(handlerDe(403, {}));
     const r = await metricaFunilConversao.executar(CTX_AGENT, {});
