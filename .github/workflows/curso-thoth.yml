@@ -88,11 +88,16 @@ jobs:
         run: |
           set -euo pipefail
           pnpm e2e:env
-          {
-            echo "APP_NAME=THOTH CRM"
-            echo "APP_ACCENT_HEX=#9c8d44"
-          } >> .env.e2e
           grep -vE '^[[:space:]]*(#|$)' .env.e2e >> "$GITHUB_ENV"
+          # o e2e-build.sh faz `source` do arquivo: nome com espaço vai entre aspas lá
+          {
+            echo 'APP_NAME="THOTH CRM"'
+            echo 'APP_ACCENT_HEX=#9c8d44'
+          } >> .env.e2e
+          {
+            echo 'APP_NAME=THOTH CRM'
+            echo 'APP_ACCENT_HEX=#9c8d44'
+          } >> "$GITHUB_ENV"
 
       - name: Build de produção
         run: pnpm e2e:build
