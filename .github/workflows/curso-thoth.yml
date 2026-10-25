@@ -22,7 +22,7 @@ jobs:
       E2E_PORT: "3460"
       CURSO_URL: http://localhost:3460
       # vazio = todos os módulos; com nomes = rodada curta de diagnóstico
-      CURSO_MODULOS: "inbox contatos tarefas"
+      CURSO_MODULOS: ""
       NEXT_TELEMETRY_DISABLED: "1"
       SENTRY_DSN: "off"
     steps:

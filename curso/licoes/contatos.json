@@ -534,7 +534,7 @@
     {
      "id": "p2",
      "titulo": "Preencher o cadastro",
-     "texto": "Preencha o nome e pelo menos o e-mail ou o telefone. O telefone vai com DDD; não precisa digitar o +55. Em \"Tags\", separe as etiquetas por vírgula. O CPF é opcional.",
+     "texto": "Preencha o nome e pelo menos o e-mail ou o telefone. O telefone vai com DDD; não precisa digitar o +55. Em \"Tags\", digite a etiqueta e aperte Enter; se ela já existir, aparece como sugestão para clicar. O CPF é opcional.",
      "dica": "Se o telefone, o e-mail ou o CPF já pertencer a outro contato, o cadastro é recusado com um aviso.",
      "antes": [
       {
@@ -584,10 +584,11 @@
       {
        "acao": "fill",
        "alvo": {
-        "rotulo": "Tags (separadas por vírgula)",
+        "role": "textbox",
+        "nome": "Adicionar etiqueta",
         "exato": true
        },
-       "valor": "primeira-consulta, nutricao"
+       "valor": "primeira-consulta"
       }
      ],
      "destaques": [
@@ -699,7 +700,7 @@
     {
      "id": "p2",
      "titulo": "Mudar os dados",
-     "texto": "Na janela \"Editar contato\" você muda nome, e-mail, telefone e data de nascimento. Para pôr uma etiqueta, digite no campo de baixo e aperte Enter. Se ela já existir, aparece como sugestão para clicar. Para tirar uma etiqueta, clique no X dela. Aqui pusemos a etiqueta \"nutricao\". No fim, clique em \"Salvar\".",
+     "texto": "Na janela \"Editar contato\" você muda nome, e-mail, telefone e data de nascimento. Para pôr uma etiqueta, digite no campo de baixo, aperte Enter, escolha a cor (ou \"Sem cor\") e clique em \"Adicionar tag\". Se ela já existir, aparece como sugestão para clicar. Para tirar uma etiqueta, clique no X dela. Aqui pusemos a etiqueta \"nutricao\". No fim, clique em \"Salvar\".",
      "antes": [
       {
        "acao": "click",
@@ -731,6 +732,27 @@
         "role": "textbox",
         "nome": "Adicionar etiqueta",
         "exato": true
+       }
+      },
+      {
+       "acao": "aguardar",
+       "alvo": {
+        "role": "dialog",
+        "nome": "Adicionar tag",
+        "exato": true
+       }
+      },
+      {
+       "acao": "click",
+       "alvo": {
+        "role": "button",
+        "nome": "Adicionar tag",
+        "exato": true,
+        "dentro": {
+         "role": "dialog",
+         "nome": "Adicionar tag",
+         "exato": true
+        }
        }
       }
      ],

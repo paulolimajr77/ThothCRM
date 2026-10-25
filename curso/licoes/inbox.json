@@ -1640,7 +1640,12 @@
               "alvo": {
                 "role": "option",
                 "nome": "Carlos Mendes",
-                "exato": true
+                "exato": true,
+                "dentro": {
+                  "role": "listbox",
+                  "nome": "Atendentes para mencionar",
+                  "exato": true
+                }
               }
             }
           ],
@@ -1649,7 +1654,12 @@
               "alvo": {
                 "role": "option",
                 "nome": "Carlos Mendes",
-                "exato": true
+                "exato": true,
+                "dentro": {
+                  "role": "listbox",
+                  "nome": "Atendentes para mencionar",
+                  "exato": true
+                }
               },
               "rotulo": "Lista da equipe: clique em Carlos Mendes",
               "tipo": "caixa"
@@ -1658,7 +1668,12 @@
           "clicar": {
             "role": "option",
             "nome": "Carlos Mendes",
-            "exato": true
+            "exato": true,
+            "dentro": {
+              "role": "listbox",
+              "nome": "Atendentes para mencionar",
+              "exato": true
+            }
           }
         },
         {
@@ -1671,7 +1686,12 @@
               "alvo": {
                 "role": "option",
                 "nome": "Carlos Mendes",
-                "exato": true
+                "exato": true,
+                "dentro": {
+                  "role": "listbox",
+                  "nome": "Atendentes para mencionar",
+                  "exato": true
+                }
               }
             }
           ],
