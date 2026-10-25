@@ -23,7 +23,7 @@
         {
           "id": "p1",
           "titulo": "O que aparece aqui",
-          "texto": "O Radar mostra os negócios ainda abertos no funil em que ninguém mexeu nem falou com o cliente há mais de 24 horas. Mensagem do cliente não conta: cliente escrevendo e ninguém respondendo é justamente o risco. As três etiquetas no alto contam quantos negócios estão em cada nível. O quadro amarelo acima delas é outra lista, a dos clientes esperando sem nada combinado; ele tem uma lição só para ele, \"Demandas sem próximo passo\".",
+          "texto": "O Radar mostra os negócios ainda abertos no funil que estão parados há mais de 24 horas: ninguém mexeu neles nem falou com o cliente. A mensagem do cliente não conta, porque cliente escrevendo e ninguém respondendo é justamente o risco. As três etiquetas no alto mostram quantos negócios há em cada nível. O quadro amarelo acima delas é outra lista, a dos clientes esperando sem nada combinado. Ele tem uma lição só para ele, \"Demandas sem próximo passo\".",
           "dica": "A lista se atualiza sozinha a cada minuto.",
           "rota": "/app/radar",
           "destaques": [
@@ -48,7 +48,7 @@
         {
           "id": "p2",
           "titulo": "Crítico: parado há 3 dias ou mais",
-          "texto": "Cada linha é um negócio: o nome dele, o cliente e há quanto tempo está parado. \"Crítico\" quer dizer 3 dias ou mais sem ninguém agir. O aviso \"Sem próximo passo agendado\" diz que não há nenhum retorno do assistente nem compromisso marcado com esse cliente. Os críticos ficam no topo e, dentro de cada nível, o mais esquecido vem primeiro.",
+          "texto": "Cada linha é um negócio e mostra o nome dele, o cliente e há quanto tempo está parado. \"Crítico\" quer dizer 3 dias ou mais sem ninguém agir. O aviso \"Sem próximo passo agendado\" quer dizer que o assistente não marcou nenhum retorno e que não há compromisso marcado com esse cliente. Os críticos ficam no topo. Dentro de cada nível, o mais esquecido vem primeiro.",
           "destaques": [
             {
               "alvo": {
@@ -114,7 +114,7 @@
         {
           "id": "p4",
           "titulo": "Em voo: o assistente vai voltar a falar",
-          "texto": "\"Em voo\" é o negócio parado, mas com um retorno já marcado pelo assistente. A linha mostra quando ele pretende voltar a falar com o cliente, como \"Assistente retorna em 2d\". Ele não está esquecido: só fique de olho, porque o retorno só sai se o WhatsApp estiver conectado e o assistente estiver ligado.",
+          "texto": "\"Em voo\" é o negócio parado, mas com um retorno já marcado pelo assistente. A linha mostra quando o assistente pretende voltar a falar com o cliente, como \"Assistente retorna em 2d\". Ele não está esquecido, mas fique de olho: o retorno só sai se o WhatsApp estiver conectado e o assistente estiver ligado.",
           "destaques": [
             {
               "alvo": {
@@ -139,7 +139,7 @@
               "tipo": "caixa"
             }
           ],
-          "dica": "O prazo de 24 horas pode mudar por etapa do funil. Abra \"Ver tudo em CRM\" no menu e depois \"Etapas do funil\": cada etapa tem a \"Janela de esfriando\". Com 48 horas, por exemplo, o negócio só fica crítico depois de 6 dias."
+          "dica": "O prazo de 24 horas pode mudar em cada etapa do funil. Para ver, abra \"Ver tudo em CRM\" no menu e depois \"Etapas do funil\". Cada etapa tem a sua \"Janela de esfriando\". Com 48 horas, por exemplo, o negócio só fica crítico depois de 6 dias."
         }
       ]
     },
@@ -208,7 +208,7 @@
         {
           "id": "p2",
           "titulo": "Quando aparece o botão \"Assumir\"",
-          "texto": "O botão \"Assumir\" aparece quando o cliente tem conversa no WhatsApp, mas nem a conversa nem o negócio estão com uma pessoa da equipe. Na Sandra, ninguém cuida. Na Renata, quem responde é o atendimento automático. No Gustavo, o negócio é do agente de IA: assumir traz a conversa para você e cala o atendimento automático nela, mas o negócio continua em nome do agente. No Paulo não aparece, porque ele já está com uma atendente. No Marcos também não: ele ainda não conversou pelo WhatsApp.",
+          "texto": "O botão \"Assumir\" aparece quando o cliente tem conversa no WhatsApp, mas nem a conversa nem o negócio estão com uma pessoa da equipe. Na Sandra, ninguém cuida. Na Renata, quem responde é o atendimento automático. No Gustavo, o negócio é do agente de IA. Ao assumir, a conversa vem para você e o atendimento automático para de responder nela, mas o negócio continua em nome do agente. No Paulo não aparece, porque ele já está com uma atendente. No Marcos também não: ele ainda não conversou pelo WhatsApp.",
           "destaques": [
             {
               "alvo": {
@@ -291,7 +291,7 @@
         {
           "id": "p2",
           "titulo": "Agora a conversa é sua",
-          "texto": "A linha passa a mostrar \"Com atendente\" e o botão some. A conversa fica com você e o atendimento automático para de responder nela. Se o negócio não tinha responsável, você passa a ser o responsável. A Sandra continua no Radar até alguém falar com ela. Para responder, clique no nome do negócio.",
+          "texto": "A linha passa a mostrar \"Com atendente\" e o botão some. A conversa fica com você e o atendimento automático para de responder nela. Se o negócio estava sem responsável, ele passa a ser seu. A Sandra continua no Radar até alguém falar com ela. Para responder, clique no nome do negócio.",
           "antes": [
             {
               "acao": "click",
@@ -341,7 +341,7 @@
         {
           "id": "p3",
           "titulo": "A conversa da Sandra",
-          "texto": "A Inbox abre na conversa com a Sandra. No alto, \"Automático pausado — alguém assumiu\" confirma que o assistente parou de responder, e o seu nome aparece abaixo do dela. Leia o que já foi dito e responda.",
+          "texto": "A Inbox abre na conversa com a Sandra. No alto, \"Automático pausado — alguém assumiu\" confirma que o assistente parou de responder. O seu nome aparece abaixo do dela. Leia o que já foi dito e responda.",
           "antes": [
             {
               "acao": "click",
@@ -398,7 +398,7 @@
         {
           "id": "p1",
           "titulo": "Cliente com conversa",
-          "texto": "Clique na linha, fora do botão \"Assumir\", para abrir o cliente. Quando ele já conversou pelo WhatsApp, como a Renata, a Inbox abre direto na conversa dela.",
+          "texto": "Para abrir o cliente, clique na linha, fora do botão \"Assumir\". Se ele já conversou pelo WhatsApp, como a Renata, a Inbox abre direto na conversa dela.",
           "rota": "/app/radar",
           "destaques": [
             {
@@ -418,7 +418,7 @@
         {
           "id": "p2",
           "titulo": "A conversa da Renata",
-          "texto": "Aqui está a conversa com a Renata. A última mensagem foi do assistente, há 30 horas, e ela não respondeu. O botão \"Assumir\" no alto também existe aqui, para tirar a conversa do automático. Para voltar ao Radar, use o item \"Radar\" no menu da esquerda.",
+          "texto": "Aqui está a conversa com a Renata. A última mensagem foi do assistente, há 30 horas, e ela não respondeu. Aqui também há um botão \"Assumir\" no alto, para tirar a conversa do automático. Para voltar ao Radar, use o item \"Radar\" no menu da esquerda.",
           "antes": [
             {
               "acao": "click",
@@ -480,7 +480,7 @@
         {
           "id": "p4",
           "titulo": "O negócio no funil",
-          "texto": "O funil abre com os detalhes do negócio do Marcos na tela: valor, etapa, responsável e os dados do contato. Daqui você edita o negócio sem procurá-lo no quadro. Como ele ainda não conversou, \"Abrir conversa no Inbox\" cria a conversa com ele e leva você até ela, sem mandar nenhuma mensagem.",
+          "texto": "O funil abre com os detalhes do negócio do Marcos: valor, etapa, responsável e os dados do contato. Daqui você edita o negócio sem procurá-lo no quadro. Como ele ainda não conversou, \"Abrir conversa no Inbox\" cria a conversa com ele e leva você até ela. Nenhuma mensagem é enviada.",
           "antes": [
             {
               "acao": "click",
@@ -533,7 +533,7 @@
         {
           "id": "p1",
           "titulo": "O quadro amarelo",
-          "texto": "O quadro amarelo no alto lista os clientes com um pedido em aberto em que ninguém anotou o que acontece a seguir. Na mesma linha, à direita, aparece há quantas horas o pedido está aberto. Clique no nome para abrir a conversa.",
+          "texto": "O quadro amarelo no alto lista os clientes que têm um pedido em aberto sem nada anotado sobre o que acontece a seguir. Na mesma linha, à direita, aparece há quantas horas o pedido está aberto. Para abrir a conversa, clique no nome.",
           "dica": "Se a sua empresa usa Propostas, podem aparecer ali mais dois quadros: propostas vencidas sem retomada e propostas esperando revisão.",
           "rota": "/app/radar",
           "destaques": [
@@ -569,7 +569,7 @@
         {
           "id": "p2",
           "titulo": "O pedido da Fernanda",
-          "texto": "A Inbox abre na conversa da Fernanda. Na ficha do cliente, à direita, \"Demandas abertas\" mostra o pedido dela com a frase \"Sem próximo passo definido\". Clique em \"Marcar próximo passo\". A mensagem com borda vermelha na conversa é outro assunto: um envio que falhou, que se manda de novo em \"Tentar de novo\".",
+          "texto": "A Inbox abre na conversa da Fernanda. Na ficha do cliente, à direita, \"Demandas abertas\" mostra o pedido dela com a frase \"Sem próximo passo definido\". Clique em \"Marcar próximo passo\". A mensagem com borda vermelha na conversa é outro assunto: é um envio que falhou. Para mandar de novo, use \"Tentar de novo\".",
           "antes": [
             {
               "acao": "click",
@@ -703,7 +703,7 @@
         {
           "id": "p5",
           "titulo": "A Fernanda saiu do quadro",
-          "texto": "De volta ao Radar, a Fernanda sai do quadro amarelo: ela já tem um próximo passo anotado. Se ela ainda aparecer, espere até um minuto ou atualize a página. Os negócios parados continuam na lista até alguém agir em cada um: anotar o próximo passo da demanda não tira o negócio da lista.",
+          "texto": "De volta ao Radar, a Fernanda sai do quadro amarelo, porque já tem um próximo passo anotado. Se ela ainda aparecer, espere até um minuto ou atualize a página. Os negócios parados continuam na lista até alguém agir em cada um. Anotar o próximo passo da demanda não tira o negócio da lista.",
           "antes": [],
           "destaques": [
             {

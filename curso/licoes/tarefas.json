@@ -23,7 +23,7 @@
           "id": "p1",
           "titulo": "As tarefas, separadas por prazo",
           "rota": "/app/tasks",
-          "texto": "Tarefas é a lista do que a equipe combinou de fazer, como \"ligar de volta na terça\". A tela separa as tarefas em grupos pelo prazo. \"Atrasadas\" vem primeiro, em vermelho, porque pede ação agora: são as tarefas com prazo num dia que já passou. Depois vêm \"Hoje\", \"Esta semana\" (os próximos 7 dias), \"Mais tarde\" e, no fim, \"Sem prazo\". Uma tarefa de hoje cujo horário já passou continua em \"Hoje\", com a hora em vermelho. Um grupo sem nenhuma tarefa nem aparece.",
+          "texto": "Tarefas é a lista do que a equipe combinou de fazer, como \"ligar de volta na terça\". A tela separa as tarefas em grupos pelo prazo. \"Atrasadas\" vem primeiro, em vermelho, porque pede ação agora. Ali ficam as tarefas com prazo num dia que já passou. Depois vêm \"Hoje\", \"Esta semana\" (os próximos 7 dias), \"Mais tarde\" e, no fim, \"Sem prazo\". Se o horário de uma tarefa de hoje já passou, ela continua em \"Hoje\", com a hora em vermelho. Um grupo sem tarefas não aparece.",
           "dica": "A tela abre mostrando só as tarefas em aberto. As já feitas ficam escondidas; você aprende a vê-las na lição sobre filtros.",
           "destaques": [
             {
@@ -59,7 +59,7 @@
         {
           "id": "p2",
           "titulo": "O que cada linha mostra",
-          "texto": "Cada linha é uma tarefa. Embaixo do título aparecem os detalhes, quando alguém escreveu. Depois vêm a prioridade (Baixa, Média, Alta ou Urgente), o dia e a hora do prazo (em vermelho quando já passou) e quem é o responsável. Quando a tarefa está ligada a um negócio do funil, o nome do negócio aparece no fim da linha.",
+          "texto": "Cada linha é uma tarefa. Embaixo do título aparecem os detalhes, se alguém escreveu algum. Depois vêm a prioridade (Baixa, Média, Alta ou Urgente), o dia e a hora do prazo (em vermelho quando já passou) e quem é o responsável. Quando a tarefa está ligada a um negócio do funil, o nome do negócio aparece no fim da linha.",
           "destaques": [
             {
               "alvo": {
@@ -206,7 +206,7 @@
         {
           "id": "p3",
           "titulo": "Prazo, prioridade e situação",
-          "texto": "Em \"Prazo\" você escolhe o dia e em \"Horário\" a hora. O prazo é opcional: sem ele, a tarefa vai para o grupo \"Sem prazo\". A hora só fica liberada depois que você escolhe o dia. \"Prioridade\" vai de Baixa a Urgente e já vem como Média; aqui escolhemos Alta. \"Situação\" já vem como Pendente.",
+          "texto": "Em \"Prazo\" você escolhe o dia, e em \"Horário\", a hora. O prazo é opcional: sem ele, a tarefa vai para o grupo \"Sem prazo\". A hora só fica liberada depois que você escolhe o dia. \"Prioridade\" vai de Baixa a Urgente e já vem como Média. \"Situação\" já vem como Pendente. Na foto, escolhemos Alta.",
           "dica": "Para criar a tarefa já com o dia preenchido, use o calendário: é a lição \"Ver as tarefas no calendário\".",
           "antes": [
             {
@@ -258,7 +258,7 @@
         {
           "id": "p4",
           "titulo": "Quem vai fazer",
-          "texto": "Em \"Responsável\", escolha quem vai cumprir a tarefa. A lista traz as pessoas da equipe, menos quem só tem permissão de leitura; você aparece como \"Eu\". \"Ninguém\" deixa a tarefa sem dono.",
+          "texto": "Em \"Responsável\", escolha quem vai cumprir a tarefa. A lista traz as pessoas da equipe, exceto quem só tem permissão de leitura. Você aparece como \"Eu\". \"Ninguém\" deixa a tarefa sem dono.",
           "antes": [
             {
               "acao": "click",
@@ -494,7 +494,7 @@
         {
           "id": "p3",
           "titulo": "Editar uma tarefa",
-          "texto": "Clique no lápis para abrir a tarefa no formulário \"Editar tarefa\". Ele traz tudo o que já estava preenchido. Aqui vamos subir a prioridade da tarefa da Fernanda para Urgente.",
+          "texto": "Clique no lápis para abrir a tarefa no formulário \"Editar tarefa\". Ele traz tudo o que já estava preenchido. Na foto, vamos subir a prioridade da tarefa da Fernanda para Urgente.",
           "antes": [
             {
               "acao": "hover",
@@ -592,7 +592,7 @@
         {
           "id": "p5",
           "titulo": "Apagar em dois cliques",
-          "texto": "Para apagar, clique na lixeira. No lugar dela aparece o botão vermelho \"Confirmar\": só ao clicar nele a tarefa é apagada. Tarefa apagada não volta. Se ela só não vai mais ser feita, prefira editar e mudar a situação para \"Cancelada\".",
+          "texto": "Para apagar, clique na lixeira. No lugar dela aparece o botão vermelho \"Confirmar\". A tarefa só é apagada quando você clica nele. Tarefa apagada não volta. Se ela só não vai mais ser feita, prefira editar e mudar a situação para \"Cancelada\".",
           "antes": [
             {
               "acao": "hover",
@@ -724,7 +724,7 @@
         {
           "id": "p3",
           "titulo": "As tarefas em andamento",
-          "texto": "Com \"Em andamento\", aparecem só as tarefas que alguém marcou como \"Em andamento\". Essa marcação é feita à mão, no formulário da tarefa, no campo \"Situação\".",
+          "texto": "Com \"Em andamento\", aparecem só as tarefas que alguém marcou como \"Em andamento\". Você faz essa marcação à mão, no campo \"Situação\" do formulário da tarefa.",
           "dica": "Para voltar à lista normal, escolha \"Em aberto\" no mesmo seletor.",
           "antes": [
             {
@@ -786,7 +786,7 @@
           "titulo": "Trocar para o calendário",
           "rota": "/app/tasks",
           "texto": "Clique em \"Calendário\" para ver as tarefas do mês, cada uma no dia do seu prazo. O dia de hoje fica marcado com um círculo colorido. As tarefas atrasadas aparecem em vermelho. As setas dos lados do nome do mês passam para o mês anterior e para o próximo.",
-          "dica": "Num dia com mais de três tarefas, aparece \"+1 mais\", \"+2 mais\"… Esse aviso não abre nada; para ver todas, volte para \"Lista\". O calendário mostra as mesmas tarefas do seletor de situação (com \"Em aberto\", as concluídas ficam de fora), e as tarefas sem prazo não aparecem nele.",
+          "dica": "Num dia com mais de três tarefas, aparece \"+1 mais\", \"+2 mais\"… Esse aviso não abre nada. Para ver todas as tarefas, volte para \"Lista\". O calendário mostra as mesmas tarefas do seletor de situação. Com \"Em aberto\", por exemplo, as concluídas ficam de fora. As tarefas sem prazo não aparecem nele.",
           "antes": [
             {
               "acao": "click",
@@ -995,7 +995,7 @@
         {
           "id": "p2",
           "titulo": "As tarefas dentro do negócio",
-          "texto": "O funil abre com a ficha do negócio por cima. Na seção \"Tarefas\" da ficha aparecem só as tarefas deste negócio, inclusive as já concluídas, e, ao lado do título, a conta de quantas estão abertas e quantas estão atrasadas. Dali também dá para criar uma tarefa em \"Nova tarefa\": ela já nasce ligada ao negócio.",
+          "texto": "O funil abre com a ficha do negócio por cima. Na seção \"Tarefas\" da ficha aparecem só as tarefas deste negócio, inclusive as já concluídas. Ao lado do título fica a conta de quantas estão abertas e quantas estão atrasadas. Dali também dá para criar uma tarefa em \"Nova tarefa\": ela já nasce ligada ao negócio.",
           "antes": [
             {
               "acao": "click",
@@ -1047,7 +1047,7 @@
         {
           "id": "p3",
           "titulo": "Criar uma tarefa pelo negócio",
-          "texto": "Clique em \"Nova tarefa\", na seção \"Tarefas\" da ficha. O formulário é o mesmo da tela de Tarefas, com duas diferenças: a tarefa já nasce ligada a este negócio, e o campo \"Responsável\" já vem com você (\"Eu\"), porque quem anota o próximo passo do negócio quase sempre é quem vai cumpri-lo.",
+          "texto": "Clique em \"Nova tarefa\", na seção \"Tarefas\" da ficha. O formulário é o mesmo da tela de Tarefas, com duas diferenças. A tarefa já nasce ligada a este negócio. E o campo \"Responsável\" já vem com você (\"Eu\"), porque quem anota o próximo passo do negócio quase sempre é quem vai cumpri-lo.",
           "antes": [
             {
               "acao": "click",

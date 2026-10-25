@@ -23,8 +23,8 @@
     {
      "id": "p1",
      "titulo": "Onde ficam os números",
-     "texto": "A tela Desempenho junta os números do atendimento e das vendas da clínica. Você chega a ela pelo menu, em \"Desempenho\", no grupo Análise. A maior parte dos números olha para os últimos 30 dias, contados até agora, e não há como escolher outro período nesta tela. O Funil e a Previsão são a exceção: eles mostram os negócios que estão abertos agora. O campo \"Atendente\" mostra parte dos blocos só para uma pessoa da equipe; ele aparece numa lição mais adiante.",
-     "dica": "Role a tela para baixo: os blocos aparecem nesta ordem: Atrito, Perdas, Previsão, Funil, Performance por atendente, Por canal e Ganhos por período.",
+     "texto": "A tela Desempenho junta os números do atendimento e das vendas da clínica. Para chegar a ela, abra o menu e clique em \"Desempenho\", no grupo Análise. A maior parte dos números olha para os últimos 30 dias, contados até agora, mas nesta tela não dá para escolher outro período. O Funil e a Previsão são a exceção: eles mostram os negócios que estão abertos agora. O campo \"Atendente\" mostra parte dos blocos só para uma pessoa da equipe. Ele aparece numa lição mais adiante.",
+     "dica": "Role a tela para baixo. Os blocos aparecem nesta ordem: Atrito, Perdas, Previsão, Funil, Performance por atendente, Por canal e Ganhos por período.",
      "rota": "/app/metrics",
      "antes": [],
      "destaques": [
@@ -60,7 +60,7 @@
     {
      "id": "p2",
      "titulo": "O bloco Atrito",
-     "texto": "O primeiro bloco, \"Atrito\", mostra o que o resultado custou para o cliente e para a equipe. A frase de cima diz em que base os números foram medidos: quantas demandas foram encerradas nos últimos 30 dias e quantas ainda estão abertas. Uma demanda é um pedido de um cliente, do começo ao fim do atendimento. Logo abaixo fica a régua que diz depois de quantas horas sem resposta uma conversa conta como perdida; ela tem uma lição própria.",
+     "texto": "O primeiro bloco, \"Atrito\", mostra o que o resultado custou para o cliente e para a equipe. A frase de cima diz em que base os números foram medidos: quantas demandas foram encerradas nos últimos 30 dias e quantas ainda estão abertas. Uma demanda é um pedido de um cliente, do começo ao fim do atendimento. Logo abaixo fica a régua que diz depois de quantas horas sem resposta uma conversa conta como perdida. Ela tem uma lição própria.",
      "antes": [],
      "destaques": [
       {
@@ -82,7 +82,7 @@
     {
      "id": "p3",
      "titulo": "Como ler um cartão",
-     "texto": "O Atrito tem quatro cartões: Conversão, Automação, Custo humano e Contenção. Todos se leem do mesmo jeito. À esquerda, em letra grande, fica o resultado (aqui, \"Negócios ganhos\": quantos negócios foram ganhos nos últimos 30 dias). À direita, em \"O que isso custou\", ficam as medidas do preço desse resultado. Os dois lados ficam juntos de propósito: um número bom só vale se o custo dele também estiver bom.",
+     "texto": "O Atrito tem quatro cartões: Conversão, Automação, Custo humano e Contenção. Todos se leem do mesmo jeito. À esquerda, em letra grande, fica o resultado. Na foto, \"Negócios ganhos\" mostra quantos negócios foram ganhos nos últimos 30 dias. À direita, em \"O que isso custou\", ficam as medidas do preço desse resultado. Os dois lados ficam juntos de propósito: um número bom só vale se o custo dele também estiver bom.",
      "antes": [],
      "destaques": [
       {
@@ -124,7 +124,7 @@
     {
      "id": "p1",
      "titulo": "Conversão",
-     "texto": "O cartão Conversão põe os negócios ganhos ao lado do esforço que o cliente teve. \"Turnos até o desfecho (mediana)\" mostra quantas mensagens, somando os dois lados, um atendimento típico trocou até ser encerrado. As duas linhas de \"Insistência\" contam quantas vezes o agente voltou a procurar o cliente por conta própria; elas só são medidas nos atendimentos que viraram um caso do agente, e aqui aparecem com \"—\" porque não houve nenhum. \"Descadastros no período\" conta quem pediu para não receber mais mensagens. \"Conversas que morreram no silêncio\" mostra, das conversas em que a clínica falou, quantas acabaram com a clínica falando por último, o cliente sem responder há mais de 72 horas e ninguém encerrando.",
+     "texto": "O cartão Conversão põe os negócios ganhos ao lado do esforço que o cliente teve. \"Turnos até o desfecho (mediana)\" mostra quantas mensagens um atendimento típico trocou até ser encerrado, somando os dois lados. As duas linhas de \"Insistência\" contam quantas vezes o agente voltou a procurar o cliente por conta própria. Elas só são medidas nos atendimentos que viraram um caso do agente. Na foto aparecem com \"—\", porque não houve nenhum. \"Descadastros no período\" conta quem pediu para não receber mais mensagens. \"Conversas que morreram no silêncio\" mostra, das conversas em que a clínica falou, quantas terminaram com a última mensagem da clínica. Nelas, o cliente está sem responder há mais de 72 horas e ninguém encerrou.",
      "rota": "/app/metrics",
      "antes": [],
      "destaques": [
@@ -156,7 +156,7 @@
     {
      "id": "p2",
      "titulo": "Automação",
-     "texto": "O cartão Automação mostra quanto o agente de IA respondeu sozinho. \"Respostas dadas pelo agente\" é a parte das respostas aos clientes que foi escrita pelo agente; as mensagens de automação não entram nessa conta. Do lado do custo: \"Passagens para humano\" conta as vezes em que o agente passou para uma pessoa o atendimento de um cliente que tem negócio no funil. \"Respostas humanas fora do sistema\" mostra, em porcentagem, quanto das respostas da equipe saiu pelo celular, fora do Deskcomm. \"Clientes que repetiram depois da passagem\" mostra, entre os atendimentos passados para uma pessoa, em quantos o cliente teve de repetir o que já tinha dito. \"Perguntas que a pessoa teve de repetir\" mostra, também em porcentagem, quantas vezes o cliente mandou de novo quase a mesma frase depois de receber uma resposta.",
+     "texto": "O cartão Automação mostra quanto o agente de IA respondeu sozinho. \"Respostas dadas pelo agente\" é a parte das respostas aos clientes que o agente escreveu. As mensagens de automação não entram nessa conta. Do lado do custo, \"Passagens para humano\" conta as vezes em que o agente passou para uma pessoa o atendimento de um cliente que tem negócio no funil. \"Respostas humanas fora do sistema\" mostra, em porcentagem, quanto das respostas da equipe saiu pelo celular, fora do Deskcomm. \"Clientes que repetiram depois da passagem\" mostra, entre os atendimentos passados para uma pessoa, em quantos o cliente teve de repetir o que já tinha dito. \"Perguntas que a pessoa teve de repetir\" mostra, também em porcentagem, quantas vezes o cliente mandou de novo quase a mesma frase depois de receber uma resposta.",
      "antes": [
       {
        "acao": "rolar",
@@ -196,7 +196,7 @@
     {
      "id": "p3",
      "titulo": "Custo humano",
-     "texto": "O cartão Custo humano mostra o trabalho da equipe. O número grande é o total de demandas encerradas no período. \"Espera na fila humana\" mede quanto o cliente esperou até alguém da equipe agir, nos atendimentos que o agente passou adiante; aqui aparece \"—\" porque não houve nenhum no período. As linhas vizinhas medem quantas vezes a equipe precisou entrar em cada demanda, a espera dos casos mais demorados (p90) e quantas demandas precisaram subir para alguém de nível acima. \"Demandas abertas sem próximo passo\" conta os atendimentos abertos em que nada está marcado para acontecer: é alguém esperando sem que ninguém tenha combinado o que vem depois. A última linha mostra, em porcentagem, quantas falas do cliente esperaram mais de 4 horas pela primeira resposta.",
+     "texto": "O cartão Custo humano mostra o trabalho da equipe. O número grande é o total de demandas encerradas no período. \"Espera na fila humana\" mede quanto o cliente esperou até alguém da equipe agir, nos atendimentos que o agente passou adiante. Na foto aparece \"—\", porque não houve nenhum no período. As linhas vizinhas medem três coisas: quantas vezes a equipe precisou entrar em cada demanda, a espera dos casos mais demorados (p90) e quantas demandas precisaram subir para alguém de nível acima. \"Demandas abertas sem próximo passo\" conta os atendimentos abertos em que nada está marcado para acontecer. É alguém esperando sem que ninguém tenha combinado o que vem depois. A última linha mostra, em porcentagem, quantas falas do cliente esperaram mais de 4 horas pela primeira resposta.",
      "antes": [
       {
        "acao": "rolar",
@@ -244,7 +244,7 @@
     {
      "id": "p4",
      "titulo": "Contenção e o traço",
-     "texto": "O cartão Contenção conta as mensagens que saíram sem uma pessoa escrever. \"Mensagens enviadas pelo agente\" são as do agente de IA. À direita, em \"O que isso custou\", \"Vetos por execução\" mostra, em média, quantas vezes o sistema segurou uma mensagem do agente antes de ela sair. Logo abaixo aparecem as enviadas por automação (regras, follow-up e lembretes da agenda) e por integração com outro sistema, contadas à parte para não se misturarem com as do agente. Quando um número aparece como \"—\", não houve dado suficiente para medir: o traço não quer dizer zero.",
+     "texto": "O cartão Contenção conta as mensagens que saíram sem uma pessoa escrever. \"Mensagens enviadas pelo agente\" são as do agente de IA. À direita, em \"O que isso custou\", \"Vetos por execução\" mostra, em média, quantas vezes o sistema segurou uma mensagem do agente antes de ela sair. Logo abaixo aparecem as enviadas por automação (regras, follow-up e lembretes da agenda) e as enviadas por integração com outro sistema. Elas são contadas à parte, para não se misturarem com as do agente. Quando um número aparece como \"—\", não houve dado suficiente para medir. O traço não quer dizer zero.",
      "antes": [
       {
        "acao": "rolar",
@@ -301,7 +301,7 @@
     {
      "id": "p1",
      "titulo": "A régua do silêncio",
-     "texto": "No alto do Atrito fica a frase \"Contar como perdida no silêncio após 72 horas sem resposta\". É ela que decide quando uma conversa entra na medida \"Conversas que morreram no silêncio\", no cartão Conversão. O aviso \"(padrão do sistema)\" quer dizer que a régua está no valor padrão, 72 horas. Clínicas que costumam esperar menos pelo retorno do paciente podem querer um número menor.",
+     "texto": "No alto do Atrito fica a frase \"Contar como perdida no silêncio após 72 horas sem resposta\". Ela decide quando uma conversa entra na medida \"Conversas que morreram no silêncio\", no cartão Conversão. O aviso \"(padrão do sistema)\" quer dizer que a régua está no valor padrão, 72 horas. Clínicas que costumam esperar menos pelo retorno do paciente podem querer um número menor.",
      "dica": "Só quem é gerente ou administrador muda a régua. Os atendentes veem o mesmo número numa frase só para leitura, sem o campo para editar.",
      "rota": "/app/metrics",
      "antes": [],
@@ -326,7 +326,7 @@
     {
      "id": "p2",
      "titulo": "Digite o novo número",
-     "texto": "Clique no campo e troque o número de horas, por exemplo para 48. Assim que o número muda, aparece o botão \"Salvar\" ao lado, e o aviso \"(padrão do sistema)\" sai. O campo aceita um número inteiro de 1 a 2160 horas (90 dias); fora disso, aparece um aviso em vermelho e o botão fica desligado. Clique em \"Salvar\".",
+     "texto": "Clique no campo e troque o número de horas, por exemplo para 48. Assim que o número muda, aparece o botão \"Salvar\" ao lado, e o aviso \"(padrão do sistema)\" sai. O campo aceita um número inteiro de 1 a 2160 horas (90 dias). Fora disso, aparece um aviso em vermelho e o botão fica desligado. Clique em \"Salvar\".",
      "antes": [
       {
        "acao": "fill",
@@ -363,7 +363,7 @@
     {
      "id": "p3",
      "titulo": "A medida muda junto",
-     "texto": "Depois de salvar, o botão some e a medida do cartão Conversão passa a se chamar \"Conversas que morreram no silêncio (após 48h)\", já contada com a régua nova. Aqui o número não mudou, porque a única conversa perdida já estava em silêncio havia mais de 72 horas. A régua vale para toda a empresa e muda também a leitura dos dias que já passaram. Para voltar ao padrão, digite 72 e salve de novo.",
+     "texto": "Depois de salvar, o botão some. A medida do cartão Conversão passa a se chamar \"Conversas que morreram no silêncio (após 48h)\", já contada com a régua nova. Na foto o número não mudou, porque a única conversa perdida já estava em silêncio havia mais de 72 horas. A régua vale para toda a empresa e muda também a leitura dos dias que já passaram. Para voltar ao padrão, digite 72 e salve de novo.",
      "antes": [
       {
        "acao": "click",
@@ -483,7 +483,7 @@
     {
      "id": "p3",
      "titulo": "A previsão do funil",
-     "texto": "O cartão \"Previsão\" estima quanto deve entrar por mês com os negócios abertos do funil principal, usando a chance de fechamento de cada etapa. Nesta clínica nenhuma etapa tem chance definida, por isso todo o valor em aberto aparece em \"Sem chance definida na etapa — falta calibrar\". Quando as etapas têm chance, aparece uma tabela por mês com o valor \"Ponderado\" (o valor vezes a chance) e o \"Bruto\" (o valor cheio). Negócio sem data prevista de fechamento fica numa linha à parte.",
+     "texto": "O cartão \"Previsão\" estima quanto deve entrar por mês com os negócios abertos do funil principal. Ele usa a chance de fechamento de cada etapa. Nesta clínica nenhuma etapa tem chance definida. Por isso todo o valor em aberto aparece em \"Sem chance definida na etapa — falta calibrar\". Quando as etapas têm chance, aparece uma tabela por mês com o valor \"Ponderado\" (o valor vezes a chance) e o \"Bruto\" (o valor cheio). Negócio sem data prevista de fechamento fica numa linha à parte.",
      "dica": "A chance de cada etapa se define em \"Etapas do funil\" (no menu, em \"Ver tudo em CRM\"), no campo \"Chance de fechamento (0 a 100)\".",
      "antes": [
       {
@@ -532,7 +532,7 @@
     {
      "id": "p1",
      "titulo": "O funil de agora",
-     "texto": "O cartão \"Funil\" conta os negócios abertos agora em cada etapa. Ele mostra uma barra para cada etapa de todos os funis da clínica, e o número do título é o total de abertos. Cada barra é proporcional à etapa com mais negócios, e as etapas vazias também aparecem, inclusive as de ganho e de perda, que ficam em zero: um negócio que chega nelas deixa de estar aberto. Os negócios ganhos ou perdidos não entram aqui: este cartão olha para o que ainda está em andamento, e não para os últimos 30 dias.",
+     "texto": "O cartão \"Funil\" conta os negócios abertos agora em cada etapa. Ele mostra uma barra para cada etapa de todos os funis da clínica, e o número do título é o total de abertos. Cada barra é proporcional à etapa com mais negócios. As etapas vazias também aparecem, inclusive as de ganho e de perda, que ficam em zero, porque um negócio que chega nelas deixa de estar aberto. Os negócios ganhos ou perdidos não entram aqui. Este cartão olha para o que ainda está em andamento, e não para os últimos 30 dias.",
      "rota": "/app/metrics",
      "antes": [],
      "destaques": [
@@ -548,7 +548,7 @@
     {
      "id": "p2",
      "titulo": "Performance por atendente",
-     "texto": "A tabela compara as pessoas da equipe nos últimos 30 dias; o \"(você)\" marca quem está usando a tela. \"Ganhos\" e \"Perdidos\" contam os negócios fechados que estavam no nome da pessoa. \"Conversas\" conta as conversas passadas para ela. \"1ª resposta\" é o tempo entre a primeira mensagem do cliente e a primeira resposta escrita por alguém da equipe, nas conversas que estão no nome da pessoa. A média soma todos os tempos; a mediana é o tempo do meio. Na linha da Helena, a média fica bem maior que a mediana: uma única resposta demorada, de horas, puxa a média para cima, e a mediana mostra a resposta típica. Os tempos aparecem em minutos: 120min são 2 horas.",
+     "texto": "A tabela compara as pessoas da equipe nos últimos 30 dias. O \"(você)\" marca quem está usando a tela. \"Ganhos\" e \"Perdidos\" contam os negócios fechados que estavam no nome da pessoa. \"Conversas\" conta as conversas passadas para ela. \"1ª resposta\" é o tempo entre a primeira mensagem do cliente e a primeira resposta escrita por alguém da equipe, nas conversas que estão no nome da pessoa. A média soma todos os tempos, e a mediana é o tempo do meio. Na linha da Helena, a média fica bem maior que a mediana. Uma única resposta demorada, de horas, puxa a média para cima, e a mediana mostra a resposta típica. Os tempos aparecem em minutos: 120min são 2 horas.",
      "dica": "Negócio levado para outro funil não conta como perdido.",
      "antes": [],
      "destaques": [
@@ -609,7 +609,7 @@
     {
      "id": "p4",
      "titulo": "Os números de uma pessoa",
-     "texto": "Com uma pessoa escolhida, o funil passa a se chamar \"Funil do atendente\" e conta só os negócios abertos no nome dela, e a tabela fica só com a linha dela. O cartão \"Por canal\" também passa a contar só as conversas dela. O Atrito, as Perdas, a Previsão e os Ganhos por período continuam mostrando a clínica inteira. Para voltar, escolha \"Todos os atendentes\".",
+     "texto": "Com uma pessoa escolhida, o funil passa a se chamar \"Funil do atendente\" e conta só os negócios abertos no nome dela. A tabela fica só com a linha dela, e o cartão \"Por canal\" também passa a contar só as conversas dela. O Atrito, as Perdas, a Previsão e os Ganhos por período continuam mostrando a clínica inteira. Para voltar, escolha \"Todos os atendentes\".",
      "antes": [
       {
        "acao": "click",
@@ -673,7 +673,7 @@
     {
      "id": "p1",
      "titulo": "Cada número de WhatsApp",
-     "texto": "O cartão \"Por canal\" tem uma linha para cada número de WhatsApp que teve atendimento nos últimos 30 dias; um número parado no período não aparece. \"Conversas\" conta as conversas passadas para alguém da equipe nesse período. \"1ª resposta (média)\" é o tempo médio até a primeira resposta escrita por uma pessoa. \"Sem resposta\" conta, dessas conversas, quantas ainda não tiveram nenhuma resposta de alguém da equipe. Um número arquivado que teve atendimento no período continua aparecendo, marcado \"(arquivado)\".",
+     "texto": "O cartão \"Por canal\" tem uma linha para cada número de WhatsApp que teve atendimento nos últimos 30 dias. Um número parado no período não aparece. \"Conversas\" conta as conversas passadas para alguém da equipe nesse período. \"1ª resposta (média)\" é o tempo médio até a primeira resposta escrita por uma pessoa. \"Sem resposta\" conta, dessas conversas, quantas ainda não tiveram nenhuma resposta de alguém da equipe. Um número arquivado que teve atendimento no período continua aparecendo, marcado \"(arquivado)\".",
      "rota": "/app/metrics",
      "antes": [
       {
@@ -705,7 +705,7 @@
     {
      "id": "p2",
      "titulo": "Ganhos por período",
-     "texto": "O último cartão mostra os negócios ganhos ao longo dos últimos 30 dias. O número do título é o total de ganhos, de toda a clínica. A linha do gráfico passa por cada dia, e os dias sem ganho aparecem com zero, para os vales não sumirem. Mais abaixo, rolando a tela, uma tabela repete os mesmos números, período por período. O campo à direita do título, hoje em \"Dia\", escolhe se os ganhos são juntados por dia, por semana ou por mês; o período continua sendo os últimos 30 dias. Clique nele.",
+     "texto": "O último cartão mostra os negócios ganhos ao longo dos últimos 30 dias. O número do título é o total de ganhos, de toda a clínica. A linha do gráfico passa por cada dia. Os dias sem ganho aparecem com zero, para os vales não sumirem. Mais abaixo, rolando a tela, uma tabela repete os mesmos números, período por período. O campo à direita do título, hoje em \"Dia\", escolhe se os ganhos são juntados por dia, por semana ou por mês. O período continua sendo os últimos 30 dias. Clique nele.",
      "antes": [],
      "destaques": [
       {
@@ -734,7 +734,7 @@
     {
      "id": "p3",
      "titulo": "Ver por semana",
-     "texto": "Escolha \"Semana\" para juntar os ganhos de cada semana num ponto só. Assim fica mais fácil ver se as vendas estão subindo ou caindo, sem o sobe e desce de um dia para o outro. \"Mês\" serve pouco aqui: como a tela olha só 30 dias, ele mostra no máximo dois meses, e os dois incompletos.",
+     "texto": "Escolha \"Semana\" para juntar os ganhos de cada semana num ponto só. Assim fica mais fácil ver se as vendas estão subindo ou caindo, sem o sobe e desce de um dia para o outro. \"Mês\" serve pouco aqui. A tela olha só 30 dias, então ele mostra no máximo dois meses, e os dois incompletos.",
      "antes": [
       {
        "acao": "click",
@@ -820,7 +820,7 @@
     {
      "id": "p2",
      "titulo": "Números só dela",
-     "texto": "Para quem é atendente, boa parte dos números conta só o que a pessoa pode ver: os negócios e as conversas no nome dela e, no padrão da instalação, os que ainda não têm responsável. Por isso o cartão Conversão mostra os negócios ganhos que a Ana enxerga, e não os da clínica toda, e as conversas que morreram no silêncio são contadas só entre as que ela vê. Já as contagens de demandas (a base no alto do Atrito, \"Demandas encerradas\" e \"Demandas abertas sem próximo passo\") continuam sendo da clínica inteira.",
+     "texto": "Para quem é atendente, boa parte dos números conta só o que a pessoa pode ver: os negócios e as conversas no nome dela e, no padrão da instalação, os que ainda não têm responsável. Por isso o cartão Conversão mostra os negócios ganhos que a Ana enxerga, e não os da clínica toda. As conversas que morreram no silêncio também são contadas só entre as que ela vê. Já as contagens de demandas continuam sendo da clínica inteira: a base no alto do Atrito, \"Demandas encerradas\" e \"Demandas abertas sem próximo passo\".",
      "antes": [],
      "destaques": [
       {
@@ -844,7 +844,7 @@
     {
      "id": "p3",
      "titulo": "Sua performance",
-     "texto": "Mais abaixo, o funil conta os negócios abertos que a Ana enxerga: os dela e os que estão sem responsável. A tabela se chama \"Sua performance\" e tem uma linha só, a dela: os ganhos, os perdidos, as conversas e o tempo da primeira resposta. Os cartões \"Por canal\" e \"Ganhos por período\" também contam só o que ela enxerga, por isso mostram números menores que os da clínica toda.",
+     "texto": "Mais abaixo, o funil conta os negócios abertos que a Ana enxerga: os dela e os que estão sem responsável. A tabela se chama \"Sua performance\" e tem uma linha só, a dela, com os ganhos, os perdidos, as conversas e o tempo da primeira resposta. Os cartões \"Por canal\" e \"Ganhos por período\" também contam só o que ela enxerga. Por isso mostram números menores que os da clínica toda.",
      "antes": [
       {
        "acao": "rolar",

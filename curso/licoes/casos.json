@@ -46,7 +46,7 @@
         {
           "id": "p2",
           "titulo": "Lendo uma linha da lista",
-          "texto": "Cada linha mostra o assunto do caso, escrito pela IA, e um selo com a situação. \"Aguardando você\" quer dizer que a IA está esperando uma decisão da equipe. \"Aguardando o cliente\" quer dizer que a equipe já pediu uma informação e agora é o cliente que precisa responder. Embaixo vêm o tipo do pedido (como \"Pagamento\" ou \"Horário\"), o nome do cliente e há quanto tempo o caso foi aberto. Os casos mais novos ficam no alto.",
+          "texto": "Cada linha mostra o assunto do caso, escrito pela IA, e um selo com a situação. \"Aguardando você\" quer dizer que a IA está esperando uma decisão da equipe. \"Aguardando o cliente\" quer dizer que a equipe já pediu uma informação e agora o cliente precisa responder. Embaixo vêm o tipo do pedido (como \"Pagamento\" ou \"Horário\"), o nome do cliente e há quanto tempo o caso foi aberto. Os casos mais novos ficam no alto.",
           "destaques": [
             {
               "alvo": {
@@ -75,7 +75,7 @@
         {
           "id": "p3",
           "titulo": "Abertos e Concluídos",
-          "texto": "A aba \"Abertos\" mostra os casos que ainda não terminaram, e o número entre parênteses diz quantos são. A aba \"Concluídos\" guarda os que já acabaram, com três desfechos possíveis: \"Concluído\" (a equipe ou a IA resolveu), \"Virou atendimento humano\" (a conversa passou para uma pessoa da equipe) e \"Cancelado\" (o pedido deixou de existir).",
+          "texto": "A aba \"Abertos\" mostra os casos que ainda não terminaram, e o número entre parênteses diz quantos são. A aba \"Concluídos\" guarda os que já acabaram. Eles têm três desfechos possíveis: \"Concluído\" (a equipe ou a IA resolveu), \"Virou atendimento humano\" (a conversa passou para uma pessoa da equipe) e \"Cancelado\" (o pedido deixou de existir).",
           "antes": [
             {
               "acao": "click",
@@ -197,7 +197,7 @@
         {
           "id": "p2",
           "titulo": "O pedido e o motivo",
-          "texto": "Dois quadros resumem o caso. \"O que o cliente precisa\" conta o pedido com as palavras da IA. \"Por que a IA travou\" explica o que impediu a IA de resolver sozinha. Aqui, o Pedro quer desconto no Pix, e a IA não pode prometer um preço diferente sem a equipe confirmar.",
+          "texto": "Dois quadros resumem o caso. \"O que o cliente precisa\" conta o pedido com as palavras da IA. \"Por que a IA travou\" explica o que impediu a IA de resolver sozinha. Na foto, o Pedro quer desconto no Pix. A IA não pode prometer um preço diferente sem a equipe confirmar.",
           "destaques": [
             {
               "alvo": {
@@ -219,7 +219,7 @@
         {
           "id": "p3",
           "titulo": "A linha do tempo",
-          "texto": "No fim do caso fica a \"Linha do tempo\": tudo o que aconteceu, do mais antigo para o mais novo, com há quanto tempo foi. Aqui ela mostra que a IA abriu o caso e depois registrou que avisou o Pedro de que a recepção confirma o valor. Quando alguém da equipe responde, a resposta também entra nesta lista.",
+          "texto": "No fim do caso fica a \"Linha do tempo\". Ela lista tudo o que aconteceu, do mais antigo para o mais novo, e mostra há quanto tempo cada coisa aconteceu. Na foto, a IA abriu o caso e depois registrou que avisou o Pedro de que a recepção confirma o valor. Quando alguém da equipe responde, a resposta também entra nesta lista.",
           "antes": [
             {
               "acao": "rolar",
@@ -320,7 +320,7 @@
         {
           "id": "p2",
           "titulo": "Escolha e escreva",
-          "texto": "Clique na opção e escreva no campo abaixo o que foi decidido. Com \"Concluí\" ou \"Preciso de info do cliente\", quem lê o que você escreve é a IA, e é com isso que ela responde o cliente. Então escreva a decisão de forma clara, com valores e horários. Com \"Não consigo — passar pra humano\", o texto vira um recado para a pessoa da equipe que vai assumir a conversa. Aqui, a recepção liberou 5% de desconto no Pix.",
+          "texto": "Clique na opção e escreva no campo abaixo o que foi decidido. Com \"Concluí\" ou \"Preciso de info do cliente\", a IA lê o que você escreve e responde o cliente com isso. Então escreva a decisão de forma clara, com valores e horários. Com \"Não consigo — passar pra humano\", o texto vira um recado para a pessoa da equipe que vai assumir a conversa. Na foto, a recepção liberou 5% de desconto no Pix.",
           "antes": [
             {
               "acao": "click",
@@ -363,7 +363,7 @@
         {
           "id": "p3",
           "titulo": "Enviar a decisão",
-          "texto": "O botão \"Enviar\" só funciona com uma opção marcada e o campo preenchido. Ao enviar, aparece o aviso \"Resposta registrada para processamento.\". Com \"Concluí\", o caso vai para a aba \"Concluídos\" e a IA escreve para o cliente (para isso, a IA e o WhatsApp precisam estar ligados). Com \"Não consigo — passar pra humano\", ele também vai para \"Concluídos\" e a conversa passa para a equipe. Com \"Preciso de info do cliente\", ele continua em \"Abertos\", agora como \"Aguardando o cliente\".",
+          "texto": "O botão \"Enviar\" só funciona com uma opção marcada e o campo preenchido. Ao enviar, aparece o aviso \"Resposta registrada para processamento.\". Com \"Concluí\", o caso vai para a aba \"Concluídos\" e a IA escreve para o cliente. Para isso, a IA e o WhatsApp precisam estar ligados. Com \"Não consigo — passar pra humano\", ele também vai para \"Concluídos\" e a conversa passa para a equipe. Com \"Preciso de info do cliente\", ele continua em \"Abertos\", agora como \"Aguardando o cliente\".",
           "dica": "Se outra pessoa da equipe já respondeu o mesmo caso, aparece o aviso \"Este caso já foi respondido ou fechado.\" e nada muda.",
           "antes": [
             {
@@ -413,7 +413,7 @@
           "id": "p1",
           "titulo": "Conversar sobre o caso",
           "rota": "/app/ai/cases",
-          "texto": "Abaixo do quadro de resposta fica \"Conversar sobre o caso\". Ali a equipe faz perguntas à IA que abriu o caso antes de decidir, como \"Por que a IA não resolveu sozinha?\" ou \"O que o cliente já tentou?\". É uma conversa interna: o cliente não vê nada, e a IA ali não manda mensagem nem muda o caso. As perguntas dos colegas também aparecem nesse quadro, em alguns segundos. Enquanto a IA não estiver ligada, esse quadro mostra um aviso no lugar do campo de pergunta, e o próximo passo explica o porquê.",
+          "texto": "Abaixo do quadro de resposta fica \"Conversar sobre o caso\". Ali a equipe faz perguntas à IA que abriu o caso antes de decidir, como \"Por que a IA não resolveu sozinha?\" ou \"O que o cliente já tentou?\". É uma conversa interna. O cliente não vê nada, e a IA ali não manda mensagem nem muda o caso. As perguntas dos colegas também aparecem nesse quadro, em alguns segundos. Se a IA não estiver ligada, esse quadro mostra um aviso no lugar do campo de pergunta. O próximo passo explica o porquê.",
           "antes": [
             {
               "acao": "click",
@@ -450,8 +450,8 @@
         {
           "id": "p2",
           "titulo": "Quando a IA ainda não está ligada",
-          "texto": "Enquanto nenhuma chave de IA estiver cadastrada, no lugar do campo de pergunta aparece o aviso \"Nenhum provedor de IA está configurado\" e o link \"Abrir IA › Provedores\", que leva para a tela onde quem administra liga a IA.",
-          "dica": "Com a IA ligada, aparecem o campo \"Sua pergunta para a IA\" e o botão \"Perguntar\", e, enquanto ninguém perguntou nada, algumas sugestões de pergunta. Clicar numa sugestão só preenche o campo. Ctrl + Enter (Cmd + Enter no Mac) também envia. Cada pergunta é cobrada na conta da sua chave de IA.",
+          "texto": "Se nenhuma chave de IA estiver cadastrada, aparecem no lugar do campo de pergunta o aviso \"Nenhum provedor de IA está configurado\" e o link \"Abrir IA › Provedores\". O link leva para a tela onde quem administra liga a IA.",
+          "dica": "Com a IA ligada, aparecem o campo \"Sua pergunta para a IA\" e o botão \"Perguntar\". Enquanto ninguém perguntou nada, aparecem também algumas sugestões de pergunta. Clicar numa sugestão só preenche o campo. Ctrl + Enter (Cmd + Enter no Mac) também envia. Cada pergunta é cobrada na conta da sua chave de IA.",
           "antes": [
             {
               "acao": "rolar",
@@ -488,7 +488,7 @@
         {
           "id": "p3",
           "titulo": "A tela de provedores",
-          "texto": "O link abre a tela \"Provedores de IA\", onde quem administra escolhe qual IA atende cada parte do sistema. Enquanto falta a chave, ela avisa que você ainda não cadastrou a chave da IA principal, e o link \"Cadastrar uma chave\" leva para onde se cadastra. Só gerentes e administradores entram nela. Depois que a IA estiver ligada, volte em \"Casos\" e o campo de pergunta aparece no lugar do aviso.",
+          "texto": "O link abre a tela \"Provedores de IA\", onde quem administra escolhe qual IA atende cada parte do sistema. Sem a chave, a tela avisa que você ainda não cadastrou a chave da IA principal. O link \"Cadastrar uma chave\" leva para onde se cadastra. Só gerentes e administradores entram nela. Depois que a IA estiver ligada, volte em \"Casos\": o campo de pergunta aparece no lugar do aviso.",
           "antes": [
             {
               "acao": "click",
@@ -599,7 +599,7 @@
         {
           "id": "p2",
           "titulo": "O que a equipe pediu",
-          "texto": "A linha do tempo mostra o pedido da equipe (\"Você pediu uma informação ao cliente\") com o texto que foi escrito, e logo depois \"A IA perguntou ao cliente\". Assim qualquer pessoa da equipe sabe em que pé está o caso sem precisar perguntar. Atenção: a tela escreve \"Você\" para qualquer pessoa da equipe que decidiu, mesmo que não tenha sido você.",
+          "texto": "A linha do tempo mostra o pedido da equipe (\"Você pediu uma informação ao cliente\") com o texto que foi escrito. Logo depois vem \"A IA perguntou ao cliente\". Assim, qualquer pessoa da equipe sabe como está o caso sem precisar perguntar. Atenção: a tela escreve \"Você\" para qualquer pessoa da equipe que decidiu, mesmo que não tenha sido você.",
           "antes": [
             {
               "acao": "rolar",
@@ -684,7 +684,7 @@
           "id": "p1",
           "titulo": "Abrindo um caso encerrado",
           "rota": "/app/ai/cases",
-          "texto": "Na aba \"Concluídos\", clique num caso para ver como ele terminou. O selo no alto diz o desfecho, e o quadro \"O que você quer fazer?\" explica por que não aceita mais resposta. Neste caso, que foi concluído, aparece \"Este caso já foi concluído.\". As opções ficam apagadas, porque não há mais o que decidir.",
+          "texto": "Na aba \"Concluídos\", clique num caso para ver como ele terminou. O selo no alto diz o desfecho. O quadro \"O que você quer fazer?\" explica por que o caso não aceita mais resposta. Neste, que foi concluído, aparece \"Este caso já foi concluído.\". As opções ficam apagadas, porque não há mais o que decidir.",
           "antes": [
             {
               "acao": "click",
@@ -757,7 +757,7 @@
         {
           "id": "p2",
           "titulo": "Como o caso foi resolvido",
-          "texto": "A linha do tempo conta a história do caso. Aqui a IA abriu o caso, a equipe resolveu (\"Você concluiu o caso\", com o que foi escrito para a IA) e o caso ficou \"Concluído\". O texto da equipe é o que a IA recebe para responder o Lucas. A tela escreve \"Você\" para qualquer pessoa da equipe que decidiu.",
+          "texto": "A linha do tempo conta a história do caso. A IA abriu o caso, a equipe resolveu (\"Você concluiu o caso\", com o que foi escrito para a IA) e o caso ficou \"Concluído\". O texto da equipe é o que a IA recebe para responder o Lucas. A tela escreve \"Você\" para qualquer pessoa da equipe que decidiu.",
           "antes": [
             {
               "acao": "rolar",
@@ -785,7 +785,7 @@
         {
           "id": "p3",
           "titulo": "Um caso que virou atendimento humano",
-          "texto": "Este caso terminou com \"Não consigo — passar pra humano\". A linha do tempo mostra \"Você decidiu passar para atendimento humano\" (a tela diz \"Você\" para quem da equipe tomou a decisão) com o motivo, e depois \"Virou atendimento humano\". A partir daí a conversa com a Fernanda segue na Inbox, com uma pessoa da equipe.",
+          "texto": "Este caso terminou com \"Não consigo — passar pra humano\". A linha do tempo mostra \"Você decidiu passar para atendimento humano\", com o motivo, e depois \"Virou atendimento humano\". A tela diz \"Você\" para qualquer pessoa da equipe que tomou a decisão. A partir daí a conversa com a Fernanda segue na Inbox, com uma pessoa da equipe.",
           "antes": [
             {
               "acao": "click",
@@ -843,7 +843,7 @@
         {
           "id": "p4",
           "titulo": "Um caso cancelado pela IA",
-          "texto": "A própria IA também encerra um caso quando o pedido deixa de existir. Aqui o Roberto achou o recibo sozinho: a IA anotou o motivo (\"A IA registrou o que aconteceu\") e o caso ficou \"Cancelado\", sem ninguém da equipe precisar mexer.",
+          "texto": "A própria IA também encerra um caso quando o pedido deixa de existir. Na foto, o Roberto achou o recibo sozinho. A IA anotou o motivo (\"A IA registrou o que aconteceu\") e o caso ficou \"Cancelado\", sem ninguém da equipe precisar mexer.",
           "antes": [
             {
               "acao": "click",

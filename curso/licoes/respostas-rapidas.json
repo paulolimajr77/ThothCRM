@@ -47,8 +47,8 @@
         {
           "id": "p2",
           "titulo": "Da equipe ou só sua",
-          "texto": "O selo ao lado do nome diz de quem é a resposta. \"Compartilhado\" é da equipe: todos usam. \"Pessoal\" é só de quem criou: aqui, a \"Confirmação de consulta\" é da Helena, que é quem está usando o sistema nesta tela, e só ela pode mudá-la. Os colegas não veem as respostas pessoais uns dos outros.",
-          "dica": "A conta que instalou o sistema é a exceção: ela vê também as respostas pessoais dos colegas, na lista e nos botões da Inbox, com o selo \"Pessoal\" e sem lápis nem lixeira.",
+          "texto": "O selo ao lado do nome diz de quem é a resposta. \"Compartilhado\" é da equipe: todos usam. \"Pessoal\" é só de quem criou, e só essa pessoa pode mudá-la. Na foto, a \"Confirmação de consulta\" é da Helena, que é quem está usando o sistema. Os colegas não veem as respostas pessoais uns dos outros.",
+          "dica": "A conta que instalou o sistema é a exceção. Ela vê também as respostas pessoais dos colegas, na lista e nos botões da Inbox, com o selo \"Pessoal\" e sem lápis nem lixeira.",
           "antes": [],
           "destaques": [
             {
@@ -76,7 +76,7 @@
         {
           "id": "p3",
           "titulo": "Respostas com imagem ou áudio",
-          "texto": "Uma resposta rápida pode levar imagens junto com o texto, ou ser só um áudio. O selo \"Imagens\" mostra quantas imagens ela leva. O selo \"🎧 Áudio\" marca a resposta que é um áudio gravado; no lugar do texto aparece \"Resposta rápida de áudio\".",
+          "texto": "Uma resposta rápida pode levar imagens junto com o texto, ou ser só um áudio. O selo \"Imagens\" mostra quantas imagens ela leva. O selo \"🎧 Áudio\" marca a resposta que é um áudio gravado. No lugar do texto aparece \"Resposta rápida de áudio\".",
           "antes": [],
           "destaques": [
             {
@@ -176,8 +176,8 @@
         {
           "id": "p2",
           "titulo": "Nome e mensagem",
-          "texto": "Em \"Título\" vai o nome curto que aparece no botão da Inbox. Em \"Mensagem\" vai o texto que o cliente vai receber. Escreva {{primeiro_nome}} onde quiser o primeiro nome do cliente, ou {{nome}} para o nome completo: na Inbox, ele é trocado sozinho pelo nome de quem está na conversa.",
-          "dica": "Se a Inbox não souber o nome do cliente (nem no cadastro, nem no WhatsApp), o {{primeiro_nome}} fica escrito do jeito que está, aparece um aviso amarelo e o envio fica travado até você apagar ou trocar essa parte.",
+          "texto": "Em \"Título\" vai o nome curto que aparece no botão da Inbox. Em \"Mensagem\" vai o texto que o cliente vai receber. Escreva {{primeiro_nome}} onde quiser o primeiro nome do cliente, ou {{nome}} para o nome completo. Na Inbox, essa parte é trocada sozinha pelo nome de quem está na conversa.",
+          "dica": "Se a Inbox não souber o nome do cliente (nem no cadastro, nem no WhatsApp), o {{primeiro_nome}} fica escrito do jeito que está. Aparece um aviso amarelo e o envio fica travado até você apagar ou trocar essa parte.",
           "antes": [
             {
               "acao": "click",
@@ -240,7 +240,7 @@
         {
           "id": "p3",
           "titulo": "Atalho e equipe",
-          "texto": "O \"Atalho (opcional)\" é uma palavra curta para achar a resposta rápido: na Inbox, com o campo de mensagem vazio, digite / e o atalho (aqui, /pix) e clique na resposta que aparece na lista. Ligue \"Compartilhar com a equipe\" para todos usarem a resposta; desligado, ela fica só para você. Depois de criada, isso não muda mais. No fim, clique em \"Criar resposta rápida\".",
+          "texto": "O \"Atalho (opcional)\" é uma palavra curta para achar a resposta rápido. Na Inbox, com o campo de mensagem vazio, digite / e o atalho (na foto, /pix) e clique na resposta que aparece na lista. Ligue \"Compartilhar com a equipe\" para todos usarem a resposta. Se deixar desligado, ela fica só para você. Essa escolha não muda depois que a resposta é criada. No fim, clique em \"Criar resposta rápida\".",
           "dica": "Só gerente e administrador veem a opção de compartilhar. O que um atendente cria é sempre pessoal.",
           "antes": [
             {
@@ -319,7 +319,7 @@
         {
           "id": "p5",
           "titulo": "Pronta para usar na Inbox",
-          "texto": "Abra uma conversa na Inbox: a resposta nova já está entre os botões acima do campo de mensagem. Um clique coloca o texto no campo, com o nome do cliente já trocado. Atenção: ele substitui o que você já tinha escrito. Nada é enviado sem você conferir e clicar em enviar. Se os botões estiverem apagados, a conversa ainda não pode receber resposta (por exemplo, falta assumi-la).",
+          "texto": "Abra uma conversa na Inbox. A resposta nova já está entre os botões acima do campo de mensagem. Um clique coloca o texto no campo, com o nome do cliente já trocado. Atenção: o texto novo substitui o que você já tinha escrito. Nada é enviado sem você conferir e clicar em enviar. Se os botões estiverem apagados, a conversa ainda não pode receber resposta, por exemplo porque falta assumi-la.",
           "rota": "/app/inbox",
           "antes": [
             {
@@ -376,7 +376,7 @@
         {
           "id": "p1",
           "titulo": "Imagens junto com o texto",
-          "texto": "Na janela \"Nova resposta rápida\", abaixo do atalho, fica a parte \"Imagens (opcional)\". Clique em \"Adicionar imagem\" e escolha uma foto do seu computador: vale JPG ou PNG, até 5 MB cada, no máximo 5 imagens. Na Inbox, a imagem entra junto com o texto, e você vê a prévia antes de enviar.",
+          "texto": "Na janela \"Nova resposta rápida\", abaixo do atalho, fica a parte \"Imagens (opcional)\". Clique em \"Adicionar imagem\" e escolha uma foto do seu computador. Vale JPG ou PNG, até 5 MB cada, no máximo 5 imagens. Na Inbox, a imagem entra junto com o texto, e você vê a prévia antes de enviar.",
           "rota": "/app/templates",
           "antes": [
             {
@@ -421,8 +421,8 @@
         {
           "id": "p2",
           "titulo": "Uma resposta que é um áudio",
-          "texto": "No alto da janela, em \"Tipo de resposta rápida\", clique em \"Áudio\". O campo de mensagem dá lugar a \"Arquivo de áudio\": escolha o arquivo gravado (OGG, MP3, AAC, AMR ou WAV, até 16 MB). A resposta de áudio não tem texto: na Inbox, o clique abre a janela \"Enviar anexo\" com o arquivo pronto, e você confere e clica em \"Enviar\". Para ouvir antes, use o lápis aqui nesta tela.",
-          "dica": "O áudio do gravador do iPhone e do Mac (M4A) não é aceito e nem aparece na hora de escolher o arquivo. Converta para MP3 antes.",
+          "texto": "No alto da janela, em \"Tipo de resposta rápida\", clique em \"Áudio\". O campo de mensagem dá lugar a \"Arquivo de áudio\". Escolha o arquivo gravado (OGG, MP3, AAC, AMR ou WAV, até 16 MB). A resposta de áudio não tem texto. Na Inbox, o clique abre a janela \"Enviar anexo\" com o arquivo pronto, e você confere e clica em \"Enviar\". Para ouvir antes, use o lápis nesta tela.",
+          "dica": "O áudio do gravador do iPhone e do Mac (M4A) não é aceito: ele nem aparece na hora de escolher o arquivo. Converta para MP3 antes.",
           "antes": [
             {
               "acao": "click",
@@ -457,7 +457,7 @@
         {
           "id": "p3",
           "titulo": "Conferir a imagem salva",
-          "texto": "Para ver o que uma resposta já leva, clique no lápis dela. No \"Cartão da clínica\", a imagem aparece em miniatura abaixo de \"Imagens (opcional)\". O X no canto tira a imagem, mas nada muda até você clicar em \"Salvar\": \"Cancelar\" devolve tudo como estava.",
+          "texto": "Para ver o que uma resposta já leva, clique no lápis dela. No \"Cartão da clínica\", a imagem aparece em miniatura abaixo de \"Imagens (opcional)\". O X no canto tira a imagem, mas nada muda até você clicar em \"Salvar\". \"Cancelar\" devolve tudo como estava.",
           "rota": "/app/templates",
           "antes": [
             {
@@ -511,7 +511,7 @@
         {
           "id": "p4",
           "titulo": "Ouvir o áudio salvo",
-          "texto": "Numa resposta de áudio, o lápis abre a janela com o tocador do áudio atual: dê o play para ouvir antes de usar (o tempo do áudio aparece depois do play). Para trocar o áudio, escolha outro arquivo em \"Arquivo de áudio\" e clique em \"Salvar\".",
+          "texto": "Numa resposta de áudio, o lápis abre a janela com o tocador do áudio atual. Dê o play para ouvir antes de usar; o tempo do áudio aparece depois do play. Para trocar o áudio, escolha outro arquivo em \"Arquivo de áudio\" e clique em \"Salvar\".",
           "rota": "/app/templates",
           "antes": [
             {
@@ -575,7 +575,7 @@
         {
           "id": "p1",
           "titulo": "Corrigir um texto",
-          "texto": "Clique no lápis da resposta que quer mudar. A janela \"Editar resposta rápida\" abre com tudo preenchido: altere o que precisar e clique em \"Salvar\". O botão \"Compartilhar com a equipe\" fica esmaecido, sem como clicar, porque não dá para mudar isso depois de criada.",
+          "texto": "Clique no lápis da resposta que quer mudar. A janela \"Editar resposta rápida\" abre com tudo preenchido. Altere o que precisar e clique em \"Salvar\". O botão \"Compartilhar com a equipe\" fica esmaecido e não aceita clique, porque isso não pode mudar depois que a resposta é criada.",
           "dica": "Para transformar uma resposta pessoal em compartilhada, crie uma nova com a opção ligada e exclua a antiga.",
           "rota": "/app/templates",
           "antes": [
@@ -633,8 +633,8 @@
         {
           "id": "p2",
           "titulo": "Mudar a ordem",
-          "texto": "As respostas mais usadas ficam melhor no começo, porque a Inbox mostra os botões na ordem desta lista. Clique nos pontinhos à esquerda de uma resposta e arraste para cima ou para baixo. Aqui, a \"Confirmação de consulta\" foi levada para o primeiro lugar.",
-          "dica": "Também dá pelo teclado: com o foco nos pontinhos, aperte a barra de espaço, use as setas ↑ e ↓ e aperte espaço de novo para soltar.",
+          "texto": "Deixe as respostas mais usadas no começo, porque a Inbox mostra os botões na ordem desta lista. Clique nos pontinhos à esquerda de uma resposta e arraste para cima ou para baixo. Na foto, a \"Confirmação de consulta\" foi levada para o primeiro lugar.",
+          "dica": "Também dá para fazer pelo teclado. Com o foco nos pontinhos, aperte a barra de espaço, use as setas ↑ e ↓ e aperte espaço de novo para soltar.",
           "antes": [
             {
               "acao": "click",
@@ -692,7 +692,7 @@
         {
           "id": "p3",
           "titulo": "Excluir uma resposta",
-          "texto": "Clique na lixeira da resposta que não serve mais. Antes de apagar, aparece a pergunta \"Excluir esta resposta rápida?\": clique em \"Excluir\" para confirmar ou em \"Cancelar\" para desistir. Não dá para desfazer, e as imagens ou o áudio dela são apagados junto.",
+          "texto": "Clique na lixeira da resposta que não serve mais. Antes de apagar, aparece a pergunta \"Excluir esta resposta rápida?\": clique em \"Excluir\" para confirmar ou em \"Cancelar\" para desistir. Não dá para desfazer. As imagens ou o áudio dela também são apagados.",
           "rota": "/app/templates",
           "antes": [
             {
@@ -783,7 +783,7 @@
         {
           "id": "p1",
           "titulo": "A lista vista pela Ana",
-          "texto": "A Ana é atendente. Ela vê e usa todas as respostas compartilhadas, mas não tem lápis, lixeira nem pontinhos nelas: só gerente e administrador mudam o que é da equipe. A \"Confirmação de consulta\", que é pessoal da Helena, não aparece para ela.",
+          "texto": "A Ana é atendente. Ela vê e usa todas as respostas compartilhadas, mas não tem lápis, lixeira nem pontinhos nelas. Só gerente e administrador mudam o que é da equipe. A \"Confirmação de consulta\", que é pessoal da Helena, não aparece para ela.",
           "rota": "/app/templates",
           "antes": [],
           "destaques": [
@@ -804,7 +804,7 @@
         {
           "id": "p2",
           "titulo": "O que a Ana cria é só dela",
-          "texto": "Na janela \"Nova resposta rápida\" da Ana não existe a opção \"Compartilhar com a equipe\": tudo o que um atendente cria fica pessoal. Para uma resposta valer para todos, peça a um gerente ou administrador que a crie.",
+          "texto": "Na janela \"Nova resposta rápida\" da Ana não existe a opção \"Compartilhar com a equipe\". Tudo o que um atendente cria fica pessoal. Para uma resposta valer para todos, peça a um gerente ou administrador que a crie.",
           "antes": [
             {
               "acao": "click",
@@ -855,7 +855,7 @@
         {
           "id": "p3",
           "titulo": "A resposta pessoal da Ana",
-          "texto": "Depois de criada, a resposta aparece no alto da lista com o selo \"Pessoal\". Nela a Ana tem o lápis, a lixeira e os pontinhos: é dela, ela pode mudar. Os outros atendentes e o gerente não veem esta resposta.",
+          "texto": "Depois de criada, a resposta aparece no alto da lista com o selo \"Pessoal\". Nela a Ana tem o lápis, a lixeira e os pontinhos, porque a resposta é dela e ela pode mudar. Os outros atendentes e o gerente não veem esta resposta.",
           "antes": [
             {
               "acao": "click",

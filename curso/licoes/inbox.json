@@ -22,8 +22,8 @@
         {
           "id": "p1",
           "titulo": "As três partes da tela",
-          "texto": "A Inbox é onde você lê e responde os clientes. À esquerda fica a lista de conversas, no meio aparece a conversa que você abrir e à direita fica a ficha do cliente. Quando você entra pelo menu, ela abre na aba Fila, que mostra quem está esperando por uma pessoa. Ao lado ficam as abas Automático (conversas que o atendimento automático está cuidando) e Minhas (as que estão com você). Na linha de baixo, as abas Todas, Fechadas e Arquivadas mostram todas as conversas, as já encerradas e as guardadas fora da fila.",
-          "dica": "No meio da tela aparece \"Ou navegue com J e K\": as teclas \"j\" e \"k\" passam para a próxima conversa e para a anterior. Você aprende esses atalhos na última lição.",
+          "texto": "A Inbox é onde você lê e responde os clientes. À esquerda fica a lista de conversas. No meio aparece a conversa que você abrir. À direita fica a ficha do cliente. Ao entrar pelo menu, a lista abre na aba Fila, que mostra quem está esperando por uma pessoa. Ao lado ficam as abas Automático (conversas que o atendimento automático está cuidando) e Minhas (as que estão com você). Na linha de baixo, as abas Todas, Fechadas e Arquivadas mostram, nesta ordem, todas as conversas, as já encerradas e as guardadas fora da fila.",
+          "dica": "No meio da tela aparece \"Ou navegue com J e K\". As teclas \"j\" e \"k\" passam para a próxima conversa e para a anterior. Você aprende esses atalhos na última lição.",
           "rota": "/app/inbox",
           "antes": [],
           "destaques": [
@@ -60,7 +60,7 @@
         {
           "id": "p2",
           "titulo": "Começar uma conversa você mesmo",
-          "texto": "O botão \"Iniciar conversa\", no alto da lista, serve para você mandar a primeira mensagem para um cliente, sem esperar que ele escreva. A conversa abre no seu nome e o atendimento automático não responde nela. A exceção é quando outro atendente já está cuidando daquele número: aí a conversa continua com ele. Para seguir, clique na conversa da Mariana Souza, a primeira da lista.",
+          "texto": "Use o botão \"Iniciar conversa\", no alto da lista, para mandar a primeira mensagem a um cliente, sem esperar que ele escreva. A conversa abre no seu nome, e o atendimento automático não responde nela. Só há uma exceção: se outro atendente já está cuidando daquele número, a conversa continua com ele. Para seguir, clique na conversa da Mariana Souza, a primeira da lista.",
           "dica": "Só quem é atendente ou tem cargo acima vê este botão.",
           "antes": [],
           "destaques": [
@@ -81,7 +81,7 @@
         {
           "id": "p3",
           "titulo": "Abrindo uma conversa",
-          "texto": "Clique numa linha da lista para abrir a conversa no meio da tela. A linha aberta fica com o fundo destacado e uma barra colorida à esquerda. Um segundo e meio depois de abrir, o contador de mensagens não lidas some sozinho. Nesta conversa aparece o cartão \"Por que a IA passou para você\": é o resumo que o atendimento automático deixa quando passa o cliente para uma pessoa. O botão \"Assumir e responder\" do cartão passa a conversa para você; isso fica para a lição sobre assumir um cliente.",
+          "texto": "Clique numa linha da lista para abrir a conversa no meio da tela. A linha aberta fica com o fundo destacado e uma barra colorida à esquerda. Um segundo e meio depois de abrir, o contador de mensagens não lidas some sozinho. Nesta conversa aparece o cartão \"Por que a IA passou para você\". É o resumo que o atendimento automático deixa quando passa o cliente para uma pessoa. O botão \"Assumir e responder\", no cartão, passa a conversa para você. Isso fica para a lição sobre assumir um cliente.",
           "antes": [
             {
               "acao": "click",
@@ -120,7 +120,7 @@
         {
           "id": "p4",
           "titulo": "O topo da conversa",
-          "texto": "No topo aparecem o nome do cliente, um selo que diz se o atendimento está aberto ou já terminou e quem está cuidando dele agora: uma pessoa, o atendimento automático ou ninguém (\"Sem responsável\"). Ao lado do nome aparece também o número por onde o cliente chegou (aqui, \"Recepção Bem Viver\"). Os botões logo abaixo, como Assumir e Fechar, valem para esta conversa. No canto direito, abaixo dos botões, o aviso \"Automático pausado\" diz que o atendimento automático não responde nesta conversa. \"Reservar serviço\" marca um horário na agenda e \"Marcar como pessoal\" tira o contato da Inbox; os outros botões aparecem nas próximas lições.",
+          "texto": "No topo aparecem o nome do cliente e um selo que diz se o atendimento está aberto ou já terminou. Aparece também quem está cuidando dele agora: uma pessoa, o atendimento automático ou ninguém (\"Sem responsável\"). Ao lado do nome fica o número por onde o cliente chegou (aqui, \"Recepção Bem Viver\"). Os botões logo abaixo, como Assumir e Fechar, valem para esta conversa. No canto direito, abaixo dos botões, o aviso \"Automático pausado\" diz que o atendimento automático não responde nesta conversa. O botão \"Reservar serviço\" marca um horário na agenda. O botão \"Marcar como pessoal\" tira o contato da Inbox. Os outros botões aparecem nas próximas lições.",
           "antes": [],
           "destaques": [
             {
@@ -176,7 +176,7 @@
         {
           "id": "p5",
           "titulo": "A ficha do cliente",
-          "texto": "A coluna da direita é a ficha do cliente. No alto ficam o telefone e as etiquetas do cliente. Mais abaixo vêm as \"Tags da conversa\", que valem só para este atendimento, e as \"Demandas abertas\" (o que ele pediu e ainda não foi resolvido). Rolando a ficha para baixo aparecem os \"Leads recentes\" (os negócios dele no funil) e os \"Pedidos recentes\". Tudo sem você precisar sair da conversa. Os outros blocos, como \"Sobre a empresa\" e \"Tarefas desta demanda\", ficam para a lição sobre a ficha. Em telas largas de computador ela fica à vista (dá para escondê-la no botão \"Recolher\"); no celular, ela abre pelo botão \"Ficha\".",
+          "texto": "A coluna da direita é a ficha do cliente. No alto ficam o telefone e as etiquetas do cliente. Mais abaixo vêm as \"Tags da conversa\", que valem só para este atendimento, e as \"Demandas abertas\" (o que ele pediu e ainda não foi resolvido). Rolando a ficha, aparecem os \"Leads recentes\" (os negócios dele no funil) e os \"Pedidos recentes\". Assim você vê tudo sem sair da conversa. Os outros blocos, como \"Sobre a empresa\" e \"Tarefas desta demanda\", ficam para a lição sobre a ficha. Em telas largas de computador, a ficha fica à vista, e dá para escondê-la no botão \"Recolher\". No celular, ela abre pelo botão \"Ficha\".",
           "antes": [],
           "destaques": [
             {
@@ -198,7 +198,7 @@
         {
           "id": "p6",
           "titulo": "Ajustar a largura da lista",
-          "texto": "Para deixar a lista de conversas mais larga ou mais estreita, arraste a divisória entre a lista e a conversa. Dar dois cliques nela volta as colunas à largura padrão, e o navegador guarda a largura que você escolheu.",
+          "texto": "Para deixar a lista mais larga ou mais estreita, arraste a divisória entre a lista e a conversa. Com dois cliques nela, as colunas voltam à largura padrão. O navegador guarda a largura que você escolheu.",
           "dica": "Com o foco na divisória, as setas ← e → do teclado também mudam a largura.",
           "antes": [
             {
@@ -247,7 +247,7 @@
         {
           "id": "p1",
           "titulo": "As seis abas",
-          "texto": "As abas separam as conversas: Automático (o robô está atendendo), Fila (esperando uma pessoa), Minhas (as suas que ainda estão abertas), Todas (todas as conversas, inclusive as fechadas e as arquivadas), Fechadas e Arquivadas. O número cinza ao lado de cada aba mostra quantas conversas há nela. Quando o número é zero, ele não aparece.",
+          "texto": "As abas separam as conversas: Automático (o robô está atendendo), Fila (esperando uma pessoa), Minhas (as suas que ainda estão abertas), Todas (todas as conversas, inclusive as fechadas e as arquivadas), Fechadas e Arquivadas. O número cinza ao lado de cada aba mostra quantas conversas há nela. Se for zero, ele não aparece.",
           "dica": "O número das abas se atualiza sozinho a cada 30 segundos.",
           "rota": "/app/inbox",
           "antes": [],
@@ -276,7 +276,7 @@
         {
           "id": "p2",
           "titulo": "Quem espera há mais tempo",
-          "texto": "Na Fila, quem espera há mais tempo fica em cima. Cada linha mostra a posição (1º, 2º…) e há quanto tempo o cliente aguarda resposta. A bolinha âmbar no canto de baixo, à esquerda, do círculo com as iniciais quer dizer \"Aguardando atendente\". O número em destaque à direita é a quantidade de mensagens que ainda não foram lidas.",
+          "texto": "Na Fila, quem espera há mais tempo fica em cima. Cada linha mostra a posição (1º, 2º…) e há quanto tempo o cliente aguarda resposta. A bolinha âmbar, no canto inferior esquerdo do círculo com as iniciais, quer dizer \"Aguardando atendente\". O número em destaque, à direita, mostra quantas mensagens ainda não foram lidas.",
           "dica": "Ao abrir a conversa, o contador de não lidas zera.",
           "antes": [],
           "destaques": [
@@ -322,7 +322,7 @@
         {
           "id": "p3",
           "titulo": "O que o robô está atendendo",
-          "texto": "A aba Automático mostra as conversas em que o atendimento automático está respondendo sozinho. Essas conversas aparecem com a bolinha roxa, que quer dizer \"Automático atendendo\". Nas outras abas, como a Todas, um ícone de robô antes da prévia da mensagem indica a mesma coisa.",
+          "texto": "A aba Automático mostra as conversas em que o atendimento automático está respondendo sozinho. Essas conversas têm uma bolinha roxa, que quer dizer \"Automático atendendo\". Nas outras abas, como a Todas, um ícone de robô antes da prévia da mensagem mostra o mesmo.",
           "antes": [
             {
               "acao": "click",
@@ -351,7 +351,7 @@
         {
           "id": "p4",
           "titulo": "As suas conversas",
-          "texto": "A aba Minhas lista as conversas que estão no seu nome e ainda estão abertas. A bolinha azul quer dizer \"Em atendimento\": uma pessoa da equipe está cuidando.",
+          "texto": "A aba Minhas lista as conversas que estão no seu nome e continuam abertas. A bolinha azul quer dizer \"Em atendimento\", ou seja, uma pessoa da equipe está cuidando.",
           "antes": [
             {
               "acao": "click",
@@ -423,7 +423,7 @@
         {
           "id": "p6",
           "titulo": "Selos de cuidado",
-          "texto": "Mais abaixo na mesma lista aparecem outros dois selos. \"Exemplo para a IA\" marca uma conversa usada para ensinar o robô a responder. O ícone de brilho à direita de cada linha liga ou desliga esse selo: cheio e verde, está ligado; só o contorno, desligado. \"Bloqueado\" marca um cliente que pediu para não receber mais mensagens.",
+          "texto": "Mais abaixo na mesma lista aparecem outros dois selos. O selo \"Exemplo para a IA\" marca uma conversa usada para ensinar o robô a responder. O ícone de brilho, à direita de cada linha, liga ou desliga esse selo. Cheio e verde, está ligado. Só o contorno, está desligado. O selo \"Bloqueado\" marca um cliente que pediu para não receber mais mensagens.",
           "antes": [
             {
               "acao": "hover",
@@ -472,8 +472,8 @@
         {
           "id": "p7",
           "titulo": "Atendimentos encerrados",
-          "texto": "A aba Fechadas guarda os atendimentos que já foram encerrados. A aba Arquivadas guarda o que você tirou da frente sem apagar. Uma conversa fechada ou arquivada sem responsável fica com a bolinha cinza clara. Ao passar o mouse sobre a bolinha de qualquer conversa fechada, aparece a palavra \"Encerrada\".",
-          "dica": "Uma conversa fechada que tem responsável continua com a bolinha azul, mas o texto dela diz \"Encerrada\".",
+          "texto": "A aba Fechadas guarda os atendimentos que já foram encerrados. A aba Arquivadas guarda o que você tirou da frente sem apagar. Se uma conversa fechada ou arquivada não tem responsável, ela fica com a bolinha cinza clara. Passe o mouse sobre a bolinha de qualquer conversa fechada para ver a palavra \"Encerrada\".",
+          "dica": "Se a conversa fechada tem responsável, a bolinha continua azul, mas o texto dela diz \"Encerrada\".",
           "antes": [
             {
               "acao": "click",
@@ -547,7 +547,7 @@
         {
           "id": "p1",
           "titulo": "Buscar pelo nome",
-          "texto": "Digite o nome ou o telefone do cliente na busca. Aqui digitamos \"Mari\" e a lista já mostra a Mariana. A lista filtra logo depois que você para de digitar. A busca também encontra palavras da última mensagem da conversa, mas não das mensagens mais antigas.",
+          "texto": "Digite o nome ou o telefone do cliente na busca. A lista filtra logo depois que você para de digitar. A busca também encontra palavras da última mensagem da conversa, mas não das mensagens mais antigas. Na foto, digitamos \"Mari\" e a lista já mostra a Mariana.",
           "dica": "Digite pelo menos 2 letras. Para buscar pelo telefone, digite pelo menos 4 números. A busca não muda o número ao lado de \"Todas\": ele continua contando a aba toda.",
           "rota": "/app/inbox?filter=all",
           "antes": [
@@ -585,7 +585,7 @@
         {
           "id": "p2",
           "titulo": "Só o que ainda não foi lido",
-          "texto": "O botão \"Não lidos\" liga e desliga um filtro. Quando está ligado, fica colorido, e a lista mostra só as conversas com mensagens que ninguém leu ainda.",
+          "texto": "O botão \"Não lidos\" liga e desliga um filtro. Quando ele está ligado, fica colorido e a lista mostra só as conversas com mensagens que ninguém leu ainda.",
           "antes": [
             {
               "acao": "fill",
@@ -625,13 +625,13 @@
             "nome": "Grupos",
             "exato": true
           },
-          "dica": "Com \"Não lidos\" ligado, o número ao lado de cada aba também passa a contar só as conversas não lidas. Aqui, \"Todas\" mostra 4 em vez de 12. Como os números mudam de tamanho, as abas podem trocar de linha."
+          "dica": "Com \"Não lidos\" ligado, o número ao lado de cada aba também passa a contar só as conversas não lidas. Na foto, \"Todas\" mostra 4 em vez de 12. Como os números mudam de tamanho, as abas podem trocar de linha."
         },
         {
           "id": "p3",
           "titulo": "Só os grupos",
-          "texto": "O botão \"Grupos\" mostra só as conversas de grupos de WhatsApp e esconde, por enquanto, as conversas com um cliente só.",
-          "dica": "O filtro \"Grupos\" não muda o número ao lado de \"Todas\" (continua 12): ele só esconde as outras conversas da lista. Um grupo só entra na Inbox depois de ligado em Conexões › Grupos, a partir da primeira mensagem que chegar depois disso.",
+          "texto": "O botão \"Grupos\" mostra só as conversas de grupos de WhatsApp. Por enquanto, ele esconde as conversas com um cliente só.",
+          "dica": "O filtro \"Grupos\" não muda o número ao lado de \"Todas\" (continua 12). Ele só esconde as outras conversas da lista. Um grupo só entra na Inbox depois de ligado em Conexões › Grupos. Ele aparece a partir da primeira mensagem que chegar depois disso.",
           "antes": [
             {
               "acao": "click",
@@ -681,7 +681,7 @@
         {
           "id": "p4",
           "titulo": "Filtrar por etiqueta",
-          "texto": "Clique no botão \"Todas as tags\", logo abaixo da busca, e marque uma ou mais etiquetas, como \"retorno\" ou \"convenio\", para ver só os clientes marcados com elas. O menu fica aberto enquanto você marca. Se a lista for longa, use o campo \"Buscar etiqueta\" no topo do menu.",
+          "texto": "Para ver só os clientes com certas etiquetas, clique no botão \"Todas as tags\", logo abaixo da busca. Depois marque uma ou mais etiquetas, como \"retorno\" ou \"convenio\". O menu fica aberto enquanto você marca. Se a lista for longa, use o campo \"Buscar etiqueta\" no topo do menu.",
           "dica": "Com duas ou mais etiquetas marcadas, aparecem as opções \"Todas (E)\" (a conversa precisa ter todas) e \"Qualquer uma (OU)\" (basta ter uma).",
           "antes": [
             {
@@ -729,7 +729,7 @@
         {
           "id": "p5",
           "titulo": "A lista filtrada",
-          "texto": "Agora a lista mostra só os clientes com a etiqueta escolhida, e o botão passa a mostrar essa etiqueta em destaque. Na própria linha do cliente, as etiquetas aparecem em selos. Quando são mais de duas, as outras viram um \"+1\", \"+2\"… Repare que o número ao lado de \"Todas\" também caiu, para 1: a etiqueta muda a contagem das abas, assim como \"Não lidos\".",
+          "texto": "Agora a lista mostra só os clientes com a etiqueta escolhida, e o botão mostra essa etiqueta em destaque. Na linha do cliente, as etiquetas aparecem em selos. Se são mais de duas, as outras viram um \"+1\", \"+2\"… O número ao lado de \"Todas\" também caiu, para 1. A etiqueta muda a contagem das abas, assim como \"Não lidos\".",
           "antes": [
             {
               "acao": "click",
@@ -770,7 +770,7 @@
         {
           "id": "p6",
           "titulo": "Quando a lista fica vazia",
-          "texto": "Aqui buscamos \"Joa\" com a etiqueta \"retorno\" ainda ligada. Nenhuma conversa combina com os dois ao mesmo tempo, então aparece \"Nenhuma conversa com esses filtros\" e, logo abaixo, os filtros que estão ligados (\"Ativos: Busca · Etiqueta\"). A caixa não está vazia: são os filtros que estão escondendo as conversas. O \"1\" ao lado de \"Todas\" é a Fernanda: ela tem a etiqueta, mas não combina com a busca \"Joa\". A busca não muda esse número.",
+          "texto": "Nenhuma conversa combina ao mesmo tempo com a busca \"Joa\" e com a etiqueta \"retorno\", que ainda está ligada. Por isso aparece \"Nenhuma conversa com esses filtros\" e, logo abaixo, os filtros que estão ligados (\"Ativos: Busca · Etiqueta\"). A Inbox não está vazia: são os filtros que estão escondendo as conversas. O \"1\" ao lado de \"Todas\" é a Fernanda: ela tem a etiqueta, mas não combina com a busca \"Joa\". A busca não muda esse número.",
           "antes": [
             {
               "acao": "fill",
@@ -817,7 +817,7 @@
         {
           "id": "p7",
           "titulo": "Limpar tudo",
-          "texto": "\"Limpar filtros\" desliga de uma vez a busca, Não lidos, Grupos, as etiquetas e os demais filtros. O botão de etiqueta volta a dizer \"Todas as tags\", a lista volta inteira e você continua na mesma aba.",
+          "texto": "O botão \"Limpar filtros\" desliga de uma vez todos os filtros, como a busca, \"Não lidos\", \"Grupos\" e as etiquetas. O botão de etiqueta volta a dizer \"Todas as tags\", a lista volta inteira e você continua na mesma aba.",
           "dica": "Os filtros se perdem quando você recarrega a página. Só a aba escolhida fica guardada.",
           "antes": [
             {
@@ -887,7 +887,7 @@
         {
           "id": "p1",
           "titulo": "Cliente à esquerda, empresa à direita",
-          "texto": "As mensagens do cliente ficam à esquerda, em cinza. As mensagens da empresa ficam à direita, na cor da marca. Pílulas como \"Hoje\" e \"Ontem\" separam os dias.",
+          "texto": "As mensagens do cliente ficam à esquerda, em cinza. As mensagens da empresa ficam à direita, na cor da marca. Marcadores como \"Hoje\" e \"Ontem\" separam os dias.",
           "rota": "/app/inbox?id=be100000-0000-4000-8000-000000000005",
           "antes": [
             {
@@ -932,7 +932,7 @@
         {
           "id": "p2",
           "titulo": "Quem mandou cada mensagem",
-          "texto": "Toda mensagem que sai da empresa mostra, em cima, quem a mandou: \"IA\", com um robozinho, para o atendimento automático; \"Você\" para o que você escreveu; \"Atendente\" para outra pessoa da equipe; e \"Celular\" quando alguém respondeu pelo WhatsApp do telefone. Lembretes e follow-ups automáticos aparecem como \"Automação\". Assim dá para saber o que o robô respondeu e o que foi escrito por uma pessoa.",
+          "texto": "Toda mensagem que sai da empresa mostra, em cima, quem a mandou. \"IA\", com um robozinho, é o atendimento automático. \"Você\" é o que você escreveu. \"Atendente\" é outra pessoa da equipe. \"Celular\" aparece quando alguém respondeu pelo WhatsApp do telefone. Lembretes e follow-ups automáticos aparecem como \"Automação\". Assim dá para saber o que o robô respondeu e o que uma pessoa escreveu.",
           "antes": [],
           "destaques": [
             {
@@ -954,7 +954,7 @@
         {
           "id": "p3",
           "titulo": "Enviada, entregue e lida",
-          "texto": "Nas mensagens enviadas pela empresa, os tiques ao lado da hora mostram o caminho da mensagem: um tique quer dizer enviada, dois tiques cinza quer dizer entregue, e dois tiques azuis quer dizer que o cliente leu. Repare na cor: é ela que separa entregue de lida.",
+          "texto": "Nas mensagens enviadas pela empresa, os tiques ao lado da hora mostram o caminho da mensagem. Um tique quer dizer enviada. Dois tiques cinza querem dizer entregue. Dois tiques azuis querem dizer que o cliente leu. Repare na cor: é ela que separa entregue de lida.",
           "antes": [],
           "destaques": [
             {
@@ -984,7 +984,7 @@
         {
           "id": "p4",
           "titulo": "Mensagem que não saiu",
-          "texto": "Quando uma mensagem não sai, ela ganha uma borda vermelha e o selo \"Falhou\", ao lado da hora. Logo abaixo vem o motivo. Quando o sistema não sabe o motivo, aparece um aviso geral, como na foto. Nas mensagens escritas pela equipe costuma aparecer o botão \"Tentar de novo\", que manda a mesma mensagem outra vez. Quando há chance de ela já ter chegado ao cliente, o sistema pede confirmação antes. Se mandar de novo não resolveria, como num número sem WhatsApp, o botão não aparece. As respostas da IA não ganham esse botão: o próprio sistema tenta de novo.",
+          "texto": "Quando uma mensagem não sai, ela ganha uma borda vermelha e o selo \"Falhou\", ao lado da hora. Logo abaixo vem o motivo. Se o sistema não sabe qual foi, aparece um aviso geral, como na foto. Nas mensagens escritas pela equipe costuma aparecer o botão \"Tentar de novo\", que manda a mesma mensagem outra vez. Se ela pode já ter chegado ao cliente, o sistema pede confirmação antes. Quando mandar de novo não resolveria, como num número sem WhatsApp, o botão não aparece. As respostas da IA não ganham esse botão, porque o próprio sistema tenta de novo.",
           "antes": [],
           "destaques": [
             {
@@ -1022,7 +1022,7 @@
         {
           "id": "p5",
           "titulo": "O menu de cada mensagem",
-          "texto": "Passe o mouse sobre uma mensagem e clique na setinha \"Opções da mensagem\". Esse menu reúne as ações daquela mensagem, como responder a ela ou encaminhá-la para outra conversa. Nas mensagens do cliente, gestores e administradores também veem \"Ocultar no CRM\". Ele esconde a mensagem só aqui dentro: ela continua no WhatsApp do cliente.",
+          "texto": "Passe o mouse sobre uma mensagem e clique na setinha \"Opções da mensagem\". Esse menu reúne as ações daquela mensagem, como responder a ela ou encaminhá-la para outra conversa. Nas mensagens do cliente, gestores e administradores também veem \"Ocultar no CRM\", que esconde a mensagem só aqui dentro. Ela continua no WhatsApp do cliente.",
           "dica": "No computador, a setinha só aparece quando o mouse passa sobre a mensagem. No celular, ela fica sempre à vista.",
           "antes": [
             {
@@ -1081,7 +1081,7 @@
         {
           "id": "p6",
           "titulo": "Responder em cima de uma mensagem",
-          "texto": "Com \"Responder a esta mensagem\", o trecho escolhido aparece acima do campo de escrever. Quando você envia uma resposta escrita, ela sai citando essa mensagem, como no WhatsApp. O X desfaz a escolha.",
+          "texto": "Ao clicar em \"Responder a esta mensagem\", o trecho escolhido aparece acima do campo de escrever. Se você enviar uma resposta escrita, ela sai citando essa mensagem, como no WhatsApp. O X desfaz a escolha.",
           "dica": "Arquivos enviados saem sem a citação.",
           "antes": [
             {
@@ -1129,8 +1129,8 @@
         {
           "id": "p7",
           "titulo": "Buscar dentro da conversa",
-          "texto": "A lupa no topo abre uma busca dentro da conversa. As mensagens que têm a palavra ganham um contorno, e um contador mostra quantas foram encontradas. A busca só olha as mensagens que já estão carregadas na tela, e as notas internas ficam de fora.",
-          "dica": "A tecla Esc fecha a busca. Em conversas longas, aparece no topo do histórico o botão \"Carregar mais antigas\": clique nele antes, para a busca alcançar mensagens mais antigas.",
+          "texto": "A lupa no topo abre uma busca dentro da conversa. As mensagens que têm a palavra ganham um contorno, e um contador mostra quantas foram encontradas. A busca só olha as mensagens que já estão carregadas na tela. As notas internas ficam de fora.",
+          "dica": "A tecla Esc fecha a busca. Em conversas longas, aparece no topo do histórico o botão \"Carregar mais antigas\". Clique nele antes de buscar, para a busca alcançar mensagens mais antigas.",
           "antes": [
             {
               "acao": "click",
@@ -1212,7 +1212,7 @@
         {
           "id": "p1",
           "titulo": "Por que a IA passou para você",
-          "texto": "Quando o atendimento automático entrega um cliente para a equipe, aparece este cartão dentro da conversa. Ele mostra o motivo da troca, o que o cliente quer, o que a IA já tentou, as últimas palavras dele e se ele já foi avisado de que uma pessoa vai assumir.",
+          "texto": "Este cartão aparece dentro da conversa quando o atendimento automático entrega um cliente para a equipe. Ele mostra o motivo da troca, o que o cliente quer e o que a IA já tentou. Mostra também as últimas palavras dele e se ele já foi avisado de que uma pessoa vai assumir.",
           "rota": "/app/inbox",
           "antes": [
             {
@@ -1258,8 +1258,8 @@
         {
           "id": "p2",
           "titulo": "Agora a conversa é sua",
-          "texto": "Ao clicar em \"Assumir e responder\", a conversa passa para o seu nome. Ela sai da aba Fila e agora fica na aba Minhas. Por isso ela some da lista da esquerda, que continua mostrando a Fila: para achá-la de novo, clique em Minhas. O topo da conversa mostra você como responsável. O atendimento automático, que já tinha parado quando passou o cliente para a equipe, continua parado: o selo no topo diz \"Automático pausado — alguém assumiu\".",
-          "dica": "Antes de assumir, o botão \"Assumir\" no topo da conversa faz a mesma coisa. Depois que a conversa é sua, ali aparece \"Liberar\", para soltá-la.",
+          "texto": "Ao clicar em \"Assumir e responder\", a conversa passa para o seu nome. Ela sai da aba Fila e passa para a aba Minhas. Por isso some da lista da esquerda, que continua mostrando a Fila. Para achá-la de novo, clique em Minhas. O topo da conversa mostra você como responsável. O atendimento automático já tinha parado ao passar o cliente para a equipe e continua parado. O selo no topo diz \"Automático pausado — alguém assumiu\".",
+          "dica": "Antes de assumir, você também pode usar o botão \"Assumir\" no topo da conversa: ele faz a mesma coisa. Depois que a conversa é sua, ali aparece \"Liberar\", para soltá-la.",
           "antes": [
             {
               "acao": "click",
@@ -1311,7 +1311,7 @@
         {
           "id": "p3",
           "titulo": "Escrever a resposta",
-          "texto": "Escreva no campo de baixo. Quando está vazio, ele mostra \"Escreva uma mensagem…\". O Enter envia, e Shift + Enter pula uma linha sem enviar. O botão de avião, à direita, também envia. A estrelinha, entre o rosto e o campo, pede ao agente de IA uma sugestão de resposta. A sugestão aparece num quadro acima do campo, com \"Aprovar e enviar\" e \"Rejeitar\": nada sai sem o seu clique.",
+          "texto": "Escreva no campo de baixo. Quando está vazio, ele mostra \"Escreva uma mensagem…\". A tecla Enter envia, e Shift + Enter pula uma linha sem enviar. O botão de avião, à direita, também envia. A estrelinha, entre o rosto e o campo, pede ao agente de IA uma sugestão de resposta. A sugestão aparece num quadro acima do campo, com \"Aprovar e enviar\" e \"Rejeitar\". Nada sai sem o seu clique.",
           "dica": "Com o campo vazio, no lugar do avião aparece o microfone, que serve para gravar áudio.",
           "antes": [
             {
@@ -1357,7 +1357,7 @@
         {
           "id": "p4",
           "titulo": "Respostas prontas num clique",
-          "texto": "Os botões logo acima do campo são as respostas rápidas da equipe. Um clique coloca o texto pronto no campo, no lugar do que estiver escrito, já com o primeiro nome do cliente, para você conferir antes de enviar. Nada é enviado sozinho.",
+          "texto": "Os botões logo acima do campo são as respostas rápidas da equipe. Um clique coloca o texto pronto no campo, já com o primeiro nome do cliente. Ele entra no lugar do que estiver escrito. Você confere antes de enviar, e nada é enviado sozinho.",
           "dica": "As respostas rápidas são criadas no item \"Respostas rápidas\" do menu lateral. A aba \"Nota interna\", ao lado de \"Responder\", serve para escrever recados que só a equipe vê.",
           "antes": [
             {
@@ -1432,8 +1432,8 @@
         {
           "id": "p5",
           "titulo": "Ou chame pelo atalho /",
-          "texto": "Digitar uma barra (/) no começo do campo abre a lista das respostas prontas. Continue digitando, sem espaço, parte do nome (por exemplo /exame) ou o atalho cadastrado em Respostas rápidas (por exemplo /jejum). A lista filtra: na foto, /exame deixou só \"Preparo para exame de sangue\". Clique na que quiser.",
-          "dica": "O {{primeiro_nome}} que aparece na lista é trocado pelo primeiro nome do cliente quando você escolhe a resposta. Neste menu o Enter não escolhe: é preciso clicar. A tecla Esc fecha a lista.",
+          "texto": "Digite uma barra (/) no começo do campo para abrir a lista das respostas prontas. Continue digitando, sem espaço, parte do nome (por exemplo /exame) ou o atalho cadastrado em Respostas rápidas (por exemplo /jejum). A lista vai filtrando. Na foto, /exame deixou só \"Preparo para exame de sangue\". Clique na que quiser.",
+          "dica": "O {{primeiro_nome}} que aparece na lista vira o primeiro nome do cliente quando você escolhe a resposta. Neste menu o Enter não escolhe: é preciso clicar. A tecla Esc fecha a lista.",
           "antes": [
             {
               "acao": "fill",
@@ -1470,7 +1470,7 @@
         {
           "id": "p6",
           "titulo": "Anexar foto, documento ou contato",
-          "texto": "O botão \"+\" abre as opções de anexo. Em \"Fotos e vídeos\" ou \"Documento\" você escolhe um arquivo, e a janela \"Enviar anexo\" mostra como ele vai ficar e deixa escrever uma legenda antes de enviar. \"Contato\" abre a janela \"Enviar contato\", onde você escolhe alguém da sua base ou digita nome e telefone.",
+          "texto": "O botão \"+\" abre as opções de anexo. Em \"Fotos e vídeos\" ou \"Documento\", você escolhe um arquivo. Aí a janela \"Enviar anexo\" mostra como ele vai ficar e deixa você escrever uma legenda antes de enviar. A opção \"Contato\" abre a janela \"Enviar contato\", onde você escolhe alguém da sua base ou digita nome e telefone.",
           "dica": "Você também pode colar uma imagem copiada (Ctrl+V, ou Cmd+V no Mac) direto no campo de mensagem.",
           "antes": [
             {
@@ -1551,7 +1551,7 @@
         {
           "id": "p1",
           "titulo": "O que é uma nota interna",
-          "texto": "As notas internas aparecem no meio da conversa, num balão amarelado, com o nome de quem escreveu e o aviso \"Nota interna · só o time vê\". Elas nunca chegam ao cliente e servem para combinar coisas com a equipe. A mensagem com borda vermelha logo acima é outro assunto: um envio que falhou, que se manda de novo em \"Tentar de novo\".",
+          "texto": "As notas internas aparecem no meio da conversa, num balão amarelado, com o nome de quem escreveu e o aviso \"Nota interna · só o time vê\". Elas nunca chegam ao cliente e servem para combinar coisas com a equipe. A mensagem com borda vermelha logo acima é outro assunto. É um envio que falhou, e você pode mandar de novo em \"Tentar de novo\".",
           "rota": "/app/inbox?id=be100000-0000-4000-8000-000000000005",
           "antes": [
             {
@@ -1579,7 +1579,7 @@
         {
           "id": "p2",
           "titulo": "Mudar para Nota interna",
-          "texto": "Acima do campo de escrever há duas opções: \"Responder\" manda a mensagem para o cliente e \"Nota interna\" guarda um recado só para a equipe. Com a nota escolhida, o botão \"Nota interna\" fica colorido, o fundo em volta do campo fica amarelado e o campo passa a mostrar \"Escreva uma nota interna… (só o time vê)\". Os botões de respostas rápidas somem, porque elas são para o cliente.",
+          "texto": "Acima do campo de escrever há duas opções. \"Responder\" manda a mensagem para o cliente. \"Nota interna\" guarda um recado só para a equipe. Com a nota escolhida, o botão \"Nota interna\" fica colorido e o fundo em volta do campo fica amarelado. O campo passa a mostrar \"Escreva uma nota interna… (só o time vê)\". Os botões de respostas rápidas somem, porque elas são para o cliente.",
           "antes": [
             {
               "acao": "click",
@@ -1623,7 +1623,7 @@
         {
           "id": "p3",
           "titulo": "Chamar um colega com @",
-          "texto": "Na nota, digite @ para abrir a lista da equipe e clique no colega. O seu próprio nome também aparece na lista. Quando a nota for salva, o colega recebe o aviso \"Você foi mencionado\": na tela, se estiver com o sistema aberto, e no celular ou computador, se tiver ativado as notificações.",
+          "texto": "Na nota, digite @ para abrir a lista da equipe e clique no colega. O seu próprio nome também aparece na lista. Quando a nota for salva, o colega recebe o aviso \"Você foi mencionado\". Ele aparece na tela, se o colega estiver com o sistema aberto, e no celular ou computador, se ele tiver ativado as notificações.",
           "dica": "Deixe um espaço antes do @. Você também pode digitar as primeiras letras do nome para filtrar a lista. O @ só chama a lista na nota interna. Ao responder o cliente, ele vira texto comum.",
           "antes": [
             {
@@ -1719,7 +1719,7 @@
         {
           "id": "p5",
           "titulo": "A nota no histórico",
-          "texto": "A nota aparece no histórico com o seu nome e a hora, e a menção ao colega fica destacada. Ao passar o mouse sobre a nota, aparece uma lixeira no canto. Quem escreveu a nota, e também gestores e administradores, podem apagá-la por ela. A nota é apagada na hora, sem pedir confirmação.",
+          "texto": "A nota aparece no histórico com o seu nome e a hora, e a menção ao colega fica destacada. Ao passar o mouse sobre a nota, aparece uma lixeira no canto. Quem escreveu a nota pode apagá-la clicando nessa lixeira, e gestores e administradores também. A nota some na hora, sem pedir confirmação.",
           "antes": [
             {
               "acao": "press",
@@ -1784,7 +1784,7 @@
         {
           "id": "p1",
           "titulo": "Calar o robô numa conversa sua",
-          "texto": "Esta conversa já está no seu nome, mas o atendimento automático (o robô) ainda pode responder nela. O seu nome aparece logo abaixo do nome do cliente (nesta demonstração, Helena Prado). \"Pausar o automático\" faz o robô parar de responder nesta conversa, e o responsável continua o mesmo. O botão \"Liberar\", logo à esquerda, faz outra coisa: solta a conversa, que fica sem responsável.",
+          "texto": "Esta conversa já está no seu nome, mas o atendimento automático (o robô) ainda pode responder nela. O seu nome aparece logo abaixo do nome do cliente (nesta demonstração, Helena Prado). O botão \"Pausar o automático\" faz o robô parar de responder nesta conversa, e você continua como responsável. O botão \"Liberar\", logo à esquerda, faz outra coisa: solta a conversa, que fica sem responsável.",
           "dica": "Numa conversa sem responsável, o botão que cala o robô é o \"Assumir\".",
           "rota": "/app/inbox?id=be100000-0000-4000-8000-000000000007",
           "antes": [],
@@ -1859,7 +1859,7 @@
         {
           "id": "p3",
           "titulo": "Transferir para um colega",
-          "texto": "Ao devolver, a conversa ficou sem responsável: no topo, o botão voltou a ser \"Assumir\". \"Transferir\" passa a conversa para outra pessoa da equipe na hora, sem ela precisar aceitar. Escolha quem vai continuar e, se quiser, escreva o motivo: a troca fica registrada, e o motivo aparece no histórico do negócio desse cliente.",
+          "texto": "Ao devolver, a conversa ficou sem responsável, e o botão no topo voltou a ser \"Assumir\". O botão \"Transferir\" passa a conversa para outra pessoa da equipe na hora, sem ela precisar aceitar. Escolha quem vai continuar e, se quiser, escreva o motivo. A troca fica registrada, e o motivo aparece no histórico do negócio desse cliente.",
           "dica": "Transferir também faz o robô parar de responder nesta conversa.",
           "antes": [
             {
@@ -1947,7 +1947,7 @@
         {
           "id": "p4",
           "titulo": "Pedir um lembrete",
-          "texto": "\"Lembrar\" serve para quando você está esperando o cliente responder. Escolha o prazo: se ele não responder até lá, a conversa sobe para o topo da lista e aparece um aviso na Central dizendo que o cliente não respondeu no prazo. Nada é enviado ao cliente. Nesta conversa o robô já estava pausado. O balão vermelho é uma mensagem que não saiu, e o quadro bege é um recado interno da equipe: nada disso tem a ver com o lembrete.",
+          "texto": "Use \"Lembrar\" quando estiver esperando o cliente responder. Escolha o prazo. Se ele não responder até lá, a conversa sobe para o topo da lista e aparece um aviso na Central dizendo que o cliente não respondeu no prazo. Nada é enviado ao cliente. Nesta conversa o robô já estava pausado. O balão vermelho é uma mensagem que não saiu, e o quadro bege é um recado interno da equipe. Nada disso tem a ver com o lembrete.",
           "dica": "Com um lembrete ligado, o botão passa a dizer \"Lembrete ativo\", e é por ele que você cancela.",
           "rota": "/app/inbox?id=be100000-0000-4000-8000-000000000005",
           "antes": [
@@ -1987,8 +1987,8 @@
         {
           "id": "p5",
           "titulo": "Encerrar o atendimento",
-          "texto": "Quando o assunto terminou, clique em \"Fechar\". Uma confirmação aparece antes de encerrar. Ela diz que dá para reabrir depois, mas nem sempre é preciso: se o cliente escrever de novo, a conversa reabre sozinha, sem responsável.",
-          "dica": "O lembrete marcado no passo anterior continua ligado. Se o prazo vencer com a conversa fechada, nada acontece. Se ela for reaberta antes, o lembrete volta a valer.",
+          "texto": "Quando o assunto terminou, clique em \"Fechar\". Antes de encerrar, aparece uma confirmação. Ela diz que dá para reabrir depois, mas nem sempre é preciso. Se o cliente escrever de novo, a conversa reabre sozinha, sem responsável.",
+          "dica": "O lembrete marcado no passo anterior continua ligado. Se o prazo vencer com a conversa fechada, nada acontece. Se ela for reaberta antes do prazo, o lembrete volta a valer.",
           "antes": [
             {
               "acao": "click",
@@ -2051,7 +2051,7 @@
         {
           "id": "p6",
           "titulo": "Reabrir",
-          "texto": "Depois de fechada, a conversa mostra o selo \"Fechada\", e o campo de mensagem fica travado: parece normal, mas não aceita texto. \"Reabrir\" começa um novo atendimento com o mesmo cliente, mas sem responsável: até alguém clicar em \"Assumir\", quem cuida dela é o atendimento automático.",
+          "texto": "Depois de fechada, a conversa mostra o selo \"Fechada\". O campo de mensagem fica travado: parece normal, mas não aceita texto. O botão \"Reabrir\" começa um novo atendimento com o mesmo cliente, mas sem responsável. Até alguém clicar em \"Assumir\", quem cuida da conversa é o atendimento automático.",
           "antes": [
             {
               "acao": "click",
@@ -2111,7 +2111,7 @@
         {
           "id": "p7",
           "titulo": "Arquivar sem apagar",
-          "texto": "\"Arquivar\" tira a conversa da Fila e da aba Minhas e a guarda na aba Arquivadas (é o \"histórico\" de que a confirmação fala). Nada é apagado. Se a conversa ainda estava aberta, o atendimento é encerrado; se o cliente escrever de novo, ela volta, sem responsável.",
+          "texto": "O botão \"Arquivar\" tira a conversa da Fila e da aba Minhas e a guarda na aba Arquivadas. Essa aba é o \"histórico\" de que a confirmação fala. Nada é apagado. Se a conversa ainda estava aberta, o atendimento é encerrado. Se o cliente escrever de novo, ela volta, sem responsável.",
           "dica": "O lembrete marcado antes continua ligado. Depois de reabrir, o botão no topo da conversa diz \"Lembrete ativo\", e é por ele que você cancela.",
           "antes": [
             {
@@ -2196,7 +2196,7 @@
         {
           "id": "p1",
           "titulo": "O que a ficha mostra",
-          "texto": "No alto da ficha ficam o nome, o telefone e as etiquetas do cliente. Logo abaixo há atalhos: \"Marcar compromisso\" abre a Agenda já com este cliente escolhido, \"Tags do contato\" abre o editor de etiquetas, \"Novo Lead\" abre um negócio novo para ele no funil e \"Ver contato\" leva à ficha completa do cliente. A mensagem com borda vermelha na conversa é só um envio que falhou neste exemplo; ela não tem a ver com a ficha.",
+          "texto": "No alto da ficha ficam o nome, o telefone e as etiquetas do cliente. Logo abaixo há atalhos. \"Marcar compromisso\" abre a Agenda já com este cliente escolhido. \"Tags do contato\" abre o editor de etiquetas. \"Novo Lead\" abre um negócio novo para ele no funil. \"Ver contato\" leva à ficha completa do cliente. A mensagem com borda vermelha na conversa é só um envio que falhou neste exemplo e não tem a ver com a ficha.",
           "rota": "/app/inbox?filter=all&id=be100000-0000-4000-8000-000000000005",
           "antes": [],
           "destaques": [
@@ -2242,8 +2242,8 @@
         {
           "id": "p2",
           "titulo": "Etiquetas da pessoa",
-          "texto": "As \"Tags do contato\" acompanham o cliente em todas as conversas dele. Digite uma etiqueta nova e aperte Enter para adicionar. O X ao lado de uma etiqueta (aqui, o de \"retorno\") remove essa etiqueta. O botãozinho de paleta logo depois de cada etiqueta troca a cor dela.",
-          "dica": "Com o campo vazio, aparecem logo abaixo, com um \"+\", as etiquetas já usadas na clínica. Ao digitar, ficam só as que combinam com o texto; aqui nenhuma aparece porque nenhuma combina com \"vip\". Clicar numa delas abre a janela \"Adicionar tag\" para escolher a cor e grava a etiqueta com a mesma grafia, para todo mundo escrever igual.",
+          "texto": "As \"Tags do contato\" acompanham o cliente em todas as conversas dele. Digite uma etiqueta nova e aperte Enter para adicionar. O X ao lado de uma etiqueta remove essa etiqueta (na foto, o de \"retorno\"). O botãozinho de paleta, logo depois de cada etiqueta, troca a cor dela.",
+          "dica": "Com o campo vazio, aparecem logo abaixo, com um \"+\", as etiquetas já usadas na clínica. Ao digitar, ficam só as que combinam com o texto. Na foto nenhuma aparece, porque nenhuma combina com \"vip\". Clicar numa delas abre a janela \"Adicionar tag\" para escolher a cor. A etiqueta é gravada com a mesma grafia, para todo mundo escrever igual.",
           "antes": [
             {
               "acao": "click",
@@ -2334,7 +2334,7 @@
         {
           "id": "p4",
           "titulo": "O que o cliente pediu",
-          "texto": "Em \"Demandas abertas\" fica cada pedido do cliente que ainda não foi resolvido, com a situação (\"Aberta\") e há quanto tempo está aberto. Quando ninguém combinou o que fazer, aparece a frase \"Sem próximo passo definido\". \"Demanda vigente neste canal\" é só um aviso, não um botão: mostra que esta é a demanda desta conversa. \"Encerrar demanda\" registra o resultado quando o pedido estiver resolvido. Clique em \"Marcar próximo passo\" para anotar o que vai acontecer a seguir.",
+          "texto": "Em \"Demandas abertas\" fica cada pedido do cliente que ainda não foi resolvido, com a situação (\"Aberta\") e há quanto tempo está aberto. Se ninguém combinou o que fazer, aparece a frase \"Sem próximo passo definido\". \"Demanda vigente neste canal\" é só um aviso, não um botão. Ele mostra que esta é a demanda desta conversa. O botão \"Encerrar demanda\" registra o resultado quando o pedido estiver resolvido. Para anotar o que vai acontecer a seguir, clique em \"Marcar próximo passo\".",
           "antes": [
             {
               "acao": "press",
@@ -2450,7 +2450,7 @@
         {
           "id": "p6",
           "titulo": "O cliente no funil",
-          "texto": "Em \"Leads recentes\" (lead é o negócio aberto com este cliente) aparecem o nome do negócio e, logo abaixo, o funil e a etapa em que ele está. \"Etapa do funil\" muda a etapa sem sair da conversa, e \"Abrir no funil\" abre o quadro do funil já com os detalhes deste negócio na tela. \"Levar para outro funil\" muda o negócio de funil, não só de etapa. A frase \"Este funil não tem campos extras.\" só avisa que este funil não pede informações a mais. \"Tarefas desta demanda\" e \"Memória do contato\", mais acima, são outras partes da ficha. Para continuar, clique em \"Recolher\", no alto da ficha.",
+          "texto": "Em \"Leads recentes\" (lead é o negócio aberto com este cliente) aparecem o nome do negócio e, logo abaixo, o funil e a etapa em que ele está. \"Etapa do funil\" muda a etapa sem sair da conversa. \"Abrir no funil\" abre o quadro do funil já com os detalhes deste negócio na tela. \"Levar para outro funil\" muda o negócio de funil, não só de etapa. A frase \"Este funil não tem campos extras.\" só avisa que este funil não pede informações a mais. \"Tarefas desta demanda\" e \"Memória do contato\", mais acima, são outras partes da ficha. Para continuar, clique em \"Recolher\", no alto da ficha.",
           "dica": "Se você escolher uma etapa de perda, o sistema pede o motivo antes de mover.",
           "antes": [],
           "destaques": [
@@ -2539,7 +2539,7 @@
         {
           "id": "p1",
           "titulo": "Cinco letras que economizam cliques",
-          "texto": "Com a Inbox aberta e o cursor fora de qualquer campo de texto, cinco teclas fazem o trabalho do mouse: \"j\" abre a próxima conversa da lista, \"k\" volta para a anterior, \"r\" leva o cursor ao campo de resposta, \"a\" assume a conversa aberta e \"e\" fecha a conversa aberta. Só o \"e\" pergunta antes de agir (\"Fechar conversa?\").",
+          "texto": "Com a Inbox aberta e o cursor fora de qualquer campo de texto, cinco teclas fazem o trabalho do mouse. A tecla \"j\" abre a próxima conversa da lista, e \"k\" volta para a anterior. A tecla \"r\" leva o cursor ao campo de resposta. A tecla \"a\" assume a conversa aberta, e \"e\" fecha essa conversa. Só o \"e\" pergunta antes de agir (\"Fechar conversa?\").",
           "dica": "Os atalhos não funcionam enquanto o cursor está dentro de um campo de texto. Clique fora dele antes de usar. Aperte \"?\" para ver a lista de atalhos.",
           "rota": "/app/inbox?filter=all",
           "antes": [],
@@ -2594,8 +2594,8 @@
         {
           "id": "p3",
           "titulo": "Marcar várias conversas",
-          "texto": "A caixinha à esquerda de cada linha marca a conversa sem abri-la. Assim que uma é marcada, aparece acima da lista a barra de ações em lote, com a quantidade de conversas selecionadas. Aqui marcamos as conversas do Roberto e da Mariana. A conversa do Pedro, aberta no meio da tela, também fica com o fundo verde-claro, mas não entra no lote: a caixinha dela está vazia. Só contam as caixinhas marcadas, por isso a barra diz \"2 conversas selecionadas\".",
-          "dica": "\"Selecionar todas\" marca todas as conversas que estão na lista agora (na aba Todas, inclusive as fechadas e as arquivadas) e só acrescenta à seleção. Para desmarcar tudo, use o X no fim da barra.",
+          "texto": "A caixinha à esquerda de cada linha marca a conversa sem abri-la. Assim que uma é marcada, aparece acima da lista a barra de ações em lote, com a quantidade de conversas selecionadas. Na foto, marcamos as conversas do Roberto e da Mariana. A conversa do Pedro, aberta no meio da tela, também fica com o fundo verde-claro, mas não entra no lote, porque a caixinha dela está vazia. Só contam as caixinhas marcadas, por isso a barra diz \"2 conversas selecionadas\".",
+          "dica": "O botão \"Selecionar todas\" marca todas as conversas que estão na lista agora (na aba Todas, inclusive as fechadas e as arquivadas). Ele só acrescenta à seleção. Para desmarcar tudo, use o X no fim da barra.",
           "antes": [
             {
               "acao": "click",
@@ -2648,8 +2648,8 @@
         {
           "id": "p4",
           "titulo": "Mais ações",
-          "texto": "Em \"Mais ações\" ficam Arquivar, Pausar IA, Devolver ao automático e \"Transferir para…\". Cada conversa marcada recebe a ação como se você a fizesse uma por uma. Pausar IA desliga o atendimento automático e, se a conversa não tiver responsável, você passa a ser o responsável. Devolver ao automático tira o responsável e deixa a IA atender de novo.",
-          "dica": "Arquivar, Pausar IA e Devolver ao automático acontecem na hora, sem pedir confirmação. \"Transferir para…\" abre uma janela para escolher o colega e, se quiser, escrever o motivo; só transfere quando você confirma em Transferir. Se alguma conversa não puder receber a ação, o aviso no fim diz quantas foram recusadas e o motivo.",
+          "texto": "Em \"Mais ações\" ficam Arquivar, Pausar IA, Devolver ao automático e \"Transferir para…\". A ação vale para cada conversa marcada, como se você a fizesse uma por uma. Pausar IA desliga o atendimento automático. Se a conversa não tiver responsável, você passa a ser o responsável. Devolver ao automático tira o responsável e deixa a IA atender de novo.",
+          "dica": "Arquivar, Pausar IA e Devolver ao automático acontecem na hora, sem pedir confirmação. \"Transferir para…\" abre uma janela para escolher o colega e, se quiser, escrever o motivo. Só transfere quando você confirma em Transferir. Se alguma conversa não puder receber a ação, o aviso no fim diz quantas foram recusadas e por quê.",
           "antes": [
             {
               "acao": "click",
@@ -2700,7 +2700,7 @@
         {
           "id": "p5",
           "titulo": "Marcar todas como lidas",
-          "texto": "\"Marcar como lida\" zera o contador de não lidas de todas as conversas marcadas. No fim, aparece o aviso \"2 conversas atualizadas.\" e a seleção é desfeita. O \"Fechar\" da barra, ao lado de \"2 conversas selecionadas\", encerra todas as marcadas de uma vez e, ao contrário da tecla \"e\", não pede confirmação. Não confunda com o \"Fechar\" do topo da conversa aberta: esse fecha só a conversa do Pedro.",
+          "texto": "O botão \"Marcar como lida\" zera o contador de não lidas de todas as conversas marcadas. No fim, aparece o aviso \"2 conversas atualizadas.\" e a seleção é desfeita. O \"Fechar\" da barra, ao lado de \"2 conversas selecionadas\", encerra de uma vez todas as marcadas. Ao contrário da tecla \"e\", ele não pede confirmação. Não confunda com o \"Fechar\" do topo da conversa aberta, que fecha só a conversa do Pedro.",
           "antes": [
             {
               "acao": "press",

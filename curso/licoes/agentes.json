@@ -24,8 +24,8 @@
         {
           "id": "p1",
           "titulo": "Um cartão para cada agente",
-          "texto": "A tela Agentes, no grupo \"Agente de IA\" do menu, reúne os atendentes virtuais que respondem seus clientes no WhatsApp. Cada agente aparece num cartão. Nesta clínica de exemplo existe um só: a Bia, que faz a recepção. Para montar outro agente, clique em \"Criar novo\".",
-          "dica": "Só o administrador vê \"Criar novo\" e o menu de ações do cartão. O gerente entra na tela, mas só consegue olhar: o botão do cartão vira \"Visualizar\".",
+          "texto": "A tela Agentes fica no grupo \"Agente de IA\" do menu. Ela reúne os atendentes virtuais que respondem seus clientes no WhatsApp. Cada agente aparece num cartão. Nesta clínica de exemplo existe só um: a Bia, que faz a recepção. Para montar outro, clique em \"Criar novo\".",
+          "dica": "Só o administrador vê \"Criar novo\" e o menu de ações do cartão. O gerente entra na tela, mas só pode olhar: para ele, o botão do cartão vira \"Visualizar\".",
           "rota": "/app/ai/agents",
           "antes": [],
           "destaques": [
@@ -50,7 +50,7 @@
         {
           "id": "p2",
           "titulo": "O que o cartão mostra",
-          "texto": "O selo \"Publicado\" quer dizer que o agente está no ar: as mensagens novas do WhatsApp vão para ele. Quando aparece \"Rascunho\", ele não está atendendo, porque ainda não foi publicado ou foi pausado. O selo \"default\" marca o agente padrão da empresa. Abaixo do nome aparecem a empresa de inteligência artificial e o modelo que estão valendo. Em \"Prioridade\" fica a ordem de preferência, que só importa quando há mais de um agente. Em \"Tipo\" aparece um código interno do sistema: é só informativo, você não precisa mexer.",
+          "texto": "O selo \"Publicado\" quer dizer que o agente está no ar: as mensagens novas do WhatsApp vão para ele. Quando aparece \"Rascunho\", ele não está atendendo, porque ainda não foi publicado ou foi pausado. O selo \"default\" marca o agente padrão da empresa. Abaixo do nome aparecem a empresa de inteligência artificial e o modelo em uso. Em \"Prioridade\" fica a ordem de preferência, que só importa quando há mais de um agente. Em \"Tipo\" aparece um código interno do sistema. Ele é só informativo: você não precisa mexer.",
           "antes": [],
           "destaques": [
             {
@@ -88,7 +88,7 @@
         {
           "id": "p3",
           "titulo": "Achar um agente",
-          "texto": "Quando a lista crescer, digite parte do nome no campo de busca. Se nenhum agente tiver aquele nome, aparece o aviso \"Nenhum agente corresponde aos filtros atuais.\". Na caixa \"Todos\", ao lado, escolha \"Publicado\" para ver só os que estão no ar. Os agentes arquivados ficam escondidos: marque \"Incluir arquivados\" para vê-los.",
+          "texto": "Quando a lista crescer, digite parte do nome no campo de busca. Se nenhum agente tiver esse nome, aparece o aviso \"Nenhum agente corresponde aos filtros atuais.\". Para ver só os agentes que estão no ar, escolha \"Publicado\" na caixa \"Todos\", ao lado. Os agentes arquivados ficam escondidos. Para vê-los, marque \"Incluir arquivados\".",
           "antes": [
             {
               "acao": "fill",
@@ -134,7 +134,7 @@
         {
           "id": "p4",
           "titulo": "Abrir um agente",
-          "texto": "Apague o que digitou na busca e o cartão da Bia volta. Para abrir a configuração de um agente, clique em \"Editar\" no cartão dele.",
+          "texto": "Apague o que digitou na busca, e o cartão da Bia volta. Para abrir a configuração de um agente, clique em \"Editar\" no cartão dele.",
           "antes": [
             {
               "acao": "fill",
@@ -182,7 +182,7 @@
         {
           "id": "p1",
           "titulo": "Editar, duplicar e renomear",
-          "texto": "O botão de três pontinhos, no canto do cartão, abre o menu de ações. \"Editar\" abre a configuração, igual ao botão do cartão. \"Duplicar\" cria uma cópia do agente com as mesmas instruções e ajustes, como rascunho: a cópia não entra no ar sozinha. \"Renomear\" troca só o nome.",
+          "texto": "O botão de três pontinhos, no canto do cartão, abre o menu de ações. \"Editar\" abre a configuração, igual ao botão do cartão. \"Duplicar\" cria uma cópia do agente, com as mesmas instruções e ajustes. A cópia nasce como rascunho e não entra no ar sozinha. \"Renomear\" troca só o nome.",
           "rota": "/app/ai/agents",
           "antes": [
             {
@@ -227,7 +227,7 @@
         {
           "id": "p2",
           "titulo": "Pausar e arquivar",
-          "texto": "\"Pausar\" faz o agente parar de responder os clientes, sem perder nada do que foi configurado. Depois disso, o item vira \"Despausar\", que põe o agente de volta no ar. \"Arquivar\" tira o agente do ar e da lista, e não dá para desarquivar pela tela. Aqui ele aparece apagado porque a Bia é o agente padrão, e o agente padrão não pode ser arquivado.",
+          "texto": "Ao clicar em \"Pausar\", o agente para de responder os clientes, sem perder nada do que foi configurado. Depois disso, o item vira \"Despausar\", que põe o agente de volta no ar. \"Arquivar\" tira o agente do ar e da lista, e não dá para desarquivar pela tela. Na foto, esse item aparece apagado: a Bia é o agente padrão, e o agente padrão não pode ser arquivado.",
           "dica": "Pausar pelo menu é o mesmo que o botão \"Pausar automático\" dentro da página do agente.",
           "antes": [],
           "destaques": [
@@ -343,7 +343,7 @@
         {
           "id": "p1",
           "titulo": "Automático ou assistido",
-          "texto": "No alto da página do agente fica a \"Operação do agente\". No modo automático, ele responde sozinho, seguindo as regras que você configurou. No modo assistido, ele só prepara sugestões dentro da conversa, e nada é enviado sem a aprovação de uma pessoa. O botão \"Pausar automático\" para na hora as respostas que ele manda sozinho: a configuração fica guardada, as sugestões do modo assistido continuam e o botão vira \"Retomar automático\".",
+          "texto": "No alto da página do agente fica a \"Operação do agente\". No modo automático, ele responde sozinho, seguindo as regras que você configurou. No modo assistido, ele só prepara sugestões dentro da conversa. Nada é enviado sem a aprovação de uma pessoa. O botão \"Pausar automático\" para na hora as respostas que ele manda sozinho. A configuração fica guardada e as sugestões do modo assistido continuam. Depois disso, o botão vira \"Retomar automático\".",
           "dica": "A troca de modo e a pausa valem assim que você clica. Não precisa salvar.",
           "rota": "/app/ai/agents",
           "antes": [
@@ -400,7 +400,7 @@
         {
           "id": "p3",
           "titulo": "A versão no ar e os botões",
-          "texto": "Ao lado do nome, o selo \"Publicado v1\" diz que a versão 1 é a que está atendendo. As instruções, a inteligência, o número e as regras de atendimento viram um rascunho: os clientes só veem essas mudanças depois que você publica. Nome, descrição e ordem de preferência mudam assim que você salva o rascunho. Enquanto não há nada para salvar, os botões ficam apagados, e a frase embaixo diz o que falta para publicar.",
+          "texto": "Ao lado do nome, o selo \"Publicado v1\" diz que a versão 1 é a que está atendendo. Mudanças nas instruções, na inteligência, no número e nas regras de atendimento ficam num rascunho. Os clientes só as veem depois que você publica. Nome, descrição e ordem de preferência mudam assim que você salva o rascunho. Enquanto não há nada para salvar, os botões ficam apagados. A frase embaixo diz o que falta para publicar.",
           "antes": [],
           "destaques": [
             {
@@ -441,7 +441,7 @@
         {
           "id": "p4",
           "titulo": "As três partes da configuração",
-          "texto": "A configuração tem três partes. \"Conversa com o cliente\" é como ele atende. \"Organiza o sistema\" é o que ele registra por dentro depois da conversa. \"Confere antes de enviar\" mostra as verificações de cada mensagem. As duas primeiras partes formam um rascunho só, salvo pelo mesmo botão. As escolhas da terceira valem na hora, para a empresa toda.",
+          "texto": "A configuração tem três partes. \"Conversa com o cliente\" é como ele atende. \"Organiza o sistema\" é o que ele registra por dentro depois da conversa. \"Confere antes de enviar\" mostra as verificações de cada mensagem. As duas primeiras partes formam um rascunho só e são salvas pelo mesmo botão. As escolhas da terceira valem na hora, para a empresa toda.",
           "antes": [],
           "destaques": [
             {
@@ -475,7 +475,7 @@
         {
           "id": "p1",
           "titulo": "Quem é este agente",
-          "texto": "Na parte \"Conversa com o cliente\", o primeiro bloco é \"Quem é este agente\". O \"Nome\" é o que aparece na lista de agentes, e a \"Descrição\" é uma anotação sua sobre o que ele faz. A \"Ordem de preferência\" só importa quando mais de um agente pode atender a mesma conversa: o de número maior tenta primeiro. Com um agente só, deixe como está. Atenção: estes três campos valem assim que você salva o rascunho, sem precisar publicar.",
+          "texto": "Na parte \"Conversa com o cliente\", o primeiro bloco é \"Quem é este agente\". O \"Nome\" é o que aparece na lista de agentes. A \"Descrição\" é uma anotação sua sobre o que ele faz. A \"Ordem de preferência\" só importa quando mais de um agente pode atender a mesma conversa: o de número maior tenta primeiro. Com um agente só, deixe como está. Atenção: estes três campos valem assim que você salva o rascunho, sem precisar publicar.",
           "rota": "/app/ai/agents",
           "antes": [
             {
@@ -522,7 +522,7 @@
         {
           "id": "p2",
           "titulo": "A inteligência e a chave",
-          "texto": "Em \"A inteligência que ele usa\" você escolhe a empresa de inteligência artificial, o modelo e a \"Chave de acesso\", que é o código da sua conta nessa empresa. Nesta instalação de exemplo nenhuma chave foi cadastrada. Por isso aparecem o aviso em vermelho e o link \"Cadastrar credencial anthropic\", que leva à tela onde você cola a chave. Sem chave, o agente não consegue salvar mudanças.",
+          "texto": "Em \"A inteligência que ele usa\" você escolhe a empresa de inteligência artificial, o modelo e a \"Chave de acesso\". A chave é o código da sua conta nessa empresa. Nesta instalação de exemplo, nenhuma chave foi cadastrada. Por isso aparecem um aviso em vermelho e o link \"Cadastrar credencial anthropic\", que leva à tela onde você cola a chave. Sem chave, o agente não consegue salvar mudanças.",
           "dica": "Se a chave foi colocada durante a instalação do sistema, ela aparece na lista como \"A chave desta instalação\".",
           "antes": [
             {
@@ -571,8 +571,8 @@
         {
           "id": "p3",
           "titulo": "Por qual número ele atende",
-          "texto": "\"Por qual número ele atende\" liga o agente a um número de WhatsApp da empresa. Aqui está escolhido o \"Recepção Bem Viver\", que aparece como \"Conectado\". Sem um número escolhido, o rascunho até salva, mas o agente não pode ser publicado.",
-          "dica": "Se a empresa ainda não tiver nenhum número de WhatsApp, aparece o link \"Conectar WhatsApp\", que leva à tela de Conexões. Um número que caiu continua na lista com a situação ao lado, mas o agente só pode ser publicado com um número \"Conectado\".",
+          "texto": "Em \"Por qual número ele atende\" você liga o agente a um número de WhatsApp da empresa. Na foto, está escolhido o \"Recepção Bem Viver\", que aparece como \"Conectado\". Sem um número escolhido, o rascunho até salva, mas o agente não pode ser publicado.",
+          "dica": "Se a empresa ainda não tiver nenhum número de WhatsApp, aparece o link \"Conectar WhatsApp\", que leva à tela de Conexões. Um número que caiu continua na lista, com a situação ao lado. Mesmo assim, o agente só pode ser publicado com um número \"Conectado\".",
           "antes": [],
           "destaques": [
             {
@@ -587,7 +587,7 @@
         {
           "id": "p4",
           "titulo": "Freios de segurança",
-          "texto": "Os \"Freios de segurança\" limitam cada atendimento. Em \"Ações por atendimento\" você define quantas ações o agente pode fazer numa resposta, e em \"Mensagens anteriores que ele lê\", quanto da conversa ele relê antes de responder. Em \"Esperar antes de responder\", as mensagens que o cliente manda em sequência, dentro desse tempo, viram uma resposta só. Deixando vazio, vale o padrão da instalação.",
+          "texto": "Os \"Freios de segurança\" limitam cada atendimento. Em \"Ações por atendimento\" você define quantas ações o agente pode fazer numa resposta. Em \"Mensagens anteriores que ele lê\" você define quanto da conversa ele relê antes de responder. Em \"Esperar antes de responder\", as mensagens que o cliente manda em sequência, dentro desse tempo, viram uma resposta só. Se deixar vazio, vale o padrão da instalação.",
           "antes": [
             {
               "acao": "rolar",
@@ -642,7 +642,7 @@
         {
           "id": "p1",
           "titulo": "As instruções dele",
-          "texto": "Em \"As instruções dele\" você escreve, com suas palavras, quem o agente é e como deve atender: o tom, o que ele pode responder e o que deve passar para a equipe. No canto, o número com barra, como \"57/20.000\", mostra quantos caracteres você já usou, de no máximo 20.000. O outro número, ao lado, é uma estimativa técnica e pode ser ignorado.",
+          "texto": "Em \"As instruções dele\" você escreve, com suas palavras, quem o agente é e como deve atender: o tom, o que ele pode responder e o que deve passar para a equipe. No canto, o número com barra, como \"57/20.000\", mostra quantos caracteres você já usou. O máximo é 20.000. O outro número, ao lado, é uma estimativa técnica e pode ser ignorado.",
           "rota": "/app/ai/agents",
           "antes": [
             {
@@ -680,7 +680,7 @@
         {
           "id": "p2",
           "titulo": "Mudou? Salve e publique",
-          "texto": "Assim que você muda algo, o botão \"Descartar alterações\" acende, para voltar ao que estava. Aqui \"Salvar rascunho\" continua apagado porque falta a chave de acesso da lição anterior. Com a chave, ele guarda a mudança como \"Rascunho v2\" e o botão de publicar vira \"Publicar v2\". Ao publicar, uma janela resume o que muda e pede confirmação. A versão anterior fica guardada no Histórico. Para desfazer a mudança, clique em \"Descartar alterações\".",
+          "texto": "Assim que você muda algo, o botão \"Descartar alterações\" acende. Ele serve para voltar ao que estava. Na foto, \"Salvar rascunho\" continua apagado, porque falta a chave de acesso da lição anterior. Com a chave, ele guarda a mudança como \"Rascunho v2\" e o botão de publicar vira \"Publicar v2\". Ao publicar, uma janela resume o que muda e pede confirmação. A versão anterior fica guardada no Histórico. Para desfazer a mudança, clique em \"Descartar alterações\".",
           "antes": [
             {
               "acao": "fill",
@@ -726,7 +726,7 @@
         {
           "id": "p3",
           "titulo": "Respostas em mensagens curtas",
-          "texto": "Em \"Estilo de resposta\", ligar \"Responder em várias mensagens curtas\" faz o agente mandar a resposta em várias bolhas, como uma pessoa digitando, em vez de um bloco único. Ligado, aparece o campo do tamanho máximo de cada bolha.",
+          "texto": "Em \"Estilo de resposta\", ligue \"Responder em várias mensagens curtas\" para o agente mandar a resposta em várias bolhas, como uma pessoa digitando, em vez de um bloco único. Com essa chave ligada, aparece o campo do tamanho máximo de cada bolha.",
           "antes": [
             {
               "acao": "click",
@@ -752,7 +752,7 @@
         {
           "id": "p4",
           "titulo": "O que o agente pode fazer",
-          "texto": "\"O que o agente pode fazer\" define o que ele faz sozinho durante o atendimento. As capacidades vêm em pacotes por tarefa, como \"Atender e responder\" e \"Vender e mover o funil\": ligar um pacote liga as capacidades dele de uma vez. As que têm \"Efeito que não dá para desfazer\" ficam no quadro vermelho e só se ligam uma a uma. O contador mostra quantas estão ligadas. O limite é 27: acima disso o agente se confunde na hora de escolher o que usar, então ligue só os pacotes de que o seu negócio precisa.",
+          "texto": "\"O que o agente pode fazer\" define o que ele faz sozinho durante o atendimento. As capacidades vêm em pacotes por tarefa, como \"Atender e responder\" e \"Vender e mover o funil\". Ligar um pacote liga, de uma vez, as capacidades dele. As que têm \"Efeito que não dá para desfazer\" ficam no quadro vermelho e só se ligam uma a uma. O contador mostra quantas estão ligadas. O limite é 27, porque acima disso o agente se confunde na hora de escolher o que usar. Ligue só os pacotes de que o seu negócio precisa.",
           "dica": "\"Escolher uma a uma (modo avançado)\", no fim da lista, mostra todas as capacidades separadas.",
           "antes": [
             {
@@ -789,7 +789,7 @@
         {
           "id": "p5",
           "titulo": "O que ele consulta antes de responder",
-          "texto": "\"O que ele consulta antes de responder\" é o material da sua clínica que o agente pode ler, como perguntas frequentes, preços e preparo de exames. Ele procura ali antes de responder e cita de onde tirou. Nesta clínica ainda não há material, e o link leva à tela onde você cadastra. Sem material marcado, ele responde só com o que a inteligência artificial já sabe.",
+          "texto": "\"O que ele consulta antes de responder\" é o material da sua clínica que o agente pode ler, como perguntas frequentes, preços e preparo de exames. Ele procura ali antes de responder e cita de onde tirou. Nesta clínica ainda não há material. O link leva à tela onde você cadastra. Sem material marcado, ele responde só com o que a inteligência artificial já sabe.",
           "antes": [],
           "destaques": [
             {
@@ -832,7 +832,7 @@
         {
           "id": "p1",
           "titulo": "Quando ele entra em ação",
-          "texto": "\"Quando ele entra em ação\" diz o que faz o agente responder: uma mensagem nova do cliente. Ele nunca responde em grupos nem às mensagens que saem do seu próprio número. Se você preencher \"Só responder quando a mensagem falar de algo específico\", ele só entra quando a mensagem tiver uma das palavras, separadas por barra vertical (|).",
+          "texto": "\"Quando ele entra em ação\" diz o que faz o agente responder: uma mensagem nova do cliente. Ele nunca responde em grupos nem às mensagens que saem do seu próprio número. Se você preencher \"Só responder quando a mensagem falar de algo específico\", escreva as palavras separadas por barra vertical (|). Aí ele só entra quando a mensagem tiver uma delas.",
           "rota": "/app/ai/agents",
           "antes": [
             {
@@ -877,7 +877,7 @@
         {
           "id": "p2",
           "titulo": "Horário de funcionamento",
-          "texto": "Ligando \"Só atender em horário de funcionamento\", aparecem o fuso horário, o início, o fim e os dias da semana do atendimento. Ele já vem das 8h às 20h, de segunda a sexta (na tela aparece como 08:00 AM e 08:00 PM), e você ajusta como quiser. Em \"Mensagem fora do horário\" você escreve o aviso para quem chamar com a clínica fechada (o texto cinza no campo é só um exemplo): ele vai uma vez por cliente em cada período fechado, e nunca para quem pediu para não receber mensagens. Para valer, salve o rascunho e publique.",
+          "texto": "Ligando \"Só atender em horário de funcionamento\", aparecem o fuso horário, o início, o fim e os dias da semana do atendimento. O padrão é das 8h às 20h, de segunda a sexta, e você ajusta como quiser. Na tela, o horário aparece como 08:00 AM e 08:00 PM. Em \"Mensagem fora do horário\" você escreve o aviso para quem chamar com a clínica fechada. O texto cinza no campo é só um exemplo. Esse aviso vai uma vez por cliente em cada período fechado, e nunca para quem pediu para não receber mensagens. Para valer, salve o rascunho e publique.",
           "antes": [
             {
               "acao": "click",
@@ -932,8 +932,8 @@
         {
           "id": "p3",
           "titulo": "Passar para uma pessoa",
-          "texto": "\"Passar para uma pessoa\" tem duas chaves. A primeira deixa o agente chamar alguém da equipe quando percebe que o caso não é dele. A segunda, que só funciona com a primeira ligada, passa a conversa quando o cliente fala de assunto jurídico, como Procon ou advogado. Em \"Palavras que chamam uma pessoa na hora\" ficam as expressões, como \"atendente\", que passam a conversa direto para a equipe.",
-          "dica": "Quem pede para falar com uma pessoa é sempre passado, mesmo com a chave do assunto jurídico desligada.",
+          "texto": "\"Passar para uma pessoa\" tem duas chaves. A primeira deixa o agente chamar alguém da equipe quando percebe que o caso não é dele. A segunda só funciona com a primeira ligada. Ela passa a conversa quando o cliente fala de assunto jurídico, como Procon ou advogado. Em \"Palavras que chamam uma pessoa na hora\" ficam as expressões, como \"atendente\", que passam a conversa direto para a equipe.",
+          "dica": "Quem pede para falar com uma pessoa é sempre passado para a equipe, mesmo com a chave do assunto jurídico desligada.",
           "antes": [
             {
               "acao": "rolar",
@@ -973,7 +973,7 @@
         {
           "id": "p4",
           "titulo": "O clima da conversa",
-          "texto": "O \"Limiar de sentimento\" é uma nota do clima da conversa, de 0 a 1. Abaixo dela, o clima é considerado fechado e a conversa passa para uma pessoa. Nota mais alta manda mais conversas para a equipe. Numa clínica, contar o problema de saúde não é irritação: o que conta é hostilidade com o atendimento.",
+          "texto": "O \"Limiar de sentimento\" é uma nota do clima da conversa, de 0 a 1. Abaixo dela, o clima é considerado fechado e a conversa passa para uma pessoa. Nota mais alta manda mais conversas para a equipe. Numa clínica, contar um problema de saúde não é irritação. O que conta é hostilidade com o atendimento.",
           "dica": "Este campo salva sozinho quando você sai dele, sem passar pelo rascunho.",
           "antes": [
             {
@@ -998,7 +998,7 @@
         {
           "id": "p5",
           "titulo": "Pedir ajuda, propostas e follow-up",
-          "texto": "Com \"Deixar o agente pedir uma tarefa a alguém\", ele abre um pedido interno, como aprovar um desconto, e continua atendendo até alguém responder. A chave de \"Propostas comerciais\" deixa ele rascunhar uma proposta quando o cliente pede orçamento. Em \"Follow-up\", ele retoma sozinho quem parou de responder: a primeira chave deixa ele marcar novos retornos, e a segunda liga os fluxos automáticos criados na tela Follow-ups.",
+          "texto": "Com \"Deixar o agente pedir uma tarefa a alguém\", ele abre um pedido interno, como aprovar um desconto, e continua atendendo até alguém responder. A chave de \"Propostas comerciais\" deixa o agente rascunhar uma proposta quando o cliente pede orçamento. Em \"Follow-up\", ele retoma sozinho quem parou de responder. A primeira chave deixa o agente marcar novos retornos. A segunda liga os fluxos automáticos criados na tela Follow-ups.",
           "antes": [
             {
               "acao": "rolar",
@@ -1051,7 +1051,7 @@
         {
           "id": "p6",
           "titulo": "Comandos pelo celular",
-          "texto": "Com \"Aceitar #on/#off enviados pelo celular\" ligado, qualquer mensagem que alguém da equipe mandar pelo WhatsApp do celular pausa a IA naquela conversa até alguém mandar #on ou clicar em \"devolver ao automático\". O #off pausa sem responder o cliente. Desligado, como na foto, #on e #off são texto comum e responder pelo celular pausa a IA só por um tempo. Atenção: o comando é digitado no chat do cliente e pode aparecer para ele.",
+          "texto": "Com \"Aceitar #on/#off enviados pelo celular\" ligado, qualquer mensagem que alguém da equipe mandar pelo WhatsApp do celular pausa a IA naquela conversa. A pausa dura até alguém mandar #on ou clicar em \"devolver ao automático\". O #off pausa a IA sem responder o cliente. Desligado, como na foto, #on e #off são texto comum, e responder pelo celular pausa a IA só por um tempo. Atenção: o comando é digitado no chat do cliente e pode aparecer para ele.",
           "dica": "Esta chave salva na hora, sem passar pelo rascunho.",
           "antes": [
             {
@@ -1097,7 +1097,7 @@
         {
           "id": "p1",
           "titulo": "Organiza o sistema",
-          "texto": "\"Organiza o sistema\" é a parte que trabalha depois da conversa. Ligando a chave e marcando em \"O que ele pode mexer no sistema\" o que ele pode fazer, o agente também abre chamados, distribui para a pessoa certa e organiza marcadores e etapas. Desligada, ele continua atendendo e o básico continua registrado sozinho. Em \"Em que negócios ele pode mexer\", marque os funis que ele cuida: sem nenhum marcado, ele conversa normalmente, mas não mexe em negócio nenhum.",
+          "texto": "\"Organiza o sistema\" é a parte que trabalha depois da conversa. Para usá-la, ligue a chave e marque, em \"O que ele pode mexer no sistema\", o que o agente pode fazer. Assim ele também abre chamados, distribui para a pessoa certa e organiza marcadores e etapas. Com a chave desligada, ele segue atendendo e o básico continua registrado sozinho. Em \"Em que negócios ele pode mexer\", marque os funis que ele cuida. Sem nenhum marcado, ele conversa normalmente, mas não mexe em negócio nenhum.",
           "rota": "/app/ai/agents",
           "antes": [
             {
@@ -1150,7 +1150,7 @@
         {
           "id": "p2",
           "titulo": "Confere antes de enviar",
-          "texto": "\"Confere antes de enviar\" mostra as verificações que o sistema faz em cada mensagem do agente antes de ela sair. São 14, nesta ordem: se uma barra a mensagem, o agente recebe o motivo e reescreve. A maioria não se desliga, como \"Respeitar quem pediu para parar\". No alto, \"Estilo de resposta\" é um ajuste à parte, para todos os agentes da empresa, que troca o travessão (—) por vírgula nas mensagens; aqui ele está desligado.",
+          "texto": "\"Confere antes de enviar\" mostra as verificações que o sistema faz em cada mensagem do agente antes de ela sair. São 14, nesta ordem. Se uma delas barra a mensagem, o agente recebe o motivo e reescreve. A maioria não se desliga, como \"Respeitar quem pediu para parar\". No alto, \"Estilo de resposta\" é um ajuste à parte, para todos os agentes da empresa. Ele troca o travessão (—) por vírgula nas mensagens. Na foto, está desligado.",
           "antes": [
             {
               "acao": "click",
@@ -1172,7 +1172,7 @@
         {
           "id": "p3",
           "titulo": "Verificações que você escolhe",
-          "texto": "Algumas verificações têm chave. \"Não fazer afirmação clínica\" foi feita para a área da saúde: barra a mensagem em que o agente diz o que a pessoa tem, indica remédio ou dose ou garante resultado. Aqui ela aparece desligada; numa clínica, vale ligar. Essas chaves valem na hora e para a empresa toda, sem passar pelo rascunho.",
+          "texto": "Algumas verificações têm chave. \"Não fazer afirmação clínica\" foi feita para a área da saúde. Ela barra a mensagem em que o agente diz o que a pessoa tem, indica remédio ou dose ou garante resultado. Na foto, está desligada, mas numa clínica vale ligar. Essas chaves valem na hora e para a empresa toda, sem passar pelo rascunho.",
           "antes": [
             {
               "acao": "rolar",
@@ -1194,7 +1194,7 @@
         {
           "id": "p4",
           "titulo": "Testar sem mandar nada",
-          "texto": "A aba \"Teste\" mostra como o agente responderia a uma mensagem de exemplo, sem mandar nada pelo WhatsApp. No alto aparecem a versão que será testada (aqui, a v1 publicada) e o modelo de IA. Você escreve a mensagem e clica em \"Executar teste\". O aviso em laranja lembra que o teste gasta créditos da empresa de inteligência artificial. Como esta instalação de exemplo não tem chave de acesso, não vamos executar o teste aqui.",
+          "texto": "A aba \"Teste\" mostra como o agente responderia a uma mensagem de exemplo, sem mandar nada pelo WhatsApp. No alto aparecem a versão que será testada (na foto, a v1 publicada) e o modelo de IA. Você escreve a mensagem e clica em \"Executar teste\". O aviso em laranja lembra que o teste gasta créditos da empresa de inteligência artificial. Como esta instalação de exemplo não tem chave de acesso, não vamos executar o teste aqui.",
           "antes": [
             {
               "acao": "click",
@@ -1240,7 +1240,7 @@
         {
           "id": "p5",
           "titulo": "Histórico de versões",
-          "texto": "A aba \"Histórico\" lista as versões do agente e mostra qual está publicada. \"Diff\" compara uma versão com outra. \"Reverter\" cria uma versão nova igual àquela e a publica na hora; a versão que estava no ar continua guardada.",
+          "texto": "A aba \"Histórico\" lista as versões do agente e mostra qual está publicada. \"Diff\" compara uma versão com outra. \"Reverter\" cria uma versão nova igual àquela e a publica na hora. A versão que estava no ar continua guardada.",
           "antes": [
             {
               "acao": "click",
@@ -1283,7 +1283,7 @@
         {
           "id": "p6",
           "titulo": "Execuções",
-          "texto": "A aba \"Execuções\" ganha uma linha cada vez que o agente trabalha: quando começou, se deu certo, se foi teste ou atendimento de verdade, quanto custou e quanto demorou. Em cada linha, \"Detalhes\" abre esses mesmos números num painel. Como a Bia ainda não atendeu ninguém, a lista está vazia.",
+          "texto": "A aba \"Execuções\" ganha uma linha cada vez que o agente trabalha. A linha mostra quando começou, se deu certo, se foi teste ou atendimento de verdade, quanto custou e quanto demorou. Em cada linha, \"Detalhes\" abre esses mesmos números num painel. Como a Bia ainda não atendeu ninguém, a lista está vazia.",
           "antes": [
             {
               "acao": "click",
@@ -1313,7 +1313,7 @@
         {
           "id": "p7",
           "titulo": "Propostas de melhoria",
-          "texto": "Na aba \"Propostas\", o agente sugere melhorias que aprendeu com as conversas reais. Nada é aplicado sozinho: cada proposta tem um botão para você aplicar, se concordar. Atenção: \"Aplicar como versão nova\" publica a mudança na hora, sem passar pelo rascunho, e a versão anterior fica no Histórico. As propostas dependem da chave de acesso da inteligência artificial; por enquanto não há nenhuma.",
+          "texto": "Na aba \"Propostas\", o agente sugere melhorias que aprendeu com as conversas reais. Nada é aplicado sozinho: cada proposta tem um botão para você aplicar, se concordar. Atenção: \"Aplicar como versão nova\" publica a mudança na hora, sem passar pelo rascunho. A versão anterior fica no Histórico. As propostas dependem da chave de acesso da inteligência artificial. Por enquanto, não há nenhuma.",
           "antes": [
             {
               "acao": "click",

@@ -25,8 +25,8 @@
           "id": "p1",
           "titulo": "As partes da tela",
           "rota": "/app/agenda?tipo=be310000-0000-4000-8000-000000000001",
-          "texto": "A Agenda mostra os compromissos da clínica: consultas, sessões e reuniões da equipe. Abaixo do título \"Agendamentos\" ficam as setas para mudar de semana e os botões de visão. Logo depois vem a lista de compromissos, separada em abas, e mais abaixo a grade da semana, com um bloco colorido para cada compromisso. No topo, o quadro \"Sincronizar com o Google ainda não está disponível\" aparece enquanto a instalação não tem a ligação com o Google cadastrada. A Agenda funciona normalmente sem ela; só não troca compromissos com a agenda do Google.",
-          "dica": "Quem administra a instalação vê o link \"Cadastrar as credenciais do Google\". O resto do quadro, com o endereço de retorno, é para essa pessoa e pode ser ignorado por quem só usa a Agenda. Na sua instalação, o endereço mostra o seu domínio; na foto aparece o desta demonstração (127.0.0.1). Depois do cadastro, o quadro troca pelo botão \"Conectar Google\".",
+          "texto": "A Agenda mostra os compromissos da clínica: consultas, sessões e reuniões da equipe. Abaixo do título \"Agendamentos\" ficam as setas para mudar de semana e os botões de visão. Depois vem a lista de compromissos, separada em abas. Mais abaixo fica a grade da semana, com um bloco colorido para cada compromisso. No topo, o quadro \"Sincronizar com o Google ainda não está disponível\" aparece enquanto a instalação não tem a ligação com o Google cadastrada. Sem ela, a Agenda funciona normalmente. Só não troca compromissos com a agenda do Google.",
+          "dica": "Quem administra a instalação vê o link \"Cadastrar as credenciais do Google\". O resto do quadro, com o endereço de retorno, é para essa pessoa. Quem só usa a Agenda pode ignorar. Na sua instalação, o endereço mostra o seu domínio. Na foto aparece o desta demonstração (127.0.0.1). Depois do cadastro, o quadro dá lugar ao botão \"Conectar Google\".",
           "destaques": [
             {
               "alvo": {
@@ -105,7 +105,7 @@
         {
           "id": "p3",
           "titulo": "Ver um dia só",
-          "texto": "Os botões \"Dia\", \"Semana\" e \"Mês\" trocam o tamanho do período. Em \"Dia\", a grade mostra só um dia, com mais espaço para cada compromisso, e as setas passam a andar um dia por vez. No celular, a Agenda já abre nesta visão.",
+          "texto": "Os botões \"Dia\", \"Semana\" e \"Mês\" trocam o tamanho do período. Em \"Dia\", a grade mostra só um dia, com mais espaço para cada compromisso. As setas passam a andar um dia por vez. No celular, a Agenda já abre nesta visão.",
           "antes": [
             {
               "acao": "click",
@@ -241,7 +241,7 @@
           "id": "p1",
           "titulo": "Cada pessoa tem uma cor",
           "rota": "/app/agenda?tipo=be310000-0000-4000-8000-000000000001",
-          "texto": "As bolinhas com as iniciais, ao lado dos botões \"Dia\", \"Semana\" e \"Mês\", são as pessoas da equipe. Cada pessoa tem uma cor, e os compromissos dela aparecem na grade e na lista com essa cor. Aqui estão a Helena Prado, a Ana Ribeiro, da fisioterapia, e o Carlos Mendes, da odontologia.",
+          "texto": "As bolinhas com as iniciais, ao lado dos botões \"Dia\", \"Semana\" e \"Mês\", são as pessoas da equipe. Cada pessoa tem uma cor, e os compromissos dela aparecem na grade e na lista com essa cor. Na foto estão a Helena Prado, a Ana Ribeiro, da fisioterapia, e o Carlos Mendes, da odontologia.",
           "destaques": [
             {
               "alvo": {
@@ -268,7 +268,7 @@
         {
           "id": "p2",
           "titulo": "Ver só a agenda de uma pessoa",
-          "texto": "Clique na bolinha de uma pessoa para ver só a agenda dela. A grade e a lista passam a mostrar apenas os compromissos da Ana, a bolinha dela sobe um pouco e as outras ficam cinza. Ao lado aparece o botão \"Todos\".",
+          "texto": "Clique na bolinha de uma pessoa para ver só a agenda dela. Na foto, clicamos na da Ana: a grade e a lista passam a mostrar apenas os compromissos dela, a bolinha dela sobe um pouco e as outras ficam cinza. Ao lado aparece o botão \"Todos\".",
           "antes": [
             {
               "acao": "click",
@@ -359,7 +359,7 @@
           "id": "p1",
           "titulo": "As quatro abas",
           "rota": "/app/agenda?tipo=be310000-0000-4000-8000-000000000001",
-          "texto": "A lista fica logo acima da grade e tem quatro abas: \"Próximos\", \"Aguardando confirmação\", \"Passados\" e \"Cancelados\". O número em cada aba diz quantos compromissos ela tem. A lista acompanha o período que está na tela: aqui avançamos uma semana com a seta da direita, para ver o que vem pela frente. Em cada linha aparecem o dia, o horário, o nome do cliente (ou o nome do compromisso, quando não há cliente), quem vai atender e a situação.",
+          "texto": "A lista fica logo acima da grade e tem quatro abas: \"Próximos\", \"Aguardando confirmação\", \"Passados\" e \"Cancelados\". O número em cada aba diz quantos compromissos ela tem. A lista acompanha o período que está na tela. Na foto, avançamos uma semana com a seta da direita, para ver o que vem pela frente. Cada linha mostra o dia, o horário, o nome do cliente, quem vai atender e a situação. Quando não há cliente, aparece o nome do compromisso.",
           "dica": "Clique no nome da linha para abrir os detalhes do compromisso.",
           "antes": [
             {
@@ -447,7 +447,7 @@
         {
           "id": "p3",
           "titulo": "O que já passou",
-          "texto": "\"Passados\" mostra o que já aconteceu no período. Aqui voltamos para a semana passada, clicando duas vezes na seta da esquerda. Como a semana já passou, a grade avisa que não há horário livre. O selo diz o resultado: \"Realizado\" quando o paciente veio e \"Não compareceu\" quando faltou. Os que ainda estão como \"Confirmado\" esperam alguém da equipe dizer o que houve, com os botões \"Realizado\" e \"Faltou\".",
+          "texto": "\"Passados\" mostra o que já aconteceu no período. O selo diz o resultado: \"Realizado\" quando o paciente veio e \"Não compareceu\" quando faltou. Os que ainda estão como \"Confirmado\" esperam alguém da equipe dizer o que houve, com os botões \"Realizado\" e \"Faltou\". Na foto, voltamos para a semana passada com dois cliques na seta da esquerda. Como essa semana já passou, a grade avisa que não há horário livre.",
           "antes": [
             {
               "acao": "click",
@@ -507,7 +507,7 @@
         {
           "id": "p4",
           "titulo": "Registrar que o paciente veio",
-          "texto": "Ao clicar em \"Realizado\", aparece o aviso \"Marcado como realizado.\" e, em instantes, o selo da linha muda e os botões somem. Só dá para registrar presença ou falta depois que o horário começou.",
+          "texto": "Ao clicar em \"Realizado\", aparece o aviso \"Marcado como realizado.\". Em instantes, o selo da linha muda e os botões somem. Só dá para registrar presença ou falta depois que o horário começou.",
           "antes": [
             {
               "acao": "click",
@@ -582,7 +582,7 @@
           "id": "p1",
           "titulo": "Abrir pelo bloco da grade",
           "rota": "/app/agenda?tipo=be310000-0000-4000-8000-000000000001",
-          "texto": "Clique num bloco da grade para abrir os detalhes daquele compromisso. Todo bloco mostra o nome; os mais compridos mostram também o horário de início. Aqui vamos abrir a reunião de equipe de quarta-feira.",
+          "texto": "Clique num bloco da grade para abrir os detalhes daquele compromisso. Todo bloco mostra o nome, e os mais compridos mostram também o horário de início. Na foto, abrimos a reunião de equipe de quarta-feira.",
           "destaques": [
             {
               "alvo": {
@@ -600,8 +600,8 @@
         {
           "id": "p2",
           "titulo": "O que o painel mostra",
-          "texto": "Os detalhes abrem na lateral: o nome do compromisso, o dia e o horário, o local e a observação. A \"Anotação\" é um recado interno, para quem vai atender. Logo abaixo vem a situação (aqui, \"Agendado\", que é o mesmo que aparece como \"Confirmado\" na lista) e com quem é. Esta reunião não tem cliente, por isso aparece \"Compromisso pessoal, sem cliente vinculado.\". Quando há um cliente, no lugar aparece o link \"Ver contato\", que abre a ficha dele.",
-          "dica": "O quadro \"Sincronização Google\", no alto do painel, aparece em todo compromisso. Enquanto a agenda do Google não estiver conectada, ele pode dizer \"Ainda não publicado no Google.\" ou \"Há alterações aguardando sincronização.\", com o botão \"Tentar sincronizar novamente\". Pode ignorar: o compromisso fica só aqui na Agenda.",
+          "texto": "Os detalhes abrem na lateral: o nome do compromisso, o dia e o horário, o local e a observação. A \"Anotação\" é um recado interno, para quem vai atender. Logo abaixo vêm a situação e com quem é o compromisso. Na foto a situação é \"Agendado\", o mesmo que aparece como \"Confirmado\" na lista. Esta reunião não tem cliente, por isso aparece \"Compromisso pessoal, sem cliente vinculado.\". Quando há um cliente, aparece no lugar o link \"Ver contato\", que abre a ficha dele.",
+          "dica": "O quadro \"Sincronização Google\", no alto do painel, aparece em todo compromisso. Se a agenda do Google não estiver conectada, ele pode dizer \"Ainda não publicado no Google.\" ou \"Há alterações aguardando sincronização.\", com o botão \"Tentar sincronizar novamente\". Pode ignorar: o compromisso fica só aqui na Agenda.",
           "antes": [
             {
               "acao": "click",
@@ -654,7 +654,7 @@
         {
           "id": "p3",
           "titulo": "As ações do compromisso",
-          "texto": "Mais abaixo ficam as ações. \"Compareceu\" e \"Faltou\" registram o que aconteceu, e só funcionam depois que o horário começou. Quando o compromisso tem cliente e ele avisou por mensagem, escolha a mensagem dele em \"Mensagem do cliente usada como evidência (opcional)\" antes de clicar. \"Lembrar em uma hora\" adia por uma hora o aviso que pede à equipe para registrar a presença. Para desmarcar, escreva o motivo, com pelo menos 3 letras, em \"Motivo do cancelamento\" e clique em \"Cancelar agendamento\".",
+          "texto": "Mais abaixo ficam as ações. \"Compareceu\" e \"Faltou\" registram o que aconteceu e só funcionam depois que o horário começou. Se o compromisso tem cliente e ele avisou por mensagem, escolha essa mensagem em \"Mensagem do cliente usada como evidência (opcional)\" antes de clicar. \"Lembrar em uma hora\" adia por uma hora o aviso que pede à equipe para registrar a presença. Para desmarcar, escreva o motivo em \"Motivo do cancelamento\", com pelo menos 3 letras, e clique em \"Cancelar agendamento\".",
           "antes": [
             {
               "acao": "rolar",
@@ -740,7 +740,7 @@
           "id": "p1",
           "titulo": "O botão Novo agendamento",
           "rota": "/app/agenda?tipo=be310000-0000-4000-8000-000000000001",
-          "texto": "O botão \"Novo agendamento\", no alto à direita, abre o painel para marcar um horário. Ele só aparece para quem é atendente ou tem cargo acima, e fica apagado enquanto não houver nenhum tipo de agendamento cadastrado.",
+          "texto": "O botão \"Novo agendamento\", no alto à direita, abre o painel para marcar um horário. Ele só aparece para quem é atendente ou tem cargo acima. Fica apagado enquanto não houver nenhum tipo de agendamento cadastrado.",
           "destaques": [
             {
               "alvo": {
@@ -758,8 +758,8 @@
         {
           "id": "p2",
           "titulo": "Os dados do compromisso",
-          "texto": "O painel abre na lateral. Em cima ficam os dados do compromisso: \"Quem será atendido\", o \"Tipo de agendamento\", o \"E-mail do convidado\", o \"Endereço\" e a \"Observação\". Escolha o tipo pelos botões (eles aparecem quando a clínica tem mais de um tipo); cada um mostra a duração. O endereço já vem com o do tipo escolhido, e dá para trocar. Se \"Quem será atendido\" ficar em branco, o compromisso é pessoal, sem cliente.",
-          "dica": "O convite por e-mail só sai quando quem atende conectou a agenda do Google. Aí o cliente com e-mail na ficha já é convidado, e o \"E-mail do convidado\" serve para chamar mais alguém, como um acompanhante. Sem o Google conectado, ninguém recebe convite por e-mail.",
+          "texto": "O painel abre na lateral. Em cima ficam os dados do compromisso: \"Quem será atendido\", o \"Tipo de agendamento\", o \"E-mail do convidado\", o \"Endereço\" e a \"Observação\". Escolha o tipo pelos botões, que mostram a duração de cada um. Eles aparecem quando a clínica tem mais de um tipo. O endereço já vem com o do tipo escolhido, mas dá para trocar. Se \"Quem será atendido\" ficar em branco, o compromisso é pessoal, sem cliente.",
+          "dica": "O convite por e-mail só sai quando quem atende conectou a agenda do Google. Nesse caso, o cliente com e-mail na ficha já é convidado. O \"E-mail do convidado\" serve para chamar mais alguém, como um acompanhante. Sem o Google conectado, ninguém recebe convite por e-mail.",
           "antes": [
             {
               "acao": "click",
@@ -822,7 +822,7 @@
         {
           "id": "p3",
           "titulo": "Escolher o cliente",
-          "texto": "Clique em \"Quem será atendido\" e digite o nome do cliente. A lista mostra os contatos que combinam; clique no certo. Quando nenhum contato combina com o que você digitou, a lista oferece \"Criar\" com esse nome, para cadastrar o cliente ali mesmo. A primeira opção, \"Compromisso pessoal, sem cliente\", serve para marcar um horário sem cliente, como uma reunião.",
+          "texto": "Clique em \"Quem será atendido\" e digite o nome do cliente. A lista mostra os contatos que combinam. Clique no certo. Se nenhum contato combinar com o que você digitou, a lista oferece \"Criar\" com esse nome, para cadastrar o cliente ali mesmo. A primeira opção, \"Compromisso pessoal, sem cliente\", serve para marcar um horário sem cliente, como uma reunião.",
           "antes": [
             {
               "acao": "fill",
@@ -871,7 +871,7 @@
         {
           "id": "p4",
           "titulo": "O resumo e o calendário",
-          "texto": "Com o cliente escolhido, aparece \"Conversa vinculada (opcional)\", para ligar o compromisso a uma conversa dele. Mais abaixo, à esquerda, o painel resume o atendimento: quem atende, o tipo, a duração e o local. No calendário ao lado, os dias com horário livre ficam coloridos. Clique num deles.",
+          "texto": "Depois de escolher o cliente, aparece \"Conversa vinculada (opcional)\", para ligar o compromisso a uma conversa dele. Mais abaixo, à esquerda, o painel resume o atendimento: quem atende, o tipo, a duração e o local. No calendário ao lado, os dias com horário livre ficam coloridos. Clique em um deles.",
           "antes": [
             {
               "acao": "click",
@@ -931,8 +931,8 @@
         {
           "id": "p5",
           "titulo": "Escolher o horário e confirmar",
-          "texto": "Os horários livres do dia aparecem à direita. Clique no que quiser e aparece o resumo com o dia e a hora. O compromisso só é marcado quando você clica em \"Confirmar\". Depois disso, o painel mostra \"Marcado.\" e o botão \"Ver na agenda\".",
-          "dica": "Precisa de um horário que não está na lista? \"Outro horário\" deixa digitar a hora. Vale fora dos horários publicados; a agenda só recusa se o horário já estiver ocupado.",
+          "texto": "Os horários livres do dia aparecem à direita. Clique no horário que quiser, e o resumo mostra o dia e a hora. O compromisso só é marcado quando você clica em \"Confirmar\". Depois disso, o painel mostra \"Marcado.\" e o botão \"Ver na agenda\".",
+          "dica": "Precisa de um horário que não está na lista? \"Outro horário\" deixa você digitar a hora, mesmo fora dos horários publicados. A agenda só recusa se o horário já estiver ocupado.",
           "antes": [
             {
               "acao": "click",
@@ -1015,7 +1015,7 @@
           "id": "p1",
           "titulo": "Horários livres de qual tipo",
           "rota": "/app/agenda?tipo=be310000-0000-4000-8000-000000000001",
-          "texto": "Logo acima da grade fica a linha \"Horários livres de\", com um botão para cada tipo de agendamento. O tipo escolhido decide quais horários a grade oferece: a duração dele e o expediente de quem atende. Aqui está escolhida a \"Sessão de fisioterapia\", que é da Ana. Quando não sobra horário livre no período, aparece o aviso \"Nenhum horário livre neste período.\". E, se quem atende ainda não publicou o expediente, o aviso é \"A jornada de atendimento ainda não foi publicada.\".",
+          "texto": "Logo acima da grade fica a linha \"Horários livres de\", com um botão para cada tipo de agendamento. O tipo escolhido decide quais horários a grade oferece, conforme a duração dele e o expediente de quem atende. Se não sobra horário livre no período, aparece o aviso \"Nenhum horário livre neste período.\". Se quem atende ainda não publicou o expediente, o aviso é \"A jornada de atendimento ainda não foi publicada.\". Na foto, está escolhida a \"Sessão de fisioterapia\", que é da Ana.",
           "destaques": [
             {
               "alvo": {
@@ -1040,7 +1040,7 @@
         {
           "id": "p2",
           "titulo": "Achar um horário livre",
-          "texto": "Avançamos uma semana: ali a Ana ainda tem muitos horários livres. Passe o mouse na grade: o horário livre que está embaixo do mouse fica colorido e o cursor vira a mãozinha de clique. Os espaços fora do expediente e os horários já ocupados não mudam de cor nem respondem ao clique.",
+          "texto": "Passe o mouse na grade: o horário livre que está sob o mouse fica colorido e o cursor vira a mãozinha de clique. Os espaços fora do expediente e os horários já ocupados não mudam de cor nem respondem ao clique. Na foto, avançamos uma semana, porque ali a Ana ainda tem muitos horários livres.",
           "antes": [
             {
               "acao": "click",
@@ -1150,7 +1150,7 @@
           "id": "p1",
           "titulo": "Remarcar e Cancelar na lista",
           "rota": "/app/agenda?tipo=be310000-0000-4000-8000-000000000001",
-          "texto": "Na aba \"Próximos\" da lista, cada compromisso tem os botões \"Remarcar\" e \"Cancelar\". Avançamos para a semana que vem e vamos remarcar a sessão de fisioterapia do Roberto Almeida.",
+          "texto": "Na aba \"Próximos\" da lista, cada compromisso tem os botões \"Remarcar\" e \"Cancelar\". Na foto, avançamos para a semana que vem para remarcar a sessão de fisioterapia do Roberto Almeida.",
           "antes": [
             {
               "acao": "click",
@@ -1192,8 +1192,8 @@
         {
           "id": "p2",
           "titulo": "Escolher o novo horário",
-          "texto": "Abre o painel \"Remarcar agendamento\", com o mesmo calendário de marcar. Escolha o novo dia e o novo horário e clique em \"Confirmar\". O compromisso muda de lugar e continua com o mesmo cliente, o mesmo tipo e a mesma pessoa que atende.",
-          "dica": "Antes de clicar em \"Remarcar\", confira se \"Horários livres de\", acima da grade, está no tipo do compromisso: os horários oferecidos seguem esse tipo. Para remarcar uma consulta do Carlos, escolha antes \"Consulta odontológica\" ali. Trocar o tipo dentro do painel não muda o tipo do compromisso. Também dá para arrastar o bloco na grade até outro horário: a Agenda pergunta antes de remarcar.",
+          "texto": "Abre o painel \"Remarcar agendamento\", com o mesmo calendário usado para marcar. Escolha o novo dia e o novo horário e clique em \"Confirmar\". O compromisso muda de lugar, mas continua com o mesmo cliente, o mesmo tipo e a mesma pessoa que atende.",
+          "dica": "Antes de clicar em \"Remarcar\", olhe o \"Horários livres de\", acima da grade. Ele precisa estar no tipo do compromisso, porque os horários oferecidos seguem esse tipo. Para remarcar uma consulta do Carlos, escolha antes \"Consulta odontológica\" ali. Trocar o tipo dentro do painel não muda o tipo do compromisso. Também dá para arrastar o bloco na grade até outro horário. Nesse caso, a Agenda pergunta antes de remarcar.",
           "antes": [
             {
               "acao": "click",
@@ -1234,7 +1234,7 @@
         {
           "id": "p3",
           "titulo": "Cancelar com motivo",
-          "texto": "Para desmarcar, clique em \"Cancelar\" na linha do compromisso. Aqui vamos desmarcar a sessão da Camila Rocha de quarta-feira. O painel pede o motivo, que é obrigatório: escreva pelo menos 3 letras e o botão \"Cancelar agendamento\" acende. O horário volta a ficar livre e o compromisso vai para a aba \"Cancelados\". \"Voltar\" fecha o painel sem cancelar nada.",
+          "texto": "Para desmarcar, clique em \"Cancelar\" na linha do compromisso. O painel pede o motivo, que é obrigatório. Escreva pelo menos 3 letras e o botão \"Cancelar agendamento\" acende. O horário volta a ficar livre e o compromisso vai para a aba \"Cancelados\". \"Voltar\" fecha o painel sem cancelar nada. Na foto, desmarcamos a sessão da Camila Rocha de quarta-feira.",
           "antes": [
             {
               "acao": "press",

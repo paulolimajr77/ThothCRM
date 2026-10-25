@@ -21,7 +21,7 @@
         {
           "id": "p1",
           "titulo": "A lista de funis",
-          "texto": "Um funil é o caminho que um cliente percorre até fechar com você, dividido em etapas. Esta tela lista os funis da empresa. A Clínica Bem Viver tem um: \"Pacientes\". O selo \"Padrão\" marca o funil onde entra, sozinho, quem manda a primeira mensagem pelo WhatsApp da clínica (com o WhatsApp conectado).",
+          "texto": "Um funil é o caminho que um cliente percorre até fechar com você, dividido em etapas. Esta tela lista os funis da empresa. A Clínica Bem Viver tem um: \"Pacientes\". O selo \"Padrão\" marca o funil que recebe sozinho quem manda a primeira mensagem pelo WhatsApp da clínica. Isso vale com o WhatsApp conectado.",
           "rota": "/app/kanban",
           "antes": [],
           "destaques": [
@@ -45,7 +45,7 @@
         {
           "id": "p2",
           "titulo": "Os botões do topo",
-          "texto": "\"Novo funil\" cria outro funil, por exemplo um só para pilates ou para odontologia. \"Importar planilha\" traz de uma vez uma lista de clientes que você já tem, num arquivo CSV: cada linha vira um cartão na primeira etapa do funil escolhido. Ao lado de cada funil ficam \"Renomear\" e \"Arquivar\"; você usa esses botões na última lição.",
+          "texto": "\"Novo funil\" cria outro funil, por exemplo um só para pilates ou para odontologia. \"Importar planilha\" traz de uma vez uma lista de clientes que você já tem, num arquivo CSV. Cada linha vira um cartão na primeira etapa do funil escolhido. Ao lado de cada funil ficam \"Renomear\" e \"Arquivar\", que você usa na última lição.",
           "dica": "Só quem é gerente ou administrador vê \"Novo funil\", \"Renomear\" e \"Arquivar\". O atendente vê a lista e importa planilhas.",
           "antes": [],
           "destaques": [
@@ -72,7 +72,7 @@
         {
           "id": "p3",
           "titulo": "A janela de importar planilha",
-          "texto": "Escolha em \"Funil de destino\" para onde os clientes vão e clique em \"Escolher o arquivo CSV\". CSV é um formato de planilha: no Excel, use Arquivo › Salvar como › CSV; no Google Planilhas, Arquivo › Fazer download › CSV. \"Baixar planilha modelo\" baixa um exemplo com as colunas certas. No fim, a janela mostra quantos cartões foram criados, as colunas que ela não reconheceu e as linhas recusadas, com o motivo.",
+          "texto": "Em \"Funil de destino\", escolha para onde os clientes vão. Depois clique em \"Escolher o arquivo CSV\". CSV é um formato de planilha. No Excel, use Arquivo › Salvar como › CSV. No Google Planilhas, use Arquivo › Fazer download › CSV. \"Baixar planilha modelo\" baixa um exemplo com as colunas certas. No fim, a janela mostra quantos cartões foram criados, as colunas que ela não reconheceu e as linhas recusadas, com o motivo.",
           "antes": [
             {
               "acao": "click",
@@ -116,8 +116,8 @@
         {
           "id": "p4",
           "titulo": "Abrindo o quadro do funil",
-          "texto": "Feche a janela e clique no nome do funil para abrir o quadro dele. É no quadro que você trabalha no dia a dia: ele mostra todos os clientes do funil, etapa por etapa.",
-          "dica": "O texto miúdo embaixo da lista lembra que, hoje, todo contato novo entra pelo funil padrão. Para mandar quem já é cliente para um funil separado, ligue \"Clientes pela agenda\" em Configurações › Tipos de agendamento. O link \"Abrir Tipos de agendamento\", ali mesmo, leva até lá.",
+          "texto": "Feche a janela e clique no nome do funil para abrir o quadro dele. Você trabalha no quadro no dia a dia. Ele mostra todos os clientes do funil, etapa por etapa.",
+          "dica": "O texto miúdo embaixo da lista lembra que, hoje, todo contato novo entra pelo funil padrão. Quer mandar quem já é cliente para um funil separado? Ligue \"Clientes pela agenda\" em Configurações › Tipos de agendamento. O link \"Abrir Tipos de agendamento\", ali mesmo, leva até lá.",
           "antes": [
             {
               "acao": "press",
@@ -195,7 +195,7 @@
         {
           "id": "p2",
           "titulo": "O que o cartão mostra",
-          "texto": "Em cima fica o título do negócio e, logo abaixo, o valor. A linha com o balão é a última mensagem da conversa com esse cliente: clicar nela abre a conversa na Inbox. O número verde no fim dessa linha conta as mensagens que ninguém leu ainda. Depois vêm o telefone do contato, quem é o responsável e há quanto tempo o cartão está nesta etapa (\"3h\" são três horas).",
+          "texto": "Em cima fica o título do negócio e, logo abaixo, o valor. A linha com o balão é a última mensagem da conversa com esse cliente. Clicar nela abre a conversa na Inbox. O número verde no fim dessa linha conta as mensagens que ninguém leu ainda. Depois vêm o telefone do contato, o responsável e há quanto tempo o cartão está nesta etapa (\"3h\" são três horas).",
           "antes": [],
           "destaques": [
             {
@@ -276,7 +276,7 @@
         {
           "id": "p4",
           "titulo": "Negócio esfriando",
-          "texto": "Quando um negócio fica parado, sem conversa nem mudança, por mais tempo que o normal da etapa (sem ajuste, um dia), o cartão ganha uma faixa laranja do lado esquerdo e o aviso \"Sem resposta há…\" logo abaixo do valor. O rodapé deixa de mostrar o tempo na etapa. É o mesmo aviso da tela Radar. Se já existe um retorno agendado com o cliente, o cartão não ganha o aviso. Aqui, a avaliação do Sérgio está parada há quatro dias: é hora de procurar esse cliente.",
+          "texto": "O cartão ganha uma faixa laranja do lado esquerdo quando o negócio fica parado, sem conversa nem mudança, por mais tempo que o normal da etapa. Sem ajuste, o normal é um dia. Logo abaixo do valor aparece o aviso \"Sem resposta há…\", e o rodapé deixa de mostrar o tempo na etapa. É o mesmo aviso da tela Radar. Mas, se já existe um retorno agendado com o cliente, o cartão não ganha o aviso. Na foto, a avaliação do Sérgio está parada há quatro dias: é hora de procurar esse cliente.",
           "antes": [],
           "destaques": [
             {
@@ -310,7 +310,7 @@
         {
           "id": "p5",
           "titulo": "As etapas de ganho e de perda",
-          "texto": "Role o quadro para o lado para ver as outras etapas. Neste funil, \"Em tratamento\", a terceira coluna, é a etapa de ganho: o cartão que chega nela conta como negócio fechado. \"Cancelado\", a última coluna, é a etapa de perda. As colunas que dizem \"vazio\" ainda não têm nenhum cartão. No topo das etapas de ganho e de perda aparece também o valor \"ponderado\": na de ganho ele é igual à soma, porque o negócio já fechou; na de perda é zero.",
+          "texto": "Role o quadro para o lado para ver as outras etapas. Neste funil, a terceira coluna, \"Em tratamento\", é a etapa de ganho. O cartão que chega nela conta como negócio fechado. \"Cancelado\", a última coluna, é a etapa de perda. As colunas que dizem \"vazio\" ainda não têm nenhum cartão. No topo das etapas de ganho e de perda aparece também o valor \"ponderado\". Na etapa de ganho, ele é igual à soma, porque o negócio já fechou. Na de perda, é zero.",
           "antes": [
             {
               "acao": "rolar",
@@ -334,7 +334,7 @@
         {
           "id": "p6",
           "titulo": "Quadro ou calendário",
-          "texto": "No alto, \"Quadro\" e \"Calendário\" trocam o jeito de ver o mesmo funil. O calendário espalha os cartões pelos dias de um campo de data que você cria no funil, como a data da avaliação (a data de fechamento previsto não entra). Este funil ainda não tem campo de data, então o calendário avisa isso. Os campos se criam em CRM › \"Ver tudo em CRM\" › \"Etapas do funil\".",
+          "texto": "No alto, \"Quadro\" e \"Calendário\" trocam o jeito de ver o mesmo funil. O calendário espalha os cartões pelos dias de um campo de data que você cria no funil, como a data da avaliação. A data de fechamento previsto não entra. Este funil ainda não tem campo de data, então o calendário avisa isso. Você cria os campos em CRM › \"Ver tudo em CRM\" › \"Etapas do funil\".",
           "antes": [
             {
               "acao": "click",
@@ -487,7 +487,7 @@
         {
           "id": "p3",
           "titulo": "Filtrando por responsável",
-          "texto": "Limpe a busca e abra \"Responsável\". \"Sem responsável\" mostra os negócios que ninguém pegou; \"Eu\" mostra os seus. Abaixo vêm as outras pessoas da equipe e os agentes de IA. Escolha \"Ana Ribeiro\" para ver só a carteira dela.",
+          "texto": "Limpe a busca e abra \"Responsável\". \"Sem responsável\" mostra os negócios que ninguém pegou, e \"Eu\" mostra os seus. Abaixo vêm as outras pessoas da equipe e os agentes de IA. Escolha \"Ana Ribeiro\" para ver só a carteira dela.",
           "antes": [
             {
               "acao": "click",
@@ -575,7 +575,7 @@
         {
           "id": "p5",
           "titulo": "Vendo os negócios perdidos",
-          "texto": "Em \"Status\", \"Perdidos\" mostra só os negócios que não fecharam; eles ficam na etapa de perda, \"Cancelado\", no fim do quadro. Com esse filtro ligado aparece o botão \"Motivo\", que separa as perdas pelo motivo escolhido na hora de perder, como \"Preço\". Ao lado pode aparecer \"Categoria\", que agrupa as perdas por quem causou: o cliente, a própria clínica (\"Nós\"), a concorrência ou a falta de resposta. É um jeito rápido de ver por que os clientes desistem.",
+          "texto": "Em \"Status\", \"Perdidos\" mostra só os negócios que não fecharam. Eles ficam na etapa de perda, \"Cancelado\", no fim do quadro. Com esse filtro ligado, aparece o botão \"Motivo\". Ele separa as perdas pelo motivo escolhido na hora de perder, como \"Preço\". Ao lado pode aparecer \"Categoria\", que agrupa as perdas por quem causou: o cliente, a própria clínica (\"Nós\"), a concorrência ou a falta de resposta. É um jeito rápido de ver por que os clientes desistem.",
           "antes": [
             {
               "acao": "click",
@@ -665,7 +665,7 @@
         {
           "id": "p6",
           "titulo": "Negócios atrasados",
-          "texto": "Marque \"Apenas atrasados\" para ver os negócios abertos cuja data de fechamento prevista já passou. Aqui aparece a avaliação do Sérgio, que ficou de confirmar a data e sumiu: é o cliente para procurar hoje.",
+          "texto": "Marque \"Apenas atrasados\" para ver os negócios abertos cuja data de fechamento prevista já passou. Na foto aparece a avaliação do Sérgio, que ficou de confirmar a data e sumiu: é o cliente para procurar hoje.",
           "dica": "Os filtros ficam guardados no endereço da página. Se você copiar o endereço e mandar para alguém da equipe, a pessoa abre o quadro já filtrado.",
           "antes": [
             {
@@ -847,7 +847,7 @@
         {
           "id": "p3",
           "titulo": "Preencha o negócio",
-          "texto": "Ao escolher o contato, o título vem com o nome dele; troque por algo que diga o que está sendo negociado. Em \"Etapa\" já vem a primeira etapa do funil. Preencha o \"Valor\" e, se quiser, a data de \"Fechamento previsto\" e etiquetas em \"Tags\", separadas por vírgula.",
+          "texto": "Ao escolher o contato, o título vem com o nome dele. Troque por algo que diga o que está sendo negociado. Em \"Etapa\" já vem a primeira etapa do funil. Preencha o \"Valor\". Se quiser, preencha também a data de \"Fechamento previsto\" e as etiquetas em \"Tags\", separadas por vírgula.",
           "antes": [
             {
               "acao": "click",
@@ -917,8 +917,8 @@
         {
           "id": "p4",
           "titulo": "O cartão novo no quadro",
-          "texto": "Clique em \"Criar lead\". O cartão aparece na etapa escolhida, com o valor, o telefone e a última conversa do contato. O quadro desce sozinho até o cartão novo; os outros continuam lá em cima. Como a Beatriz ainda não tem ninguém fixo cuidando dela, ele nasce \"Sem responsável\". Para escolher quem cuida, use o menu do cartão, que você conhece na próxima lição.",
-          "dica": "Se o contato já tem um negócio aberto neste funil, ao clicar em \"Criar lead\" a janela avisa e mostra o link para o que já existe. Aí você escolhe entre \"Não criar\" e \"Criar mesmo assim\".",
+          "texto": "Clique em \"Criar lead\". O cartão aparece na etapa escolhida, com o valor, o telefone e a última conversa do contato. O quadro desce sozinho até o cartão novo, e os outros continuam lá em cima. A Beatriz ainda não tem ninguém fixo cuidando dela, então o cartão nasce \"Sem responsável\". Para escolher quem cuida, use o menu do cartão, que você conhece na próxima lição.",
+          "dica": "Se o contato já tem um negócio aberto neste funil, a janela avisa ao clicar em \"Criar lead\" e mostra o link para o que já existe. Aí você escolhe entre \"Não criar\" e \"Criar mesmo assim\".",
           "antes": [
             {
               "acao": "click",
@@ -973,7 +973,7 @@
         {
           "id": "p1",
           "titulo": "Arrastar muda a etapa",
-          "texto": "Para mudar um negócio de etapa, segure o cartão e arraste até a coluna nova. Para os outros comandos, passe o mouse no cartão: aparecem os três pontinhos no canto de cima. Clique neles para abrir o menu do cartão.",
+          "texto": "Para mudar um negócio de etapa, segure o cartão e arraste até a coluna nova. Para os outros comandos, passe o mouse no cartão. Aparecem três pontinhos no canto de cima. Clique neles para abrir o menu do cartão.",
           "rota": "/app/kanban",
           "antes": [
             {
@@ -1027,7 +1027,7 @@
         {
           "id": "p2",
           "titulo": "O menu do cartão",
-          "texto": "\"Editar\" muda título, valor, descrição e data prevista. \"Responsável\" passa o negócio para outra pessoa ou para um agente de IA. \"Marcar como ganho\" e \"Marcar como perdido\" fecham o negócio. \"Levar para outro funil\" recria o negócio em outro funil e fecha este como perdido; com um funil só, a janela avisa que não há para onde levar. \"Excluir\" apaga o cartão, mas o contato e as conversas continuam.",
+          "texto": "No menu, \"Editar\" muda título, valor, descrição e data prevista. \"Responsável\" passa o negócio para outra pessoa ou para um agente de IA. \"Marcar como ganho\" e \"Marcar como perdido\" fecham o negócio. \"Levar para outro funil\" recria o negócio em outro funil e fecha este como perdido. Com um funil só, a janela avisa que não há para onde levar. \"Excluir\" apaga o cartão, mas o contato e as conversas continuam.",
           "antes": [
             {
               "acao": "click",
@@ -1066,7 +1066,7 @@
         {
           "id": "p3",
           "titulo": "Perder com motivo",
-          "texto": "\"Marcar como perdido\" sempre pede o motivo. Escolha o que aconteceu, aqui \"Sem resposta do cliente\", e clique em \"Confirmar\". O cartão vai para a etapa de perda do funil. Os motivos ficam guardados e depois aparecem no filtro \"Motivo\".",
+          "texto": "\"Marcar como perdido\" sempre pede o motivo. Escolha o que aconteceu e clique em \"Confirmar\". Na foto, o motivo é \"Sem resposta do cliente\". O cartão vai para a etapa de perda do funil. Os motivos ficam guardados e depois aparecem no filtro \"Motivo\".",
           "dica": "A lista que vem pronta traz motivos de loja, como \"Produto indisponível\". Para usar motivos com as palavras da sua clínica, cadastre a lista na tela \"Etapas do funil\".",
           "antes": [
             {
@@ -1121,7 +1121,7 @@
         {
           "id": "p4",
           "titulo": "Ganhar o negócio",
-          "texto": "Quando o cliente fecha, abra o menu do cartão (aqui, o da Juliana) e clique em \"Marcar como ganho\". O cartão vai para a etapa de ganho do funil, aqui \"Em tratamento\", e conta como negócio fechado. Sem ajuste no funil, se depois ele voltar para uma etapa aberta, o negócio é reaberto.",
+          "texto": "Quando o cliente fecha, abra o menu do cartão (aqui, o da Juliana) e clique em \"Marcar como ganho\". O cartão vai para a etapa de ganho do funil, aqui \"Em tratamento\", e conta como negócio fechado. Se o funil não foi ajustado, o negócio é reaberto quando o cartão volta para uma etapa aberta.",
           "antes": [
             {
               "acao": "click",
@@ -1219,7 +1219,7 @@
         {
           "id": "p6",
           "titulo": "Selecionar vários cartões",
-          "texto": "Para mexer em vários negócios de uma vez, passe o mouse no cartão e marque a caixinha ao lado do título. Para marcar a etapa inteira, use a caixinha que aparece no topo da coluna. Segurar Ctrl (Cmd no Mac) e clicar no cartão também marca.",
+          "texto": "Para mexer em vários negócios de uma vez, passe o mouse no cartão e marque a caixinha ao lado do título. Para marcar a etapa inteira, use a caixinha que aparece no topo da coluna. Também dá para clicar no cartão segurando Ctrl (Cmd no Mac).",
           "antes": [
             {
               "acao": "click",
@@ -1266,7 +1266,7 @@
         {
           "id": "p7",
           "titulo": "A barra de ações em grupo",
-          "texto": "Com cartões marcados, aparece uma barra embaixo. \"Mover para…\" muda todos de etapa, \"Responsável…\" passa todos para alguém, \"Tag…\" põe uma etiqueta, \"Marcar como perdido…\" fecha todos com um motivo e \"Excluir\" apaga. \"Cancelar\", ou a tecla Esc, desmarca tudo.",
+          "texto": "Com cartões marcados, aparece uma barra embaixo com estes botões. \"Mover para…\" muda todos de etapa. \"Responsável…\" passa todos para alguém. \"Tag…\" põe uma etiqueta. \"Marcar como perdido…\" fecha todos com um motivo. \"Excluir\" apaga. \"Cancelar\", ou a tecla Esc, desmarca tudo.",
           "antes": [],
           "destaques": [
             {
@@ -1393,7 +1393,7 @@
         {
           "id": "p3",
           "titulo": "Os dados do contato",
-          "texto": "A parte \"Contato\" mostra telefone e e-mail de quem está negociando; a aba \"Links\" guarda Instagram, site e outros endereços. \"Abrir no WhatsApp\" abre o WhatsApp do seu computador ou celular, fora do sistema: para a conversa ficar guardada aqui, prefira \"Abrir conversa no Inbox\". \"Ver ficha completa do contato\" leva para a tela do contato. Em \"Pessoas relacionadas\", \"Adicionar participante\" liga outras pessoas ao negócio, como quem paga.",
+          "texto": "A parte \"Contato\" mostra telefone e e-mail de quem está negociando. A aba \"Links\" guarda Instagram, site e outros endereços. \"Abrir no WhatsApp\" abre o WhatsApp do seu computador ou celular, fora do sistema. Para a conversa ficar guardada aqui, prefira \"Abrir conversa no Inbox\". \"Ver ficha completa do contato\" leva para a tela do contato. Em \"Pessoas relacionadas\", \"Adicionar participante\" liga outras pessoas ao negócio, como quem paga.",
           "antes": [],
           "destaques": [
             {
@@ -1464,7 +1464,7 @@
         {
           "id": "p5",
           "titulo": "Tarefas e histórico",
-          "texto": "Em \"Tarefas\", \"Nova tarefa\" anota o próximo passo combinado com o cliente, com prazo e responsável. A \"Linha do tempo\", no fim da ficha, registra tudo o que aconteceu com o negócio: aqui já aparece \"Dados do negócio alterados\", avisando que o valor mudou agora há pouco.",
+          "texto": "Em \"Tarefas\", \"Nova tarefa\" anota o próximo passo combinado com o cliente, com prazo e responsável. A \"Linha do tempo\", no fim da ficha, registra tudo o que aconteceu com o negócio. Na foto, já aparece \"Dados do negócio alterados\", avisando que o valor mudou agora há pouco.",
           "antes": [
             {
               "acao": "click",
@@ -1566,7 +1566,7 @@
         {
           "id": "p2",
           "titulo": "O funil novo na lista",
-          "texto": "O funil aparece no fim da lista. As setinhas à esquerda mudam a ordem dos funis. \"Tornar padrão\" faz quem escreve pela primeira vez no WhatsApp da clínica entrar por este funil, no lugar do atual; só use quando quiser mesmo trocar.",
+          "texto": "O funil aparece no fim da lista. As setinhas à esquerda mudam a ordem dos funis. \"Tornar padrão\" faz este funil receber quem escreve pela primeira vez no WhatsApp da clínica, no lugar do atual. Só use quando quiser mesmo trocar.",
           "antes": [
             {
               "acao": "click",
@@ -1655,7 +1655,7 @@
         {
           "id": "p4",
           "titulo": "Arquivar",
-          "texto": "\"Arquivar\" tira o funil da lista e ele para de receber negócios novos, mas nada é apagado. A pergunta aparece logo abaixo do funil. \"Excluir de vez\" só funciona em funil que não tem nenhum negócio, nem aberto nem encerrado; se tiver, o sistema recusa e explica por quê.",
+          "texto": "\"Arquivar\" tira o funil da lista e ele para de receber negócios novos, mas nada é apagado. A pergunta aparece logo abaixo do funil. \"Excluir de vez\" só funciona em funil sem nenhum negócio, nem aberto nem encerrado. Se tiver negócio, o sistema recusa e explica por quê.",
           "antes": [
             {
               "acao": "click",
@@ -1711,7 +1711,7 @@
         {
           "id": "p5",
           "titulo": "A gaveta dos arquivados",
-          "texto": "O funil arquivado vai para \"Funis arquivados\", embaixo da lista. Clique para abrir a gaveta. \"Tirar do arquivo\" traz o funil de volta para a lista; \"Excluir de vez\" apaga e libera o nome.",
+          "texto": "O funil arquivado vai para \"Funis arquivados\", embaixo da lista. Clique ali para abrir a gaveta. \"Tirar do arquivo\" traz o funil de volta para a lista. \"Excluir de vez\" apaga o funil e libera o nome.",
           "antes": [
             {
               "acao": "click",

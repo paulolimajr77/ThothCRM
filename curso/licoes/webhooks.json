@@ -48,7 +48,7 @@
         {
           "id": "p2",
           "titulo": "Uma fonte para cada formulário",
-          "texto": "Cada cartão é uma fonte. O selo verde \"Ativa\" quer dizer que ela está aceitando contatos. \"Pausada\" quer dizer que ela recusa os envios: quem preencher aquele formulário não entra no funil. Embaixo do nome aparece há quanto tempo chegou o último contato, ou \"nunca recebeu\" se ainda não chegou nenhum. Um formulário que costumava receber todo dia e está parado há muito tempo merece uma olhada.",
+          "texto": "Cada cartão é uma fonte. O selo verde \"Ativa\" quer dizer que ela está aceitando contatos. \"Pausada\" quer dizer que ela recusa os envios, então quem preencher aquele formulário não entra no funil. Embaixo do nome aparece há quanto tempo chegou o último contato, ou \"nunca recebeu\" se ainda não chegou nenhum. Um formulário que costumava receber todo dia e está parado há muito tempo merece uma olhada.",
           "antes": [],
           "destaques": [
             {
@@ -93,7 +93,7 @@
         {
           "id": "p3",
           "titulo": "Abrindo uma fonte",
-          "texto": "Clique num cartão para abrir o painel da fonte, à direita. No alto ficam o nome e a situação. O lápis ao lado do nome serve para renomear a fonte. Logo abaixo vem o endereço da fonte: é ele que você cola no seu site. A próxima lição mostra como.",
+          "texto": "Clique num cartão para abrir o painel da fonte, à direita. No alto ficam o nome e a situação. O lápis ao lado do nome serve para renomear a fonte. Logo abaixo vem o endereço da fonte, que você cola no seu site. A próxima lição mostra como.",
           "antes": [
             {
               "acao": "click",
@@ -170,7 +170,7 @@
         {
           "id": "p2",
           "titulo": "Dar um nome",
-          "texto": "Dê à fonte um nome que diga qual é o formulário. Aqui, \"Formulário de avaliação postural\". Depois escolha o \"Funil de entrada\", o funil em que o contato vai entrar. O \"Estágio de entrada\" (a etapa do funil) só abre depois do funil. Em \"URL de obrigado\", cole a página de agradecimento do seu site. Ela vale para o formulário pronto do CRM. Preencha agora: depois de criada, a fonte não deixa mudar esse endereço.",
+          "texto": "Dê à fonte um nome que diga qual é o formulário. Na foto, o nome é \"Formulário de avaliação postural\". Depois escolha o \"Funil de entrada\", o funil em que o contato vai entrar. O \"Estágio de entrada\" (a etapa do funil) só abre depois do funil. Em \"URL de obrigado\", cole a página de agradecimento do seu site. Ela vale para o formulário pronto do CRM. Preencha agora, porque, depois de criada a fonte, não dá para mudar esse endereço.",
           "antes": [
             {
               "acao": "click",
@@ -302,7 +302,7 @@
         {
           "id": "p5",
           "titulo": "Criar a fonte",
-          "texto": "Confira o funil e o estágio e clique em \"Criar fonte\". Se esquecer um dos dois, a tela avisa e não cria. Capriche nessa escolha: depois de criada, a fonte não deixa trocar o funil nem o estágio.",
+          "texto": "Confira o funil e o estágio e clique em \"Criar fonte\". Se esquecer um dos dois, a tela avisa e não cria. Capriche nessa escolha, porque, depois de criada a fonte, não dá para trocar o funil nem o estágio.",
           "antes": [
             {
               "acao": "click",
@@ -345,7 +345,7 @@
         {
           "id": "p6",
           "titulo": "A fonte pronta",
-          "texto": "A fonte nasce ativa, e o painel dela abre sozinho. O endereço no alto já está pronto para usar: cada envio com nome, telefone ou e-mail vira um contato no funil Pacientes, na etapa Primeiro contato. As chaves técnicas logo abaixo do endereço podem ficar desligadas. A próxima lição mostra como colocar esse endereço no seu site.",
+          "texto": "A fonte nasce ativa, e o painel dela abre sozinho. O endereço no alto já está pronto para usar. Cada envio com nome, telefone ou e-mail vira um contato no funil Pacientes, na etapa Primeiro contato. As chaves técnicas logo abaixo do endereço podem ficar desligadas. A próxima lição mostra como colocar esse endereço no seu site.",
           "antes": [
             {
               "acao": "click",
@@ -400,7 +400,7 @@
         {
           "id": "p1",
           "titulo": "O endereço da fonte",
-          "texto": "Abra a fonte do formulário que você quer ligar. O endereço da fonte é para onde o seu formulário manda os dados. Muitos construtores de site têm um campo para colar esse endereço. O botão ao lado copia o endereço inteiro. No seu CRM, o endereço começa com o endereço da sua instalação.",
+          "texto": "Abra a fonte do formulário que você quer ligar. O endereço da fonte é para onde o seu formulário manda os dados. Muitos construtores de site têm um campo para colar esse endereço. O botão ao lado copia o endereço inteiro. O começo dele é o endereço da sua instalação do CRM.",
           "rota": "/app/webhooks",
           "antes": [
             {
@@ -438,7 +438,7 @@
         {
           "id": "p2",
           "titulo": "Perguntas extras do formulário",
-          "texto": "Além de nome, WhatsApp e e-mail, o formulário pode ter perguntas suas. Esta fonte já pergunta \"Qual é o seu objetivo?\", com uma lista de opções. \"+ Adicionar pergunta\" cria outra: você escreve a pergunta e escolhe o tipo de resposta (texto curto, texto longo, número, moeda, lista de opções ou caixa de seleção). \"Remover\" tira a pergunta. O botão \"Salvar perguntas\" só fica disponível depois que você muda alguma coisa. As respostas ficam guardadas no lead.",
+          "texto": "Além de nome, WhatsApp e e-mail, o formulário pode ter perguntas suas. Esta fonte já pergunta \"Qual é o seu objetivo?\", com uma lista de opções. \"+ Adicionar pergunta\" cria outra. Você escreve a pergunta e escolhe o tipo de resposta: texto curto, texto longo, número, moeda, lista de opções ou caixa de seleção. \"Remover\" tira a pergunta. O botão \"Salvar perguntas\" só fica disponível depois que você muda alguma coisa. As respostas ficam guardadas no lead.",
           "antes": [
             {
               "acao": "rolar",
@@ -476,12 +476,12 @@
               "tipo": "seta"
             }
           ],
-          "dica": "\"Resposta obrigatória\" faz o formulário pronto não deixar enviar sem essa resposta. \"Chave enviada ao CRM\" é o nome interno do campo: pode deixar o que aparece."
+          "dica": "Com \"Resposta obrigatória\", o formulário pronto não deixa enviar sem essa resposta. \"Chave enviada ao CRM\" é o nome interno do campo. Pode deixar o que aparece."
         },
         {
           "id": "p3",
           "titulo": "O formulário pronto",
-          "texto": "Se o seu site não tem formulário, use o pronto. \"Copiar formulário\" copia o código, já com as suas perguntas e apontando para o endereço certo. Cole esse código numa área de código do seu site, ou entregue a quem cuida dele. Para quem enviar ver uma página de agradecimento, a fonte precisa ter sido criada com a \"URL de obrigado\" preenchida.",
+          "texto": "Se o seu site não tem formulário, use o pronto. \"Copiar formulário\" copia o código, já com as suas perguntas e apontando para o endereço certo. Cole esse código numa área de código do seu site, ou entregue a quem cuida dele. A página de agradecimento só aparece para quem enviar se a fonte tiver sido criada com a \"URL de obrigado\" preenchida.",
           "antes": [
             {
               "acao": "rolar",
@@ -514,7 +514,7 @@
         {
           "id": "p4",
           "titulo": "Passo a passo para o seu caso",
-          "texto": "Clique em \"Como conectar no seu caso\" para ver onde colar o endereço nas ferramentas mais usadas: Elementor Pro, JetFormBuilder, WordPress, Zapier ou n8n, e \"Formulário próprio\", que é o código pronto do passo anterior. Logo abaixo, \"Para desenvolvedores\" traz um exemplo técnico para quem programa.",
+          "texto": "Clique em \"Como conectar no seu caso\" para ver onde colar o endereço nas ferramentas mais usadas: Elementor Pro, JetFormBuilder, WordPress, Zapier ou n8n. Há também \"Formulário próprio\", que é o código pronto do passo anterior. Logo abaixo, \"Para desenvolvedores\" traz um exemplo técnico para quem programa.",
           "antes": [
             {
               "acao": "click",
@@ -588,7 +588,7 @@
         {
           "id": "p6",
           "titulo": "Últimos recebimentos",
-          "texto": "Em \"Últimos recebimentos\" fica cada envio que chegou por esta fonte, do mais novo para o mais antigo. O primeiro é o teste que você acabou de fazer. A bolinha verde quer dizer só que o envio chegou; a vermelha, que a assinatura não conferiu. Para saber se o envio virou lead, veja a aba \"Leads recebidos\". A lista se atualiza sozinha a cada 5 segundos enquanto o painel está aberto.",
+          "texto": "Em \"Últimos recebimentos\" fica cada envio que chegou por esta fonte, do mais novo para o mais antigo. O primeiro é o teste que você acabou de fazer. A bolinha verde quer dizer só que o envio chegou. A vermelha quer dizer que a assinatura não conferiu. Para saber se o envio virou lead, veja a aba \"Leads recebidos\". A lista se atualiza sozinha a cada 5 segundos enquanto o painel está aberto.",
           "antes": [
             {
               "acao": "esperar",
@@ -608,8 +608,8 @@
         {
           "id": "p7",
           "titulo": "Pausar ou excluir",
-          "texto": "Para parar de receber contatos por um tempo, desligue \"Fonte ativa\": aparece o aviso \"Fonte pausada.\", o formulário passa a ser recusado e nada entra no funil. Ao fechar o painel, o cartão da fonte mostra \"Pausada\". Ligue de novo quando quiser. \"Excluir fonte\" desliga o endereço para sempre. Os contatos que já chegaram continuam no funil.",
-          "dica": "Acima fica a \"Assinatura (HMAC)\". Ela é só para quem tem um programador ligando outro sistema: protege o endereço para que só esse sistema consiga mandar contatos. Não ligue se você usa o formulário pronto ou um construtor de site: eles não sabem assinar, e todos os envios passam a ser recusados. Com ela ligada, o botão de teste também fica desligado.",
+          "texto": "Para parar de receber contatos por um tempo, desligue \"Fonte ativa\". Aparece o aviso \"Fonte pausada.\", o formulário passa a ser recusado e nada entra no funil. Ao fechar o painel, o cartão da fonte mostra \"Pausada\". Ligue de novo quando quiser. \"Excluir fonte\" desliga o endereço para sempre. Os contatos que já chegaram continuam no funil.",
+          "dica": "Acima fica a \"Assinatura (HMAC)\". Ela é só para quem tem um programador ligando outro sistema. Ela protege o endereço, para que só esse sistema consiga mandar contatos. Não ligue se você usa o formulário pronto ou um construtor de site, porque eles não sabem assinar e todos os envios passam a ser recusados. Com ela ligada, o botão de teste também fica desligado.",
           "antes": [
             {
               "acao": "rolar",
@@ -658,8 +658,8 @@
         {
           "id": "p1",
           "titulo": "Tudo o que chegou",
-          "texto": "A aba \"Leads recebidos\" lista cada envio dos seus formulários, do mais novo para o mais antigo: quem é, o contato, por qual fonte chegou, o dia e a hora, a página de origem e o resultado. \"Virou lead\" quer dizer que entrou no funil. \"Reenvio\" é quando o sistema que envia manda de novo o mesmo envio, com o mesmo código de identificação: ele não cria outro lead. Se a mesma pessoa preencher o formulário duas vezes, cada envio vira um lead. \"Não entrou\" quer dizer que o envio foi recusado.",
-          "dica": "Existe também \"Card atualizado\": aparece só em fontes com assinatura em que você ligou a opção de atualizar o card, quando o envio muda um card que já existia.",
+          "texto": "A aba \"Leads recebidos\" lista cada envio dos seus formulários, do mais novo para o mais antigo. Cada linha mostra quem é, o contato, por qual fonte chegou, o dia e a hora, a página de origem e o resultado. \"Virou lead\" quer dizer que entrou no funil. \"Reenvio\" é quando o sistema que envia manda de novo o mesmo envio, com o mesmo código de identificação. Ele não cria outro lead. Mas, se a mesma pessoa preencher o formulário duas vezes, cada envio vira um lead. \"Não entrou\" quer dizer que o envio foi recusado.",
+          "dica": "Existe também \"Card atualizado\". Ele aparece só em fontes com assinatura em que você ligou a opção de atualizar o card, quando o envio muda um card que já existia.",
           "rota": "/app/webhooks?aba=leads",
           "antes": [],
           "destaques": [
@@ -746,7 +746,7 @@
         {
           "id": "p3",
           "titulo": "Só os que não entraram",
-          "texto": "Com \"Não entrou\" escolhido, a lista mostra só os envios recusados. Este não tem nome: a tabela mostra \"(sem identificação)\". Clique nele para ver o motivo.",
+          "texto": "Com \"Não entrou\" escolhido, a lista mostra só os envios recusados. Este não tem nome, e a tabela mostra \"(sem identificação)\". Clique nele para ver o motivo.",
           "antes": [
             {
               "acao": "click",
@@ -840,7 +840,7 @@
         {
           "id": "p5",
           "titulo": "Um envio que virou lead",
-          "texto": "Agora um envio que deu certo, o da Larissa Mendes. Em \"O que o formulário trouxe\" aparecem nome, telefone, e-mail e a resposta da pergunta extra. O botão \"Cadastrar como campo do lead\" transforma essa resposta num campo do funil, que passa a aparecer no card do lead.",
+          "texto": "Agora um envio que deu certo, o da Larissa Mendes. Em \"O que o formulário trouxe\" aparecem nome, telefone, e-mail e a resposta da pergunta extra. O botão \"Cadastrar como campo do lead\" transforma essa resposta num campo do funil. Esse campo passa a aparecer no card do lead.",
           "rota": "/app/webhooks?aba=leads",
           "antes": [
             {
@@ -883,7 +883,7 @@
         {
           "id": "p6",
           "titulo": "De onde veio e onde está",
-          "texto": "Em \"De onde veio\" aparecem a página do formulário, o endereço de internet (IP) e o navegador de quem enviou. As linhas com \"utm\" dizem de qual anúncio ou campanha a pessoa veio, quando o seu link tem essa marcação. Aqui, do Instagram, campanha \"avaliacao-outubro\". O botão \"Ver o lead no funil\" abre o lead que esse envio criou.",
+          "texto": "Em \"De onde veio\" aparecem a página do formulário, o endereço de internet (IP) e o navegador de quem enviou. As linhas com \"utm\" dizem de qual anúncio ou campanha a pessoa veio, quando o seu link tem essa marcação. Na foto, veio do Instagram, campanha \"avaliacao-outubro\". O botão \"Ver o lead no funil\" abre o lead que esse envio criou.",
           "antes": [
             {
               "acao": "rolar",
@@ -1067,7 +1067,7 @@
         {
           "id": "p4",
           "titulo": "Condição e ação",
-          "texto": "A parte SE é opcional. Com \"Adicionar condição\" você limita a regra, por exemplo, a um tipo de atendimento. Para avisar sempre, deixe vazio. Na parte ENTÃO, clique em \"Adicionar ação\" para escolher o que a automação faz.",
+          "texto": "A parte SE é opcional. Com \"Adicionar condição\" você limita a regra a, por exemplo, um tipo de atendimento. Para avisar sempre, deixe vazio. Na parte ENTÃO, clique em \"Adicionar ação\" para escolher o que a automação faz.",
           "antes": [
             {
               "acao": "click",
@@ -1103,7 +1103,7 @@
         {
           "id": "p5",
           "titulo": "Escolher \"Avisar outro sistema\"",
-          "texto": "Entre as ações, \"Avisar outro sistema (webhook)\" é a que manda os dados do que aconteceu para o endereço de outro sistema. Esse outro sistema precisa ter um endereço próprio para receber avisos. É assim que o CRM conversa com um sistema de gestão ou com ferramentas como Zapier e n8n, que podem levar o aviso adiante, por exemplo para uma planilha.",
+          "texto": "Entre as ações, \"Avisar outro sistema (webhook)\" manda os dados do que aconteceu para o endereço de outro sistema. Esse outro sistema precisa ter um endereço próprio para receber avisos. É assim que o CRM conversa com um sistema de gestão ou com ferramentas como Zapier e n8n. Elas podem levar o aviso adiante, por exemplo para uma planilha.",
           "antes": [
             {
               "acao": "click",
@@ -1140,7 +1140,7 @@
         {
           "id": "p6",
           "titulo": "O endereço do outro sistema",
-          "texto": "Cole em \"Endereço (URL)\" o endereço que o outro sistema te deu para receber avisos. O \"Segredo (opcional)\" serve para o outro sistema conferir que o aviso veio mesmo do seu CRM. Só preencha se quem cuida dele pedir; o texto cinza é só um exemplo. \"Incluir o responsável no corpo\" fica desligado: ligue só se o outro sistema precisar saber quem da equipe atende o cliente.",
+          "texto": "Em \"Endereço (URL)\", cole o endereço que o outro sistema te deu para receber avisos. O \"Segredo (opcional)\" serve para o outro sistema conferir que o aviso veio mesmo do seu CRM. Só preencha se quem cuida dele pedir. O texto cinza é só um exemplo. \"Incluir o responsável no corpo\" fica desligado. Ligue só se o outro sistema precisar saber quem da equipe atende o cliente.",
           "antes": [
             {
               "acao": "click",
@@ -1189,7 +1189,7 @@
         {
           "id": "p7",
           "titulo": "Criar a automação",
-          "texto": "Clique em \"Criar automação\". Ela nasce pausada, para você revisar antes, e aparece na lista com o selo \"Pausada\" e a chave desligada. Quando tiver revisado, ligue a chave: a partir daí, cada horário marcado manda um aviso para o endereço do laboratório. Na aba \"Atividade\" você confere se ele chegou.",
+          "texto": "Clique em \"Criar automação\". Ela nasce pausada, para você revisar antes, e aparece na lista com o selo \"Pausada\" e a chave desligada. Quando tiver revisado, ligue a chave. A partir daí, cada horário marcado manda um aviso para o endereço do laboratório. Na aba \"Atividade\" você confere se ele chegou.",
           "antes": [
             {
               "acao": "click",
@@ -1246,7 +1246,7 @@
         {
           "id": "p1",
           "titulo": "O que cada automação fez",
-          "texto": "A aba \"Atividade\" mostra cada vez que uma automação agiu, da mais recente para a mais antiga. Cada cartão traz o nome da regra, há quanto tempo foi e o resultado. \"Sucesso\" quer dizer que todas as ações da regra deram certo; num aviso, que o outro sistema respondeu que recebeu. \"Falhou\" quer dizer que nenhuma ação deu certo; num aviso, que o outro sistema não aceitou ou não respondeu.",
+          "texto": "A aba \"Atividade\" mostra cada vez que uma automação agiu, da mais recente para a mais antiga. Cada cartão traz o nome da regra, há quanto tempo foi e o resultado. \"Sucesso\" quer dizer que todas as ações da regra deram certo. Num aviso, quer dizer que o outro sistema respondeu que recebeu. \"Falhou\" quer dizer que nenhuma ação deu certo. Num aviso, quer dizer que o outro sistema não aceitou ou não respondeu.",
           "dica": "Pode aparecer também \"Parcial\", quando só algumas ações deram certo, e \"Aguardando envio\", quando uma mensagem espera para sair.",
           "rota": "/app/webhooks?aba=atividade",
           "antes": [],
@@ -1272,7 +1272,7 @@
         {
           "id": "p2",
           "titulo": "Quando o aviso falha",
-          "texto": "Embaixo da ação que falhou aparece o que o outro sistema respondeu. Aqui é \"http_404\": o endereço não foi encontrado do outro lado. Em geral é endereço digitado errado ou que mudou. Confira o endereço na automação (o lápis do cartão, na aba Automações). Depois volte aqui e clique em \"Reenviar\": o mesmo aviso sai de novo e um cartão novo mostra o resultado.",
+          "texto": "Embaixo da ação que falhou aparece o que o outro sistema respondeu. Aqui é \"http_404\", que quer dizer que o endereço não foi encontrado do outro lado. Em geral, o endereço foi digitado errado ou mudou. Confira o endereço na automação (o lápis do cartão, na aba Automações). Depois volte aqui e clique em \"Reenviar\". O mesmo aviso sai de novo, e um cartão novo mostra o resultado.",
           "antes": [],
           "destaques": [
             {

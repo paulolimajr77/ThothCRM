@@ -23,7 +23,7 @@
     {
      "id": "p1",
      "titulo": "As três partes da tela",
-     "texto": "Em Contatos ficam todas as pessoas que a sua empresa atende, mesmo as que ainda não mandaram mensagem. No alto ficam os botões para cadastrar, juntar repetidos, trazer e levar contatos. Logo abaixo fica a barra de busca e filtros. Embaixo fica a lista, com um cliente por linha.",
+     "texto": "Em Contatos ficam todas as pessoas que a sua empresa atende, mesmo as que ainda não mandaram mensagem. No alto estão os botões para cadastrar, juntar repetidos, trazer e levar contatos. Logo abaixo vem a barra de busca e filtros. Embaixo está a lista, com um cliente por linha.",
      "dica": "Quem escreve para o número de WhatsApp conectado em \"Conexões\" entra aqui sozinho. Você só cadastra à mão quem ainda não falou com a empresa.",
      "rota": "/app/contacts",
      "destaques": [
@@ -54,7 +54,7 @@
     {
      "id": "p2",
      "titulo": "O que cada coluna mostra",
-     "texto": "Cada linha mostra o nome, o e-mail, o telefone e as etiquetas do cliente (aqui chamadas de \"Tags\"). \"Última atividade\" diz quando houve o último movimento com ele, como uma mensagem: hoje e ontem aparecem com a hora, os dias mais antigos com a data. A coluna \"Status\" usa selos: \"Ativo\" é o cliente normal e \"Bloqueado\" é quem pediu para não receber mais mensagens.",
+     "texto": "Cada linha mostra o nome, o e-mail, o telefone e as etiquetas do cliente (aqui chamadas de \"Tags\"). \"Última atividade\" diz quando houve o último movimento com ele, como uma mensagem. Hoje e ontem aparecem com a hora, e os dias mais antigos com a data. A coluna \"Status\" usa selos: \"Ativo\" é o cliente normal e \"Bloqueado\" é quem pediu para não receber mais mensagens.",
      "dica": "Outros selos que podem aparecer: \"Anonimizado\" (dados apagados a pedido do cliente, pela LGPD), \"Cliente\" (quando a empresa usa a regra de clientes pela agenda) e \"Pessoal\" (contato da vida pessoal, que só aparece com o filtro \"Pessoais\" ligado).",
      "destaques": [
       {
@@ -96,7 +96,7 @@
     {
      "id": "p3",
      "titulo": "Os atalhos no fim da linha",
-     "texto": "No fim de cada linha ficam até três atalhos. O balão abre a conversa desse cliente na Inbox. Quando o cliente tem telefone mas nunca conversou, o balão começa uma conversa nova na Inbox, para você escrever primeiro. Isso precisa de um número de WhatsApp conectado em \"Conexões\". Sem telefone e sem conversa, o balão não aparece. O lápis edita o cadastro sem sair da lista, e a lixeira exclui o contato. Clicar no nome abre a ficha completa do cliente.",
+     "texto": "No fim de cada linha ficam até três atalhos. O balão abre a conversa desse cliente na Inbox. Se o cliente tem telefone mas nunca conversou, o balão começa uma conversa nova na Inbox, para você escrever primeiro. Isso precisa de um número de WhatsApp conectado em \"Conexões\". Sem telefone e sem conversa, o balão não aparece. O lápis edita o cadastro sem sair da lista, e a lixeira exclui o contato. Clicar no nome abre a ficha completa do cliente.",
      "destaques": [
       {
        "alvo": {
@@ -157,7 +157,7 @@
     {
      "id": "p1",
      "titulo": "Buscar pelo nome",
-     "texto": "Digite parte do nome, do e-mail ou do telefone na busca. Aqui digitamos \"Fern\" e a lista já mostra a Fernanda Oliveira. A lista filtra logo depois que você para de digitar.",
+     "texto": "Digite parte do nome, do e-mail ou do telefone na busca. A lista filtra logo depois que você para de digitar. Na foto, digitamos \"Fern\" e a lista já mostra a Fernanda Oliveira.",
      "dica": "Digite pelo menos 2 letras. Não precisa acertar o acento: \"Joao\" também acha \"João\".",
      "rota": "/app/contacts",
      "antes": [
@@ -198,7 +198,7 @@
     {
      "id": "p2",
      "titulo": "Filtrar por etiqueta",
-     "texto": "Clique em \"Limpar filtros\" para apagar a busca. Depois clique no botão \"Tag: todas\" e marque uma etiqueta, como \"convenio\", para ver só os clientes marcados com ela. O menu fica aberto enquanto você marca.",
+     "texto": "Clique em \"Limpar filtros\" para apagar a busca. Depois clique no botão \"Tag: todas\" e marque uma etiqueta, como \"convenio\". Assim você vê só os clientes marcados com ela. O menu fica aberto enquanto você marca.",
      "dica": "As etiquetas do menu são as dos contatos que já estão na lista.",
      "antes": [
       {
@@ -250,7 +250,7 @@
     {
      "id": "p3",
      "titulo": "Duas etiquetas: todas ou qualquer uma",
-     "texto": "Marcamos \"convenio\" e \"retorno\". Com duas ou mais etiquetas marcadas, aparecem duas opções: \"Todas (E)\" mostra só quem tem todas as etiquetas, e \"Qualquer uma (OU)\" mostra quem tem pelo menos uma.",
+     "texto": "Na foto, marcamos \"convenio\" e \"retorno\". Com duas ou mais etiquetas marcadas, aparecem duas opções. \"Todas (E)\" mostra só quem tem todas as etiquetas. \"Qualquer uma (OU)\" mostra quem tem pelo menos uma.",
      "antes": [
       {
        "acao": "click",
@@ -290,7 +290,7 @@
     {
      "id": "p4",
      "titulo": "O resultado do filtro",
-     "texto": "Fechamos o menu. O botão agora diz \"Tag: convenio +1\": a primeira etiqueta escolhida e quantas mais. Com \"Todas (E)\", só a Fernanda Oliveira tem as duas etiquetas.",
+     "texto": "Fechamos o menu. O botão agora diz \"Tag: convenio +1\", ou seja, a primeira etiqueta escolhida e quantas mais. Com \"Todas (E)\", só a Fernanda Oliveira tem as duas etiquetas.",
      "antes": [
       {
        "acao": "press",
@@ -328,7 +328,7 @@
     {
      "id": "p5",
      "titulo": "Filtrar pela origem",
-     "texto": "O botão \"Todas as origens\" mostra de onde o contato veio: cadastro à mão (\"Manual\"), WhatsApp, site, planilha (\"Importado (CSV)\"), agenda do celular ou anúncio. Aqui escolhemos \"Importado (CSV)\" e a lista mostra só quem entrou por planilha.",
+     "texto": "O botão \"Todas as origens\" mostra de onde o contato veio: cadastro à mão (\"Manual\"), WhatsApp, site, planilha (\"Importado (CSV)\"), agenda do celular ou anúncio. Na foto, escolhemos \"Importado (CSV)\", e a lista mostra só quem entrou por planilha.",
      "antes": [
       {
        "acao": "click",
@@ -388,7 +388,7 @@
     {
      "id": "p6",
      "titulo": "Os contatos pessoais",
-     "texto": "Contatos marcados como pessoais, como um parente, ficam fora da lista normal. Ligue o botão \"Pessoais\" para ver só eles. Ligado, ele fica colorido.",
+     "texto": "Contatos marcados como pessoais, como um parente, ficam fora da lista normal. Ligue o botão \"Pessoais\" para ver só eles. Quando está ligado, ele fica colorido.",
      "dica": "Para tirar a marca de pessoal, abra a ficha do contato e clique em \"Desmarcar pessoal\". Só gerentes e administradores veem esse botão.",
      "antes": [
       {
@@ -441,7 +441,7 @@
     {
      "id": "p7",
      "titulo": "Quem está parado há mais tempo",
-     "texto": "A lista começa pelos contatos com movimento mais recente. Os títulos de coluna com setinhas mudam a ordem: clicando de novo no mesmo título, a ordem inverte. Aqui desligamos \"Pessoais\" e clicamos em \"Última atividade\": agora quem está há mais tempo sem movimento aparece primeiro, bom para lembrar de chamar de volta.",
+     "texto": "A lista começa pelos contatos com movimento mais recente. Os títulos de coluna com setinhas mudam a ordem, e clicar de novo no mesmo título inverte essa ordem. Na foto, desligamos \"Pessoais\" e clicamos em \"Última atividade\". Agora quem está há mais tempo sem movimento aparece primeiro, o que ajuda a lembrar de chamar de volta.",
      "dica": "Contatos sem nenhuma atividade ficam sempre no fim, em qualquer ordem.",
      "antes": [
       {
@@ -534,7 +534,7 @@
     {
      "id": "p2",
      "titulo": "Preencher o cadastro",
-     "texto": "Preencha o nome e pelo menos o e-mail ou o telefone. O telefone vai com DDD; não precisa digitar o +55. Em \"Tags\", digite a etiqueta e aperte Enter; se ela já existir, aparece como sugestão para clicar. O CPF é opcional.",
+     "texto": "Preencha o nome e pelo menos o e-mail ou o telefone. O telefone vai com DDD, e não precisa digitar o +55. Em \"Tags\", digite a etiqueta e aperte Enter. Se ela já existir, aparece como sugestão para clicar. O CPF é opcional.",
      "dica": "Se o telefone, o e-mail ou o CPF já pertencer a outro contato, o cadastro é recusado com um aviso.",
      "antes": [
       {
@@ -617,7 +617,7 @@
     {
      "id": "p3",
      "titulo": "O contato na lista",
-     "texto": "Clicamos em \"Criar contato\". A janela fecha e o contato entra na lista, com as etiquetas que você digitou. Ele fica registrado com a origem \"Manual\", e dá para achá-lo no filtro de origem. Aqui buscamos \"Carolina\" para encontrá-la.",
+     "texto": "Clicamos em \"Criar contato\". A janela fecha e o contato entra na lista, com as etiquetas que você digitou. Ele fica registrado com a origem \"Manual\", e dá para achá-lo no filtro de origem. Na foto, buscamos \"Carolina\" para encontrá-la.",
      "antes": [
       {
        "acao": "click",
@@ -700,7 +700,7 @@
     {
      "id": "p2",
      "titulo": "Mudar os dados",
-     "texto": "Na janela \"Editar contato\" você muda nome, e-mail, telefone e data de nascimento. Para pôr uma etiqueta, digite no campo de baixo, aperte Enter, escolha a cor (ou \"Sem cor\") e clique em \"Adicionar tag\". Se ela já existir, aparece como sugestão para clicar. Para tirar uma etiqueta, clique no X dela. Aqui pusemos a etiqueta \"nutricao\". No fim, clique em \"Salvar\".",
+     "texto": "Na janela \"Editar contato\" você muda nome, e-mail, telefone e data de nascimento. Para pôr uma etiqueta, digite no campo de baixo e aperte Enter. Depois escolha a cor (ou \"Sem cor\") e clique em \"Adicionar tag\". Se a etiqueta já existir, aparece como sugestão para clicar. Para tirar uma etiqueta, clique no X dela. No fim, clique em \"Salvar\". Na foto, pusemos a etiqueta \"nutricao\".",
      "antes": [
       {
        "acao": "click",
@@ -807,7 +807,7 @@
     {
      "id": "p4",
      "titulo": "Excluir pede confirmação",
-     "texto": "A lixeira pergunta antes de apagar. Excluir apaga o contato, as conversas e as mensagens dele, e não tem como desfazer. Os negócios dele no funil continuam, mas ficam sem cliente. Se o cliente tem ou já teve compromisso na Agenda, mesmo cancelado, a janela avisa e a exclusão não acontece. Aqui clicamos em \"Cancelar\".",
+     "texto": "A lixeira pergunta antes de apagar. Excluir apaga o contato, as conversas e as mensagens dele, e não tem como desfazer. Os negócios dele no funil continuam, mas ficam sem cliente. Se o cliente tem ou já teve compromisso na Agenda, mesmo cancelado, a janela avisa e a exclusão não acontece. Na foto, clicamos em \"Cancelar\".",
      "antes": [
       {
        "acao": "click",
@@ -897,7 +897,7 @@
     {
      "id": "p2",
      "titulo": "O topo da ficha",
-     "texto": "No topo ficam o nome, o e-mail, o telefone e as etiquetas. \"Marcar como pessoal\" tira o contato do atendimento: as conversas fecham e param a IA, as mensagens automáticas de retomada, as campanhas e os envios. \"Marcar como sempre humano\" faz a IA parar de responder este cliente até alguém clicar em \"Remover marca de humano\". Os dois pedem confirmação antes. \"Editar\" abre a janela de edição, com os campos personalizados a mais.",
+     "texto": "No topo ficam o nome, o e-mail, o telefone e as etiquetas. \"Marcar como pessoal\" tira o contato do atendimento. As conversas fecham. A IA, as mensagens automáticas de retomada, as campanhas e os envios param. \"Marcar como sempre humano\" faz a IA parar de responder este cliente até alguém clicar em \"Remover marca de humano\". Os dois pedem confirmação antes. \"Editar\" abre a janela de edição, com os campos personalizados a mais.",
      "dica": "Só gerentes e administradores veem os dois botões de marcar.",
      "antes": [
       {
@@ -1016,7 +1016,7 @@
     {
      "id": "p5",
      "titulo": "O histórico do cliente",
-     "texto": "A aba \"Timeline\" conta o que aconteceu com este cliente, do mais novo para o mais antigo, separado por dia. Entram aqui os movimentos dos negócios dele, como a entrada no funil (\"Entrou no funil\") e a troca de etapa (\"Mudou de estágio\"), e as anotações da equipe. Ao lado de cada linha aparece quem fez.",
+     "texto": "A aba \"Timeline\" conta o que aconteceu com este cliente, do mais novo para o mais antigo, separado por dia. Entram aqui os movimentos dos negócios dele e as anotações da equipe. Os movimentos incluem a entrada no funil (\"Entrou no funil\") e a troca de etapa (\"Mudou de estágio\"). Ao lado de cada linha aparece quem fez.",
      "antes": [
       {
        "acao": "click",
@@ -1051,7 +1051,7 @@
     {
      "id": "p6",
      "titulo": "Apagar os dados a pedido do cliente",
-     "texto": "A aba \"LGPD\" serve para quando o cliente pede que a empresa apague os dados dele. \"Anonimizar contato\" troca o nome por \"Cliente Anonimizado\" seguido de um número e apaga e-mail, telefone e documento. Antes, a janela pede o motivo e que você digite ANONIMIZAR. Não tem como desfazer: use só com o pedido formal do cliente ou ordem judicial.",
+     "texto": "A aba \"LGPD\" serve para quando o cliente pede que a empresa apague os dados dele. \"Anonimizar contato\" troca o nome por \"Cliente Anonimizado\" seguido de um número e apaga e-mail, telefone e documento. Antes, a janela pede o motivo e que você digite ANONIMIZAR. Não tem como desfazer. Use só com o pedido formal do cliente ou ordem judicial.",
      "dica": "Só administradores veem a aba LGPD.",
      "antes": [
       {
@@ -1106,7 +1106,7 @@
     {
      "id": "p1",
      "titulo": "Marcar os contatos",
-     "texto": "A caixinha no começo de cada linha marca o contato. Marcamos a Mariana Souza e a Gabriela Duarte. Assim que um contato é marcado, aparece uma barra acima da lista dizendo quantos estão marcados.",
+     "texto": "A caixinha no começo de cada linha marca o contato. Na foto, marcamos a Mariana Souza e a Gabriela Duarte. Assim que um contato é marcado, aparece uma barra acima da lista dizendo quantos estão marcados.",
      "dica": "A caixinha do título da lista marca de uma vez todos os contatos que estão na tela. Para desmarcar todos, use o X no fim da barra.",
      "rota": "/app/contacts",
      "antes": [
@@ -1153,7 +1153,7 @@
     {
      "id": "p2",
      "titulo": "O que dá para fazer",
-     "texto": "Clique em \"Mais ações\". Dá para adicionar ou remover uma etiqueta, mudar o vendedor dono de todos (\"Mudar responsável\") e preencher um campo personalizado. O X no fim da barra desmarca todos.",
+     "texto": "Clique em \"Mais ações\". Dá para adicionar ou remover uma etiqueta, preencher um campo personalizado e mudar o vendedor dono de todos (\"Mudar responsável\"). O X no fim da barra desmarca todos.",
      "dica": "\"Mudar responsável\" só aparece para gerentes e administradores.",
      "antes": [
       {
@@ -1192,7 +1192,7 @@
     {
      "id": "p3",
      "titulo": "Escolher a etiqueta",
-     "texto": "Em \"Adicionar etiqueta\", digite a etiqueta e clique em \"Adicionar\". Aqui digitamos \"nutricao\". Ela entra em todos os contatos marcados, e a etiqueta que eles já tinham continua.",
+     "texto": "Em \"Adicionar etiqueta\", digite a etiqueta e clique em \"Adicionar\". Na foto, digitamos \"nutricao\". Ela entra em todos os contatos marcados, e as etiquetas que eles já tinham continuam.",
      "antes": [
       {
        "acao": "click",
@@ -1290,7 +1290,7 @@
     {
      "id": "p1",
      "titulo": "Contatos repetidos",
-     "texto": "O botão \"Duplicados\" procura a mesma pessoa cadastrada duas vezes, pelo mesmo telefone ou e-mail. Aqui a Juliana Castro foi cadastrada de novo por uma planilha, com o mesmo celular. Escolha qual cadastro fica: o outro é absorvido por ele. O sistema já deixa marcado o cadastro com movimento mais recente.",
+     "texto": "O botão \"Duplicados\" procura a mesma pessoa cadastrada duas vezes, pelo mesmo telefone ou e-mail. Na foto, a Juliana Castro foi cadastrada de novo por uma planilha, com o mesmo celular. Escolha qual cadastro fica, e o outro é absorvido por ele. O sistema já deixa marcado o cadastro com movimento mais recente.",
      "rota": "/app/contacts",
      "antes": [
       {
@@ -1336,7 +1336,7 @@
     {
      "id": "p2",
      "titulo": "Juntar não tem volta",
-     "texto": "\"Juntar\" pede confirmação e diz quem fica e quem é absorvido. Conversas, mensagens, negócios e histórico passam para o cadastro que fica, e o outro sai da lista. Não tem como desfazer. Aqui clicamos em \"Cancelar\".",
+     "texto": "\"Juntar\" pede confirmação e diz quem fica e quem é absorvido. Conversas, mensagens, negócios e histórico passam para o cadastro que fica, e o outro sai da lista. Não tem como desfazer. Na foto, clicamos em \"Cancelar\".",
      "dica": "Só gerentes e administradores conseguem juntar contatos.",
      "antes": [
       {
@@ -1372,7 +1372,7 @@
     {
      "id": "p3",
      "titulo": "Trazer de uma planilha",
-     "texto": "\"Importar CSV\" traz contatos de uma planilha. O arquivo precisa ter uma linha de títulos com colunas como nome, telefone, email, cpf, nascimento e tags. No Excel, use \"Salvar como\" e escolha \"CSV UTF-8\". Cabem até 500 linhas por arquivo. No fim, a janela mostra quantos entraram, quantos já existiam e quais linhas deram problema.",
+     "texto": "\"Importar CSV\" traz contatos de uma planilha. O arquivo precisa ter uma linha de títulos, com colunas como nome, telefone, email, cpf, nascimento e tags. No Excel, use \"Salvar como\" e escolha \"CSV UTF-8\". Cabem até 500 linhas por arquivo. No fim, a janela mostra quantos entraram, quantos já existiam e quais linhas deram problema.",
      "rota": "/app/contacts",
      "antes": [
       {
@@ -1415,7 +1415,7 @@
     {
      "id": "p4",
      "titulo": "Trazer da agenda do celular",
-     "texto": "\"Sincronizar agenda\" traz os contatos salvos na agenda do celular conectado ao número da empresa, só os que têm WhatsApp. Quem já está cadastrado não é repetido. No fim, a janela mostra quantos entraram e quantos foram deixados de fora. Atenção ao aviso com o triângulo: vêm também os contatos pessoais do celular, e só pode receber campanha quem autorizou.",
+     "texto": "\"Sincronizar agenda\" traz os contatos salvos na agenda do celular conectado ao número da empresa, só os que têm WhatsApp. Quem já está cadastrado não é repetido. No fim, a janela mostra quantos entraram e quantos foram deixados de fora. Atenção ao aviso com o triângulo: vêm também os contatos pessoais do celular. Só pode receber campanha quem autorizou.",
      "dica": "Sem um número de WhatsApp conectado em \"Conexões\", a janela avisa e o botão \"Sincronizar\" fica desligado. Se o celular tiver muitos contatos, clique em \"Continuar de onde parou\" para seguir do próximo.",
      "antes": [
       {
@@ -1461,7 +1461,7 @@
     {
      "id": "p5",
      "titulo": "Baixar a lista",
-     "texto": "\"Exportar\" baixa os contatos num arquivo. \"Exportar CSV\" é uma planilha, que pode ser aberta no Excel ou no Google Planilhas. \"Exportar vCard\" é o formato que o celular importa. Sai a lista inteira com os filtros que estiverem ligados na tela, não só a página que você está vendo, até 10.000 contatos.",
+     "texto": "\"Exportar\" baixa os contatos num arquivo. \"Exportar CSV\" é uma planilha, que pode ser aberta no Excel ou no Google Planilhas. \"Exportar vCard\" é o formato que o celular importa. Sai a lista inteira, com os filtros que estiverem ligados na tela, e não só a página que você está vendo. O limite é 10.000 contatos.",
      "dica": "Só gerentes e administradores veem o botão \"Exportar\".",
      "antes": [
       {

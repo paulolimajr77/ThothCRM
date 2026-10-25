@@ -56,7 +56,7 @@
         {
           "id": "p2",
           "titulo": "Os números vêm na hora",
-          "texto": "A frase no alto avisa como a tela funciona: ela não guarda os números. Eles são buscados no Facebook na hora: quando a tela abre, quando você troca a conta ou o período, e quando você clica em \"Atualizar\". Esse botão só aparece depois que a conta de anúncios estiver ligada. Até lá, nada aparece aqui.",
+          "texto": "A frase no alto avisa como a tela funciona: ela não guarda os números. Ela busca tudo no Facebook na hora: quando abre, quando você troca a conta ou o período e quando você clica em \"Atualizar\". Esse botão só aparece depois que a conta de anúncios estiver ligada. Até lá, a tela não mostra número nenhum.",
           "antes": [],
           "destaques": [
             {
@@ -119,7 +119,7 @@
         {
           "id": "p1",
           "titulo": "Pelo caminho das Configurações",
-          "texto": "Além do botão da tela de Meta Ads, a página de conexão também abre por \"Configurações\", no rodapé do menu. Ela fica na seção \"Sua empresa\", no cartão \"Meta Ads\". Não confunda com o cartão \"Conversões\": ele serve para outra coisa e pede um token diferente. Clique no cartão \"Meta Ads\", na coluna da direita (não no item \"Meta Ads\" do menu).",
+          "texto": "A página de conexão também abre por \"Configurações\", no rodapé do menu, além do botão da tela de Meta Ads. Ela fica na seção \"Sua empresa\", no cartão \"Meta Ads\". Clique nesse cartão, na coluna da direita (não no item \"Meta Ads\" do menu). Não confunda com o cartão \"Conversões\", que serve para outra coisa e pede um token diferente.",
           "rota": "/app/settings",
           "antes": [],
           "destaques": [
@@ -138,8 +138,8 @@
         {
           "id": "p2",
           "titulo": "Uma ligação só para ler",
-          "texto": "A frase do alto garante que a ligação é só de leitura: nada é criado, pausado ou alterado na sua conta de anúncios. O quadro azul diz o que você precisa trazer: um token de acesso, que é uma senha especial que o Facebook gera para o sistema poder ler os seus anúncios. Ele é gerado no site Meta for Developers e precisa da permissão \"ads_read\".",
-          "dica": "O token fica guardado de forma protegida e nunca é mostrado de volta, nem para você. Atenção: para gerar o token é preciso ter um aplicativo criado no Meta for Developers, e alguns tokens vencem em poucas horas. Se a tela de Meta Ads pedir um token novo pouco depois de ligar, foi isso. Gere um token de longa duração.",
+          "texto": "A frase do alto garante que a ligação é só de leitura. Nada é criado, pausado ou alterado na sua conta de anúncios. O quadro azul diz o que você precisa trazer: um token de acesso, uma senha especial que o Facebook gera para o sistema poder ler os seus anúncios. Você gera o token no site Meta for Developers, com a permissão \"ads_read\".",
+          "dica": "O token fica guardado de forma protegida e nunca é mostrado de volta, nem para você. Atenção: para gerar o token é preciso ter um aplicativo criado no Meta for Developers. Alguns tokens vencem em poucas horas. Se a tela de Meta Ads pedir um token novo pouco depois de ligar, foi isso. Gere um token de longa duração.",
           "antes": [
             {
               "acao": "click",
@@ -175,7 +175,7 @@
         {
           "id": "p3",
           "titulo": "O campo do token",
-          "texto": "Cole o token no campo \"Token de acesso\". O \"EAA...\" cinza dentro do campo é só um exemplo de como o token começa: o campo ainda está vazio. Enquanto ele estiver vazio, ou curto demais para ser um token inteiro, o botão \"Salvar\" fica apagado e, ao lado, aparece \"Cole o token para poder salvar.\". Na primeira vez, o token é obrigatório.",
+          "texto": "Cole o token no campo \"Token de acesso\". O \"EAA...\" cinza dentro do campo é só um exemplo de como o token começa. O campo ainda está vazio. Enquanto ele estiver vazio, ou com um token curto demais para ser inteiro, o botão \"Salvar\" fica apagado e, ao lado, aparece \"Cole o token para poder salvar.\". Na primeira vez, o token é obrigatório.",
           "antes": [],
           "destaques": [
             {
@@ -225,7 +225,7 @@
         {
           "id": "p5",
           "titulo": "Pronto para salvar",
-          "texto": "Com o token colado, ele aparece como pontinhos, para ninguém ler por cima do seu ombro, e \"Salvar\" acende. Ao salvar, aparece \"Conexão salva.\" e o campo do token fica vazio de novo, porque o token nunca é mostrado de volta. O sistema não testa o token na hora de salvar: se ele estiver vencido ou sem a permissão \"ads_read\", o aviso aparece na tela de Meta Ads, dizendo o que fazer.",
+          "texto": "Com o token colado, ele aparece como pontinhos, para ninguém ler por cima do seu ombro, e o botão \"Salvar\" acende. Ao salvar, aparece \"Conexão salva.\" O campo do token fica vazio de novo, porque o token nunca é mostrado de volta. O sistema não testa o token na hora de salvar. Se ele estiver vencido ou sem a permissão \"ads_read\", um aviso na tela de Meta Ads diz o que fazer.",
           "dica": "Depois de ligada, esta página mostra também o botão \"Desconectar\". Ele apaga o token guardado e a tela de Meta Ads volta a pedir uma conexão.",
           "antes": [
             {
@@ -276,7 +276,7 @@
         {
           "id": "p1",
           "titulo": "O gerente também vê a tela",
-          "texto": "Aqui você está como Carlos Mendes, gerente da clínica. Para ele, \"Meta Ads\" também aparece no menu, no grupo \"Análise\". Os números dos anúncios, como orçamento e custo de cada resultado, são da empresa inteira e não de um atendente só. Por isso só gerentes e administradores veem esta tela.",
+          "texto": "Na foto, você está como Carlos Mendes, gerente da clínica. Para ele, \"Meta Ads\" também aparece no menu, no grupo \"Análise\". Os números dos anúncios, como orçamento e custo de cada resultado, são da empresa inteira, e não de um atendente só. Por isso só gerentes e administradores veem esta tela.",
           "dica": "Atendentes não veem \"Meta Ads\" no menu.",
           "rota": "/app/ads/meta",
           "antes": [],
@@ -316,7 +316,7 @@
         {
           "id": "p3",
           "titulo": "A página de conexão é do administrador",
-          "texto": "O gerente nem vê o cartão \"Meta Ads\" em Configurações. Se ele abrir a página de conexão pelo endereço, aparece \"403 — Sem permissão\". Ligar ou trocar o token é só para o administrador: o token dá acesso à conta de anúncios inteira da empresa, e escolher qual conta ligar é decisão de quem administra. O botão \"Voltar pra Inbox\" leva de volta ao trabalho.",
+          "texto": "O gerente nem vê o cartão \"Meta Ads\" em Configurações. Se ele abrir a página de conexão pelo endereço, aparece \"403 — Sem permissão\". Ligar ou trocar o token é só para o administrador. O token dá acesso à conta de anúncios inteira da empresa, e escolher qual conta ligar é decisão de quem administra. O botão \"Voltar pra Inbox\" leva de volta ao trabalho.",
           "rota": "/app/settings/meta-ads",
           "antes": [],
           "destaques": [
