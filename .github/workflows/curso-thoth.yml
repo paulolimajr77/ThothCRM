@@ -199,7 +199,8 @@ jobs:
             -e 's/--oliva-suave: #e4ebe0;/--oliva-suave: #efeadb;/' \
             -e 's/--oliva: #8fae84; --oliva-forte: #a9c49f; --oliva-suave: rgba(143, 174, 132, 0.16);/--oliva: #d5cb8b; --oliva-forte: #e3dbab; --oliva-suave: rgba(213, 203, 139, 0.16);/g' \
             "$f"
-          restos=$(grep -o -i 'deskcomm' "$f" | wc -l)
+          # zero sobras é o caso bom: grep sem achado sai 1 e o pipefail derrubaria o passo
+          restos=$(grep -o -i 'deskcomm' "$f" | wc -l || true)
           echo "citações de deskcomm que sobraram: $restos"
           grep -n -o -i '.\{40\}deskcomm.\{40\}' "$f" | head -20 || true
 
