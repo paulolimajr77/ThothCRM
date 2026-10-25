@@ -190,7 +190,7 @@ async function main() {
           capturas[chave] = { foto, destaques, clicar };
           console.info(`ok   ${modulo.id}/${chave}`);
         } catch (e) {
-          const msg = e instanceof Error ? e.message.split("\n")[0] : String(e);
+          const msg = e instanceof Error ? e.message.split("\n").slice(0, 8).join(" | ") : String(e);
           falhas.push(`${modulo.id}/${chave}: ${msg}`);
           console.info(`FALHA ${modulo.id}/${chave}: ${msg}`);
           await page.screenshot({ path: path.join(SAIDA, `falha-${chave}.jpg`), type: "jpeg", quality: 60 }).catch(() => {});

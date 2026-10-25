@@ -21,6 +21,8 @@ jobs:
     env:
       E2E_PORT: "3460"
       CURSO_URL: http://localhost:3460
+      # vazio = todos os módulos; com nomes = rodada curta de diagnóstico
+      CURSO_MODULOS: "inbox contatos tarefas"
       NEXT_TELEMETRY_DISABLED: "1"
       SENTRY_DSN: "off"
     steps:
@@ -164,8 +166,8 @@ jobs:
           set -uo pipefail
           : > /tmp/modulos-ok
           : > /tmp/modulos-falhos
-          for arquivo in curso/licoes/*.json; do
-            m=$(basename "$arquivo" .json)
+          lista="${CURSO_MODULOS:-$(ls curso/licoes/*.json | xargs -n1 basename | sed 's/\.json$//')}"
+          for m in $lista; do
             echo "::group::módulo $m"
             if CURSO_ANTES_DA_LICAO="pnpm exec tsx curso/semear-demonstracao.ts $m" \
                pnpm exec tsx curso/capturar.ts "$m"; then
@@ -191,7 +193,7 @@ jobs:
           sed -i \
             -e 's/curso-deskcomm:feitos/curso-thoth:feitos/g' \
             -e 's/<span class="marca-d" aria-hidden="true">D<\/span>/<span class="marca-d" aria-hidden="true">T<\/span>/g' \
-            -e 's/DeskComm/THOTH CRM/g' \
+            -e 's/DeskComm/THOTH CRM/g' -e 's/Deskcomm/THOTH CRM/g' \
             -e 's/--oliva: #506d48;/--oliva: #7d7032;/' \
             -e 's/--oliva-forte: #41573b;/--oliva-forte: #655a28;/' \
             -e 's/--oliva-suave: #e4ebe0;/--oliva-suave: #efeadb;/' \
@@ -209,6 +211,8 @@ jobs:
           cp -r curso/saida/capturas /tmp/pacote/curso/
           cp /tmp/modulos-ok /tmp/pacote/modulos-ok.txt
           cp /tmp/modulos-falhos /tmp/pacote/modulos-falhos.txt
+          mkdir -p /tmp/pacote/falhas
+          cp curso/saida/falha-*.jpg /tmp/pacote/falhas/ 2>/dev/null || true
           du -sh /tmp/pacote
 
       - uses: actions/upload-artifact@v7
