@@ -208,7 +208,7 @@
         {
           "id": "p2",
           "titulo": "Quando aparece o botão \"Assumir\"",
-          "texto": "O botão \"Assumir\" aparece quando o cliente tem conversa no WhatsApp e nem a conversa nem o negócio estão com uma pessoa da equipe. Na Sandra, ninguém cuida. Na Renata, quem responde é o atendimento automático. No Gustavo, o negócio é do agente de IA: assumir traz a conversa para você e cala o atendimento automático nela, mas o negócio continua em nome do agente. No Paulo não aparece, porque ele já está com uma atendente. No Marcos também não: ele ainda não conversou pelo WhatsApp.",
+          "texto": "O botão \"Assumir\" aparece quando o cliente tem conversa no WhatsApp, mas nem a conversa nem o negócio estão com uma pessoa da equipe. Na Sandra, ninguém cuida. Na Renata, quem responde é o atendimento automático. No Gustavo, o negócio é do agente de IA: assumir traz a conversa para você e cala o atendimento automático nela, mas o negócio continua em nome do agente. No Paulo não aparece, porque ele já está com uma atendente. No Marcos também não: ele ainda não conversou pelo WhatsApp.",
           "destaques": [
             {
               "alvo": {
