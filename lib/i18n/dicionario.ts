@@ -39,6 +39,8 @@ import { TEXTOS_AGENDA_SERVICOS } from "./agenda-servicos";
 type Traducoes = Record<string, Partial<Record<Exclude<Idioma, "pt-BR">, string>>>;
 
 export const DICIONARIO: Traducoes = {
+  "Mensagens da conversa": { es: "Mensajes de la conversación" },
+  "Novas mensagens · Ir para o fim": { es: "Mensajes nuevos · Ir al final" },
   // Encaminhar mensagem (#2835) — botão na bolha do chat e o diálogo de destino.
   "Encaminhar": { es: "Reenviar" },
   "Encaminhar mensagem": { es: "Reenviar mensaje" },
@@ -72,6 +74,20 @@ export const DICIONARIO: Traducoes = {
   "Deixe em branco para nenhum contato ser interno — o comportamento de antes.": {
     es: "Déjalo en blanco para que ningún contacto sea interno — el comportamiento de antes.",
   },
+  // A visão Lista do funil (#3172). O espanhol é `completo`: toda frase de tela
+  // precisa dele, e é esta linha que a guarda `i18n-espanhol-cobre-a-tela`
+  // cobra quando a chave aparece numa tela.
+  "Não consegui carregar os negócios desta lista.": {
+    es: "No pude cargar los negocios de esta lista.",
+  },
+  "Nenhum negócio nesta página.": { es: "No hay ningún negocio en esta página." },
+  // A paginação deixou de prometer "de Y" (a rota não conta mais — ver o
+  // cabeçalho dela): a tela diz a página ATUAL. Chave nova, e não a
+  // `página {atual} de {total}`, que continua em uso na exportação em PDF.
+  "página {atual}": { es: "página {atual}" },
+  // `Sem atividade` é chave NOVA; `Funil não encontrado.`, que a rota usa no
+  // 404, já existe no dicionário (bloco das rotas de fluxo) — não duplicar.
+  "Sem atividade": { es: "Sin actividad" },
   "Há um ajuste proporcional esperando pagamento. Escolher outro plano cancela esse ajuste.": { es: "Hay un ajuste proporcional esperando el pago. Elegir otro plan cancela ese ajuste." },
   "Estamos preparando o ajuste proporcional. Aguarde alguns segundos e tente novamente.": { es: "Estamos preparando el ajuste proporcional. Espera unos segundos e inténtalo de nuevo." },
   "Estamos preparando o ajuste proporcional. Aguarde alguns segundos.": { es: "Estamos preparando el ajuste proporcional. Espera unos segundos." },
@@ -2014,6 +2030,19 @@ export const DICIONARIO: Traducoes = {
   "Menu do usuário": { es: "Menú del usuario" },
   Sair: { es: "Cerrar sesión" },
   "Central de avisos": { es: "Central de avisos" },
+  // Lembrete de caso parado na Central (migration 0766; ideia de @Atlasads no #2584).
+  "Lembrete de caso parado": { es: "Recordatorio de caso detenido" },
+  "Quando um caso espera uma decisão da equipe, esta Central volta a avisar. O relógio começa quando o caso chega à equipe e recomeça quando o cliente responde.": {
+    es: "Cuando un caso espera una decisión del equipo, esta Central vuelve a avisar. El reloj empieza cuando el caso llega al equipo y se reinicia cuando el cliente responde.",
+  },
+  "Lembrar a equipe dos casos parados": { es: "Recordar al equipo los casos detenidos" },
+  "Lembrar a cada": { es: "Recordar cada" },
+  "Avisos por espera": { es: "Avisos por espera" },
+  "Salvar lembrete": { es: "Guardar recordatorio" },
+  "Lembrete de caso parado salvo.": { es: "Recordatorio de caso detenido guardado." },
+  "Não foi possível salvar o lembrete de caso parado.": { es: "No se pudo guardar el recordatorio de caso detenido." },
+  "{n} dias": { es: "{n} días" },
+  "{n} horas": { es: "{n} horas" },
   // O que a tela diz a quem NÃO alcança a Central (#3147): a frase verdadeira
   // no lugar do estado vazio, que era falso para quem não pode ver aviso nenhum.
   "A Central de avisos é para quem atende": { es: "La Central de avisos es para quienes atienden" },
@@ -6930,8 +6959,11 @@ export const DICIONARIO: Traducoes = {
   "O WhatsApp não confirmou a mudança. Nada foi alterado; tente de novo.": {
     es: "WhatsApp no confirmó el cambio. No se alteró nada; inténtalo de nuevo.",
   },
-  "Grupos ligados aparecem no chat para os atendentes responderem. A IA nunca responde em grupo.": {
-    es: "Los grupos activados aparecen en el chat para que los agentes respondan. La IA nunca responde en un grupo.",
+  "Grupos ligados aparecem no chat para os atendentes responderem. A IA só responde em grupo quando você liberar a chave de cada grupo.": {
+    es: "Los grupos activados aparecen en el chat para que los agentes respondan. La IA solo responde en un grupo cuando habilitas la llave de cada grupo.",
+  },
+  "Permitir que a IA responda neste grupo": {
+    es: "Permitir que la IA responda en este grupo",
   },
   "Atualizar lista": { es: "Actualizar lista" },
   "Ligar mesmo assim": { es: "Activar de todos modos" },
@@ -15087,6 +15119,56 @@ export const DICIONARIO: Traducoes = {
   "Um dos rótulos não virou uma chave. Escreva o rótulo com letras ou números.": {
     es: "Una de las etiquetas no se convirtió en una clave. Escribe la etiqueta con letras o números.",
   },
+  // ─── Tabela direta ───
+  "Escreva o nome da tabela.": { es: "Escribe el nombre de la tabla." },
+  "Escreva a coluna do id.": { es: "Escribe la columna del id." },
+  "Escreva a coluna do título.": { es: "Escribe la columna del título." },
+  "Mapeie pelo menos um dado da tabela.": { es: "Asigna al menos un dato de la tabla." },
+  "Preencha o rótulo e a coluna de todos os dados.": {
+    es: "Llena la etiqueta y la columna de todos los datos.",
+  },
+  "Tabela e colunas": { es: "Tabla y columnas" },
+  "A tabela do banco de origem e as colunas que viram id e título.": {
+    es: "La tabla de la base de origen y las columnas que se convierten en id y título.",
+  },
+  "Campos da tabela": { es: "Campos de la tabla" },
+  "Cada coluna mapeada como um dado na saída, com tipo e filtro.": {
+    es: "Cada columna mapeada como un dato en la salida, con tipo y filtro.",
+  },
+  "Só mostrar quando": { es: "Mostrar solo cuando" },
+  "Só exibe itens onde esta coluna é igual a este valor (ex.: cct_status = publish).": {
+    es: "Solo muestra los ítems donde esta columna es igual a este valor (ej.: cct_status = publish).",
+  },
+  "Esconder quando": { es: "Ocultar cuando" },
+  "Itens com um desses valores na coluna não aparecem para o cliente.": {
+    es: "Los ítems con alguno de estos valores en la columna no aparecen para el cliente.",
+  },
+  "O nome da tabela no banco de origem (ex.: wp_jet_cct_imovel).": {
+    es: "El nombre de la tabla en la base de origen (ej.: wp_jet_cct_imovel).",
+  },
+  "A coluna que vira o id de cada item na saída.": {
+    es: "La columna que se convierte en el id de cada ítem en la salida.",
+  },
+  "A coluna que vira o título de cada item na saída.": {
+    es: "La columna que se convierte en el título de cada ítem en la salida.",
+  },
+  "JetEngine — tipo de conteúdo próprio (CCT)": {
+    es: "JetEngine — tipo de contenido propio (CCT)",
+  },
+  "Tabela plana wp_jet_cct_<slug>: id (_ID), título (titulo), só publicados (cct_status = publish) e campos de imóveis.": {
+    es: "Tabla plana wp_jet_cct_<slug>: id (_ID), título (titulo), solo publicados (cct_status = publish) y campos de inmuebles.",
+  },
+  "Comece do zero: escreva a tabela, as colunas e mapeie os dados que o site guarda.": {
+    es: "Empieza desde cero: escribe la tabla, las columnas y asigna los datos que el sitio guarda.",
+  },
+  "Tabela": { es: "Tabla" },
+  "Coluna do id": { es: "Columna del id" },
+  "Coluna do título": { es: "Columna del título" },
+  "Coluna na tabela": { es: "Columna en la tabla" },
+  "Coluna": { es: "Columna" },
+  "Tabela:": { es: "Tabla:" },
+  "Coluna do id:": { es: "Columna del id:" },
+  "Coluna do título:": { es: "Columna del título:" },
   // ─── O rótulo do caminho que falhou no 422 das receitas ───
   "Categoria do bairro": { es: "Categoría del barrio" },
   "Categoria da cidade": { es: "Categoría de la ciudad" },
@@ -15680,6 +15762,10 @@ export const DICIONARIO: Traducoes = {
   "Já está em outra campanha ainda não concluída": { es: "Ya está en otra campaña que todavía no termina" },
   "Está na lista de exclusão de campanhas": { es: "Está en la lista de exclusión de campañas" },
   "Parar de enviar às (hora)": { es: "Dejar de enviar a las (hora)" },
+  "Dividir a mensagem em balões, um por parágrafo": { es: "Dividir el mensaje en burbujas, una por párrafo" },
+  "Até 3 balões por pessoa; o que passar disso vai junto no último. Cada balão conta no limite diário do número.": {
+    es: "Hasta 3 burbujas por persona; lo que pase de eso va junto en la última. Cada burbuja cuenta en el límite diario del número.",
+  },
   "pediram para parar": { es: "pidieron parar" },
   "pessoas? O envio segue o ritmo do número e pode levar horas.": {
     es: "personas? El envío sigue el ritmo del número y puede llevar horas.",
@@ -15734,6 +15820,13 @@ export const DICIONARIO: Traducoes = {
   "Funil do número (padrão)": { es: "Embudo del número (predeterminado)" },
   "Na etapa": { es: "En la etapa" },
   "Primeira etapa do funil": { es: "Primera etapa del embudo" },
+  "Etapa removida": { es: "Etapa eliminada" },
+  "Novas conversas do Inbox entram em…": { es: "Las conversaciones nuevas del Inbox entran en…" },
+  "Etapa de entrada das conversas do Inbox": { es: "Etapa de entrada de las conversaciones del Inbox" },
+  "Primeira etapa do funil (padrão)": { es: "Primera etapa del embudo (predeterminada)" },
+  "A conversa nova do Inbox vira card nesta etapa. Sem escolha, ela nasce na primeira etapa do funil — o comportamento de sempre.": { es: "La conversación nueva del Inbox se convierte en tarjeta en esta etapa. Sin elección, nace en la primera etapa del embudo, como siempre." },
+  "Nenhuma etapa escolhida: as conversas novas estão entrando na primeira etapa do funil.": { es: "Ninguna etapa elegida: las conversaciones nuevas están entrando en la primera etapa del embudo." },
+  "A etapa escolhida não está mais disponível (arquivada, apagada ou fechada): as conversas novas estão entrando na primeira etapa do funil. Escolha outra para voltar a decidir.": { es: "La etapa elegida ya no está disponible (archivada, eliminada o cerrada): las conversaciones nuevas están entrando en la primera etapa del embudo. Elige otra para volver a decidir." },
   "Qualquer etapa": { es: "Cualquier etapa" },
   "Qualquer um": { es: "Cualquiera" },
   "Quem atende a resposta": { es: "Quién atiende la respuesta" },
@@ -16088,7 +16181,7 @@ export const DICIONARIO: Traducoes = {
   "É um roteiro de perguntas que a IA segue durante a conversa: ela pergunta uma coisa por vez, entende a resposta e guarda o dado no cadastro do cliente.": { es: "Es un guion de preguntas que la IA sigue durante la conversación: pregunta una cosa a la vez, entiende la respuesta y guarda el dato en el registro del cliente." },
   "Montando o roteiro": { es: "Armando el guion" },
   "Crie o roteiro e dê um nome.": { es: "Crea el guion y dale un nombre." },
-  "No Início, escreva as palavras-gatilho: quando a mensagem do cliente tiver uma delas, o roteiro começa sozinho. Ele também pode começar por uma intenção em IA › Roteadores.": { es: "En el Inicio, escribe las palabras clave: cuando el mensaje del cliente tenga una de ellas, el guion empieza solo. También puede empezar por una intención en IA › Enrutadores." },
+  "No Início, escreva as palavras-gatilho: quando a mensagem do cliente tiver uma delas, o roteiro começa sozinho. Ele também começa por uma intenção em IA › Roteadores, ou quando o card do cliente entra numa etapa do funil que você marcar.": { es: "En el Inicio, escribe las palabras clave: cuando el mensaje del cliente tenga una de ellas, el guion empieza solo. También empieza por una intención en IA › Enrutadores, o cuando la tarjeta del cliente entra en una etapa del embudo que marques." },
   "Adicione uma Pergunta para cada dado, com uma chave curta (ex.: cidade), o tipo e se é obrigatória. O tipo CPF confere o dígito verificador.": { es: "Agrega una Pregunta para cada dato, con una clave corta (ej.: ciudad), el tipo y si es obligatoria. El tipo CPF valida el dígito verificador." },
   "Se quiser, adicione uma Skill — um procedimento da loja que a IA usa naquele passo.": { es: "Si quiere, agregue una Skill: un procedimiento de la tienda que la IA usa en ese paso." },
   "Ligue as caixas em linha, do Início ao Fim. No Fim, escolha o que acontece ao concluir: nada, orientar a IA, chamar uma skill ou começar outro roteiro.": { es: "Conecta las cajas en línea, del Inicio al Fin. En el Fin, elige qué pasa al concluir: nada, orientar a la IA, llamar una skill o empezar otro guion." },
@@ -16103,7 +16196,11 @@ export const DICIONARIO: Traducoes = {
   "Fluxos de atendimento": { es: "Flujos de atención" },
   "Perguntas que a IA faz durante a conversa, em ordem, e o que fazer ao concluir — os dados ficam guardados por cliente.": { es: "Preguntas que la IA hace durante la conversación, en orden, y qué hacer al concluir: los datos quedan guardados por cliente." },
   "Perguntas que a IA conduz durante a conversa, com as respostas guardadas na ficha do cliente.": { es: "Preguntas que la IA conduce durante la conversación, con las respuestas guardadas en la ficha del cliente." },
-  "O roteiro começa quando a mensagem do cliente tem uma palavra-gatilho, ou quando um roteador de intenção o aponta.": { es: "El guion empieza cuando el mensaje del cliente tiene una palabra clave, o cuando un enrutador de intención lo indica." },
+  "O roteiro começa quando a mensagem do cliente tem uma palavra-gatilho, quando um roteador de intenção o aponta ou quando o card do cliente entra numa etapa escolhida abaixo — uma vez por entrada na etapa, e não enquanto ele fica lá.": { es: "El guion empieza cuando el mensaje del cliente tiene una palabra clave, cuando un enrutador de intención lo indica o cuando la tarjeta del cliente entra en una etapa elegida abajo: una vez por entrada en la etapa, y no mientras permanece en ella." },
+  "Começar quando o card entrar na etapa": { es: "Empezar cuando la tarjeta entre en la etapa" },
+  "Marque as etapas do funil em que este roteiro deve começar sozinho. Vale do próximo turno da conversa daquele cliente em diante — não é instantâneo. Os cards que já estão na etapa quando você a marca também começam, na próxima mensagem do cliente.": { es: "Marca las etapas del embudo en las que este guion debe empezar solo. Vale desde el próximo turno de la conversación de ese cliente en adelante: no es instantáneo. Las tarjetas que ya están en la etapa cuando la marcas también empiezan, con el próximo mensaje del cliente." },
+  "Não foi possível carregar as etapas do funil. Recarregue a página para escolher uma etapa.": { es: "No se pudieron cargar las etapas del embudo. Recarga la página para elegir una etapa." },
+  "Nenhuma etapa ativa encontrada — crie o funil antes de escolher uma etapa aqui.": { es: "No se encontró ninguna etapa activa: crea el embudo antes de elegir una etapa aquí." },
   "Palavras-gatilho (separe por vírgula)": { es: "Palabras clave (separe con coma)" },
   "Máximo de tentativas por pergunta": { es: "Máximo de intentos por pregunta" },
   "Depois de tantas vezes sem resposta, a pergunta é encerrada como não respondida e deixa de ser feita.": { es: "Después de tantas veces sin respuesta, la pregunta se cierra como no respondida y deja de hacerse." },
