@@ -4,7 +4,7 @@ parent: 00-prd-master.md
 type: spec
 scope: canais (WAHA), importação do histórico, Central
 status: draft
-version: 0.2.0
+version: 0.3.0
 owner: arquitetura
 created_at: 2026-10-28
 related:
@@ -72,7 +72,11 @@ as 26 mensagens de 6 conversas, e não as 225 conversas da importação inteira 
 | C17 | Logo depois de um pareamento novo, `resolvePhoneForLid` devolve `null` (a tabela de `@lid` do canal é povoada por atividade) | `lib/waha/client.ts` |
 | C18 | A varredura de saúde também grava `status` (a cada 5 min), e o gatilho emite o evento nesse momento. Outros escritores (redes sociais, voz) emitem o mesmo evento | `app/api/v1/cron/channel-health/route.ts`; `docker/scheduler/entrypoint.sh`; `lib/channels/social/store.ts`; `app/api/v1/voice/sessions/pair/route.ts` |
 | C19 | O `external_id` do acervo não é idêntico ao do webhook (o sufixo muda). Quem evita a repetição é a consulta por candidatos antes de gravar; o índice único é `DEFERRABLE` e só pega a corrida | `mapear.ts`; `rodada.ts` (`gravarMensagens`) |
-| C20 | Avisos da Central: `kind` num CHECK único reconstruído por migration (cerca `tests/unit/kind-check-migration-x-baseline.test.ts`), política por kind em `POLITICAS_DE_AVISO` (completude cobrada na compilação), texto em `lib/ai/agent-inbox-copy.ts`; deduplicação por índice único parcial `(organization_id, kind, ref_id) where status='open'`; o destino vem de `ref_kind` (conexão leva à tela de Conexões, só admin) | `lib/ai/inbox-destino.ts`; `supabase/baseline.sql` |
+| C20 | Avisos da Central: `kind` num CHECK único reconstruído por migration (cerca `tests/unit/kind-check-migration-x-baseline.test.ts`), política por kind em `POLITICAS_DE_AVISO` (completude cobrada na compilação), texto em `lib/ai/agent-inbox-copy.ts`; deduplicação **não** é geral: só alguns kinds têm índice único parcial próprio (ex.: `agent_inbox_canal_pausado_aberto_unico`); os outros dependem do `not exists` de `insertInboxItem` (`lib/agent-engine/db/repository.ts`), que tem corrida e não atualiza; o destino vem de `ref_kind` (conexão leva à tela de Conexões, só admin) | `lib/ai/inbox-destino.ts`; `supabase/baseline.sql` |
+| C21 | `message.received` é consumido pelo worker de resposta da IA, pelo de sentimento, pelo push, pelas automações, pelo aviso ao dono da carteira, pela conversão de anúncio, pela resposta de campanha e pelo follow-up. O corte da 0760 em `fn_emit_message_event` é por tudo ou nada | `workers/ai-response-worker.handler.ts`, `workers/ai-sentiment-worker.handler.ts`, `lib/notifications/push.handler.ts`, `lib/automation/engine.handler.ts`, `lib/carteira/aviso-ao-dono.ts`, `lib/conversoes/clique-meta.handler.ts`, `lib/campanhas/resposta.handler.ts`, `lib/followup/reactivity.handler.ts` |
+| C22 | No `23505` (mensagem já gravada), o webhook só reacelera o pipeline e retorna: não aplica opt-out, não marca a conversa, não despacha o agente | `lib/waha/ingest.ts`, bloco "inbound ja ingerido" |
+| C23 | `channel_sessions.phone_number` só é gravado pelo GET da conexão (abertura da tela de Conexões); `handleSessionStatus` e a varredura de saúde não gravam | `app/api/v1/channel-sessions/[id]/route.ts`; `lib/waha/ingest.ts`; `app/api/v1/cron/channel-health/route.ts` |
+| C24 | `importacoes_de_historico.dias` é `not null`, e os CHECKs de `dias` e `status` são inline e sem nome | `supabase/baseline.sql`, `create table if not exists public.importacoes_de_historico` |
 
 ## O que muda
 
@@ -85,17 +89,24 @@ as 26 mensagens de 6 conversas, e não as 225 conversas da importação inteira 
   - O casamento usa, nesta ordem: o `wa_lid` da ficha; o telefone do chat; os telefones que as
     próprias mensagens trazem (`remoteJidAlt`); `resolvePhoneForLid` (que pode estar vazio logo
     depois de um pareamento novo, C17). Telefones comparados com as variantes do nono dígito.
+    Toda consulta filtra `organization_id` da importação.
   - **Falha fechada:** erro na consulta da ficha para a rodada com `erro` (como a trava de LGPD),
-    nunca vira "sem ficha" (C16).
+    nunca vira "sem ficha" (C16). Por isso a busca não usa `encontrarContatoPorTelefone` como está.
   - Não cria ficha e não altera a ficha achada (nem nome, nem `source_metadata`). Chat sem ficha
     conta em `mensagens_ignoradas`.
+  - Chat ignorado pelo escopo **não gasta** o teto de conversas por rodada (`TETO_PADRAO`): só a
+    conversa que entra conta. Sem isso, uma recuperação de 6 conversas no meio de 200 chats levaria
+    dezenas de minutos.
 - **Janela com fim:** a importação passa a ter `desde` e `ate`. A manual continua "de N dias até
   agora" (`dias` preenchido, `desde`/`ate` vazios). A automática (item 2) usa `desde`/`ate` e deixa
-  `dias` vazio. O CHECK passa a ser: `(dias in (30, 90, 180, 365) and desde is null and ate is null)
-  or (dias is null and desde is not null and ate is not null and desde < ate)`. A rodada não grava
-  mensagem fora da janela.
-- **Prévia:** respeita o escopo. Com `so_crm`, conta só o que casaria; a resolução de `@lid` gasta
-  do mesmo teto de chamadas da prévia (100).
+  `dias` vazio.
+  - O cliente do canal só filtra `timestamp >= desde` no servidor (`lib/waha/client.ts`); `ate` é
+    filtro **local**, na rodada, e a mensagem cortada continua contando em `lidas` (o offset do
+    cursor depende disso).
+  - A rodada não grava mensagem fora de `[desde, ate)`.
+- **Prévia:** respeita o escopo. `calcularPrevia` passa a receber o cliente administrador e o
+  `organization_id` para resolver as fichas. Com `so_crm`, conta só o que casaria; a resolução de
+  `@lid` gasta do mesmo teto de chamadas da prévia (100).
 - **Tela:** opção **"Só contatos do CRM"**, ligada por padrão; a prévia mostra o número do escopo
   escolhido.
 - Repetida não entra (C19); grupo e status ficam fora; só imagem e áudio baixam; só administrador
@@ -103,74 +114,139 @@ as 26 mensagens de 6 conversas, e não as 225 conversas da importação inteira 
 
 ### 2. Volta de uma queda dispara a recuperação sozinha
 
-- **Queda** = o par de `channel_session.status_changed` de uma conexão `provider = 'waha'`: saída
-  (`from_status = 'WORKING'`) e a próxima volta (`to_status = 'WORKING'`). Nunca
-  `last_status_change_at` (C10).
-  - Só vale se os dois eventos trazem o **mesmo `phone_number`**. Se o número mudou no
-    pareamento novo, não importa nada e abre o aviso do item 3 ("o número da conexão mudou").
+- **Queda** = o par de `channel_session.status_changed` de uma conexão: a saída
+  (`from_status = 'WORKING'`) e a próxima volta (`to_status = 'WORKING'`) da mesma
+  `channel_session_id`. Nunca `last_status_change_at` (C10).
   - Só queda de **5 minutos ou mais** (B1, B5).
   - Os eventos podem vir do webhook ou da varredura de saúde, que tem até 5 minutos de atraso
-    (C18). Por isso a janela começa **10 minutos antes** do evento de saída e termina **5 minutos
-    depois** do evento de volta.
-  - Quedas cujas janelas se sobrepõem viram **uma** importação com a janela unida.
-  - Queda sem volta ainda não dispara nada. Conexão arquivada ou empresa parada (o cron já pula
-    `STATUS_OPERANTE`) não dispara.
-- **Quando:** na primeira passada do agendador depois do evento de volta. O sistema olha para trás
-  até **7 dias** no `event_log`; queda mais antiga que isso não é recuperada sozinha.
-- **Uma por queda, garantido no banco:** a importação da queda guarda o id do evento de saída que a
-  abriu, com índice único. Duas passadas ao mesmo tempo não criam duas.
+    (C18). Por isso a janela começa **10 minutos antes** do evento de saída e **termina no evento de
+    volta** (`ate` = instante do evento de volta, nunca depois). O que chegou entre a volta real e
+    o evento atrasado veio pelo webhook ao vivo. Uma margem para frente faria a recuperação gravar
+    primeiro uma mensagem ao vivo, e o webhook, ao ver a repetida (`23505` em `lib/waha/ingest.ts`),
+    não aplicaria os efeitos nem chamaria o agente: a mensagem ficaria sem resposta.
+  - Cada queda vira **uma** importação. Janelas que se sobrepõem não se juntam: a mensagem repetida
+    não entra duas vezes (C19), e juntar a janela de uma importação que já começou deslocaria o
+    cursor (`rodada.ts` fixa `desde` na primeira rodada).
+  - Queda sem volta ainda não dispara nada.
+- **Quem dispara:** o cron `historico-import` (que hoje só lê `importacoes_de_historico`) ganha um
+  passo antes das rodadas:
+  - lê `event_log` **por organização operante** (o índice é `(organization_id, event_type,
+    created_at desc)`), `event_type = 'channel_session.status_changed'`, com o **evento de volta**
+    nos últimos **7 dias** (queda cuja volta é mais antiga não é recuperada sozinha; `event_log`
+    não tem expurgo, C8);
+  - o `channel_session_id` do payload é dado do evento: só vale se existir
+    `channel_sessions.id = payload.channel_session_id and organization_id = event_log.organization_id
+    and provider = 'waha' and archived_at is null`;
+  - conexão de outro provedor (redes sociais, voz) não dispara.
+- **O número precisa ser o mesmo.** O `phone_number` dos eventos **não** prova isso: o webhook e a
+  varredura de saúde não gravam o número; quem grava é a abertura da tela de Conexões. Por isso a
+  importação da queda nasce com o número da conexão naquele momento, e **antes de começar** o cron
+  lê o número ao vivo (`getVerifiedSession` + `numeroObservadoDaSessao`, `lib/channels/numero-observado.ts`)
+  e compara com as variantes do nono dígito:
+  - igual → segue;
+  - diferente → a importação vira `cancelada` com o motivo "o número da conexão mudou", e abre o
+    aviso do item 4;
+  - não foi possível ler (canal fora, erro) → continua `aguardando` e tenta na próxima passada; se
+    passar **60 minutos** sem conseguir, `cancelada` com o motivo, e o aviso. Nunca começa sem
+    confirmar.
+- **Uma por queda, garantido no banco:** a importação guarda o id do evento de saída
+  (`evento_de_saida_id`), com índice único parcial. Duas passadas ao mesmo tempo não criam duas
+  (`23505` tratado como "já existe").
 - **Espera:** estado novo **`aguardando`** (troca do CHECK, de `StatusDaImportacao` em `rodada.ts`
-  e das transições da rota). A importação da queda nasce `aguardando` e o cron a passa para
-  `rodando` quando não houver outra `rodando` na conexão (C7). `cancelar` aceita `aguardando`. A
-  tela mostra a manual em curso e, separada, a recuperação que espera; a da queda **não** esconde a
-  manual (C13).
+  e das transições da rota). A importação da queda nasce `aguardando`. O cron a promove com
+  `update ... set status = 'rodando' where id = ... and status = 'aguardando'`, e o `23505` do índice
+  `importacoes_de_historico_uma_rodando_idx` (outra já `rodando` na conexão) deixa a linha
+  `aguardando` para a próxima passada, sem erro.
+  - `cancelar` aceita `aguardando`.
+  - Enquanto a da queda está `aguardando` ou `rodando`, a importação manual dessa conexão fica
+    indisponível (a rota já responde 409, "Já há uma importação em andamento"). A tela diz isso e
+    mostra a recuperação em curso; o GET passa a ler a manual mais recente **e** a da queda
+    aberta, em vez de só a mais recente (C13).
 - Conexão com "Guardar o histórico" **desligado**: não há o que buscar. Nenhuma importação; abre o
-  aviso do item 3 com o motivo.
+  aviso do item 4 com o motivo.
 - Escopo sempre `so_crm`. Origem gravada `queda` (as que existem viram `manual`).
+- Audit: o início automático grava `channel.historico_import_started` com ator sistema
+  (`actorUserId` ausente) e `origem = queda`; o fim já é auditado pelo cron. Só audita quando criou
+  a importação (passada sem queda nova não audita).
 
 ### 3. A mensagem recuperada tem o efeito de "o cliente respondeu", sem resposta automática
 
-A 0760 corta tudo de uma importação de meses (C5, C14). Para a recuperação de uma **queda**
-(`origem = queda`), as mensagens **recebidas** passam a ter o efeito de uma resposta real, menos o
-que responderia sozinho:
+A 0760 corta tudo de uma importação de meses (C5, C14). A recuperação da queda **também não emite
+`message.received`**, porque esse evento é o gatilho de quem responde e notifica: o worker de
+resposta da IA (`workers/ai-response-worker.handler.ts`), o de sentimento (chamada paga de
+modelo), o push, as automações do cliente (`lib/automation/engine.handler.ts`), o aviso ao dono da
+carteira e a conversão de anúncio. O corte da 0760 é por tudo ou nada; não há corte por consumidor.
 
-| Efeito | Na recuperação da queda |
-|---|---|
-| Detecção de "PARE" (`lib/opt-out/deteccao.ts`, a mesma regra da ingestão) | **roda**; bloqueia como na ingestão |
-| Follow-up de silêncio e régua de campanha param, porque o cliente respondeu | **sim** |
-| A conversa já existente sobe na caixa de entrada: `last_message_at`, prévia e não lidas, se a mensagem recuperada for mais nova que a última da conversa | **sim** (sem mexer em dono nem status; a conversa que não existia nasce como hoje, C15) |
-| IA responde, roteador, demanda nova, webhook de saída, push | **não** |
+Por isso a rodada da queda, depois de gravar cada mensagem **recebida**, chama **direto** só os
+efeitos de "o cliente respondeu":
 
-A importação **manual** fica como hoje (corta tudo). O contrato pede o efeito; quem dispara cada
-um (função existente ou corte condicional na 0760) é escolha da implementação.
+| Efeito | Na recuperação da queda | Quem faz (o mesmo da ingestão) |
+|---|---|---|
+| Detecção de "PARE" (`lib/opt-out/deteccao.ts`), com o bloqueio e o fechamento de negócios e demandas de quem pediu parar | **roda** | `aplicarOptOut` em `lib/channels/pos-entrada.ts` (hoje privada: exportar uma entrada só com os efeitos permitidos) |
+| Resposta à campanha | **roda** | `avaliarCampanha` (`pos-entrada.ts`) e `aplicarRespostaNaCampanha` (`lib/campanhas/resposta.ts`) |
+| Follow-up de silêncio para, porque o cliente respondeu | **roda** | `applyReactivityEvent` (`lib/followup/reactivity.ts`) com a linha do evento montada em memória, sem gravar em `event_log`, e `aplicarTextoNosFollowups` |
+| A conversa sobe na caixa: `last_message_at` (com `greatest`, então mensagem mais velha não desce a conversa), prévia e não lidas (+1 por recebida recuperada) | **roda** | `marcarConversaComMensagem` (`lib/channels/marcar-conversa.ts`) |
+| IA responde, despacho do agente, roteador, sentimento, demanda nova, automações, webhook de saída, push, aviso ao dono, conversão | **não** | `message.received` não é emitido; `pedirDespachoDoAgente`, `abrirDemanda` e `drenarEventosDoInbound` não são chamados |
+
+Regras dos mesmos efeitos na ingestão, que a recuperação repete:
+- canal pausado: nenhum efeito (`idsDosCanaisDesativados`, `lib/channels/desativado.ts`, a régua
+  única);
+- contato pessoal (`is_personal`, spec 21): nenhum efeito, como em `pos-entrada.ts`;
+- mensagem **enviada pelo aparelho** (`fromMe`) recuperada entra na conversa e não tem efeito, mas
+  conta como "a equipe respondeu" para o aviso do item 4.
+
+A conversa que **não** existia nasce como hoje (`fn_upsert_wa_conversation_importada`: fechada e
+sem dono, C15). Quem avisa a equipe sobre ela é o aviso "cliente sem resposta" do item 4.
+
+A importação **manual** fica como hoje (corta tudo, nenhum efeito).
 
 ### 4. Quem precisa saber fica sabendo, e o laço se fecha
 
-Dois `kinds` novos na Central, cada um no CHECK único, em `POLITICAS_DE_AVISO` e em
-`agent-inbox-copy.ts` (C20):
+Dois `kinds` novos na Central. Cada um entra:
+- no CHECK único `agent_inbox_items_kind_check` (o bloco de reconstrução que o baseline já tem,
+  cerca `tests/unit/kind-check-migration-x-baseline.test.ts`);
+- na união `InboxKind` (`lib/agent-engine/db/repository.ts`), em `POLITICAS_DE_AVISO`
+  (`lib/ai/inbox-destino.ts`, completude cobrada na compilação), no texto
+  (`lib/ai/agent-inbox-copy.ts`) e no som por kind (cerca `tests/unit/sons-dos-avisos.test.ts`);
+- com **índice único parcial próprio** `(organization_id, ref_id) where kind = '<kind>' and status =
+  'open'`, como `agent_inbox_canal_pausado_aberto_unico`. O `not exists` de `insertInboxItem` não
+  basta: tem corrida e não atualiza.
 
+Os avisos:
 - **Resumo da recuperação** (`ref_kind = channel_session`, ref = a conexão; vai para o
   administrador, como os outros avisos de conexão). Um aberto por conexão: nova queda com o aviso
-  ainda aberto **atualiza** o mesmo aviso, não cria outro. Textos:
+  ainda aberto **atualiza** o mesmo aviso (código novo, um upsert sobre o índice único). Textos:
   - concluída com mensagens: "Recuperamos N mensagens de M conversas do período em que o número
     ficou fora (<início> a <fim>)";
   - terminou em `erro`: "A recuperação das conversas da queda parou: <erro resumido>", com o atalho
-    para retomar;
-  - acervo desligado ou número mudou: o motivo, sem importação.
+    para a tela de Conexões;
+  - número mudou, número não confirmado em 60 minutos, ou "Guardar o histórico" desligado: o
+    motivo, sem importação.
   - Concluída com 0 mensagens: nenhum aviso. Fecha quando o administrador o resolve, ou sozinho
-    quando a retomada conclui.
-- **Cliente sem resposta na queda** (`ref_kind = conversation`, ref = a conversa; vai para quem
-  atende a conversa, como os avisos de conversa). Um por conversa cuja última mensagem recuperada é
-  do cliente e não tem resposta depois dela. Fecha sozinho quando sai uma resposta na conversa.
+    quando uma recuperação seguinte da mesma conexão conclui.
+- **Cliente sem resposta na queda** (`ref_kind = conversation`, ref = a conversa). Público: quem
+  pode ver a conversa, papel mínimo `agent`, pelo mesmo destino dos avisos de conversa
+  (`resolverDestinosDosAvisos`); não há "dono" a quem mandar, porque a conversa recuperada pode não
+  ter. Um por conversa cuja última mensagem recuperada é do cliente e não tem mensagem da equipe
+  depois dela (nem pelo aparelho). Fecha sozinho quando sai uma resposta na conversa.
 
-Audit: o início automático grava `channel.historico_import_started` com ator sistema e
-`origem = queda`; o fim já é auditado pelo cron.
+Schema (migration nova, apêndice idempotente no `supabase/baseline.sql`, linha `-- manifest:`;
+número por `pnpm checar:colisao-de-migration`):
+- `importacoes_de_historico`: colunas `escopo` (`todos | so_crm`, default `todos`), `origem`
+  (`manual | queda`, default `manual`), `desde`, `ate`, `evento_de_saida_id` (índice único parcial
+  `where evento_de_saida_id is not null`), `numero_esperado`;
+- `alter column dias drop not null`;
+- os CHECKs de `dias` e `status` são **inline e sem nome** no baseline, então o Postgres os chamou
+  `importacoes_de_historico_dias_check` e `importacoes_de_historico_status_check`: `drop constraint
+  if exists` por esses nomes e `add constraint` com o mesmo nome. O vocabulário só cresce
+  (`aguardando` entra; nenhum sai), e cada constraint é definida uma só vez no baseline (cercas
+  `baseline-constraint-reconstruida` e `migrations-nao-encolhem-vocabulario`). O CHECK de `dias`
+  passa a ser `(dias in (30, 90, 180, 365) and desde is null and ate is null) or (dias is null and
+  desde is not null and ate is not null and desde < ate)`. As linhas existentes cumprem os dois
+  (todas têm `dias` válido e `desde`/`ate` vazios);
+- os dois `kinds` e os dois índices únicos parciais.
 
-Schema: colunas novas de `importacoes_de_historico` (`escopo`, `origem`, `desde`, `ate`, id do
-evento da queda com índice único), o novo CHECK de `dias`, o estado `aguardando` e os dois `kinds`
-saem como migration nova, apêndice idempotente no `supabase/baseline.sql` e linha `-- manifest:`.
-As importações que já existem ficam `escopo = todos`, `origem = manual`. Número da migration por
-`pnpm checar:colisao-de-migration`. Fragmento em `.changes/`.
+As importações que já existem ficam `escopo = todos`, `origem = manual`. Fragmento em `.changes/`.
 
 ## Fora desta spec (de propósito)
 
@@ -186,27 +262,44 @@ As importações que já existem ficam `escopo = todos`, `origem = manual`. Núm
 Cada caso com a sabotagem que o deixa vermelho.
 
 - **Escopo `so_crm` (unidade da rodada, canal simulado):** chats que casam por telefone, por `@lid`
-  com `wa_lid` da ficha e por `remoteJidAlt` entram; chat sem ficha, de ficha mesclada, anonimizada
-  ou com pedido de apagamento não entra; nenhuma ficha é criada nem alterada. *Sabotagem:* chamar
-  `fn_upsert_wa_contact` em `so_crm` (nasce ficha); tirar o filtro de `is_anonymized`.
+  com `wa_lid` da ficha e por `remoteJidAlt` entram; chat sem ficha, de ficha mesclada, anonimizada,
+  com pedido de apagamento ou de **outra organização** não entra; nenhuma ficha é criada nem
+  alterada; chat ignorado não gasta o teto da rodada. *Sabotagem:* chamar `fn_upsert_wa_contact` em
+  `so_crm` (nasce ficha); tirar o filtro de `is_anonymized`; tirar o filtro de organização.
 - **Falha fechada:** a busca da ficha devolve erro → a rodada termina em `erro`, nenhuma mensagem
   pulada em silêncio. *Sabotagem:* usar `encontrarContatoPorTelefone` como está.
-- **Janela:** mensagem depois de `ate` não entra. *Sabotagem:* ignorar `ate`.
+- **Janela:** mensagem no instante `ate` ou depois não entra, e continua contando em `lidas`.
+  *Sabotagem:* ignorar `ate`.
 - **Prévia `so_crm`:** com 3 chats e 1 ficha, a prévia conta 1. *Sabotagem:* contar todos.
-- **Disparo:** par com 4 min → nada; 6 min → 1 importação `aguardando` com a janela certa; o mesmo
-  par em duas passadas simultâneas → 1 (índice único). Par com `phone_number` diferente → nada e 1
-  aviso. Evento de conexão `zernio_social` → nada. *Sabotagem:* usar `last_status_change_at`; tirar
-  o índice único; tirar o filtro de provedor.
-- **Espera:** com uma manual `rodando`, a da queda fica `aguardando`, a tela segue mostrando a
-  manual, e a da queda começa quando a manual termina. *Sabotagem:* criar a da queda como `previa`.
+- **Disparo:** par com 4 min → nada; 6 min → 1 importação `aguardando` com `desde` = saída − 10 min
+  e `ate` = volta; o mesmo par em duas passadas simultâneas → 1 (índice único); duas quedas
+  sobrepostas → 2 importações, e a mensagem do trecho comum entra uma vez; `channel_session_id` do
+  payload de outra organização → nada; conexão `zernio_social` → nada; volta há 8 dias → nada.
+  *Sabotagem:* usar `last_status_change_at`; tirar o índice único; tirar o filtro de provedor; ler o
+  `channel_session_id` sem conferir a organização.
+- **Número:** número ao vivo diferente do esperado (com `phone_number` da conexão **igual** nos dois
+  eventos) → `cancelada` e 1 aviso; número ilegível → segue `aguardando`, e depois de 60 min
+  `cancelada` e aviso. *Sabotagem:* comparar o `phone_number` dos eventos.
+- **Espera:** com uma manual `rodando`, a da queda fica `aguardando` (o `23505` da promoção não vira
+  erro), a tela mostra a manual e a recuperação, e a da queda começa quando a manual termina.
+  *Sabotagem:* criar a da queda como `previa`.
 - **Efeitos da queda:** mensagem recuperada "PARE" bloqueia o contato; mensagem recuperada para o
-  follow-up de silêncio pendente; a conversa existente sobe e ganha não lida; a IA não é chamada.
-  *Sabotagem:* deixar o corte da 0760 igual para `origem = queda` (o follow-up sai).
+  follow-up de silêncio pendente e marca a resposta da campanha; a conversa existente sobe e ganha
+  não lida; contato pessoal e canal pausado: nenhum efeito. **E zero linhas** de `message.received`,
+  `message.sent`, `message.outbound` e `ai_agent.dispatch_requested` em `event_log` geradas pela
+  recuperação. *Sabotagem:* deixar o corte da 0760 igual para `origem = queda` (o follow-up sai);
+  afrouxar o corte para `origem = queda` (aparece `message.received`).
+- **Corrida com o webhook:** mensagem com instante depois de `ate` chega pelo webhook enquanto a
+  recuperação roda → a recuperação não a grava, e ela recebe os efeitos e o despacho normais.
+  *Sabotagem:* `ate` = volta + 5 min.
 - **Avisos:** concluída com mensagens → 1 resumo; segunda queda com o resumo aberto → o mesmo aviso
-  atualizado; `erro` na primeira rodada → aviso de erro; conversa com cliente sem resposta → 1
-  aviso dela, que fecha quando sai resposta. *Sabotagem:* não emitir aviso em `erro`.
+  atualizado; duas gravações simultâneas do resumo → 1 linha (índice único); `erro` na primeira
+  rodada → aviso de erro; conversa com cliente sem resposta → 1 aviso dela, que fecha quando sai
+  resposta; resposta pelo aparelho recuperada → nenhum aviso. *Sabotagem:* não emitir aviso em
+  `erro`; tirar o índice único.
 - **Banco (`tests/invariants`):** a importação manual continua sem emitir evento (cerca da 0760);
-  sessão de A não importa nada para B (guarda de isolamento).
+  sessão de A não importa nada para B (guarda de isolamento); migration sobre linhas existentes não
+  viola os CHECKs novos.
 - **Tela (Playwright):** "Só contatos do CRM" vem ligada e a prévia muda de número ao desligar.
 - **Prova real (receiver real):** derrubar a conexão de teste por mais de 5 minutos; pelo aparelho,
   trocar mensagens com um contato que tem ficha e outro que não tem; reconectar. Em alguns minutos
@@ -219,7 +312,11 @@ do canal. Régua: se nenhuma organização tiver queda, nada muda.
 
 ## Perguntas ao mantenedor
 
-1. O disparo fica no cron `historico-import` (que já roda a cada minuto e lê o `event_log`), ou
-   vira consumidor de `channel_session.status_changed`? A segunda opção exige tirar o evento da
-   lista de registro (`fn_event_log_e_registro`), onde ele nasce `done`.
+1. O disparo fica no cron `historico-import` (que já roda a cada minuto; hoje lê só
+   `importacoes_de_historico`, e passa a ler também o `event_log` por organização), ou vira
+   consumidor de `channel_session.status_changed`? A segunda opção exige tirar o evento da lista de
+   registro (`fn_event_log_e_registro`), onde ele nasce `done`.
 2. "Só contatos do CRM" ligado por padrão muda a importação manual para quem já usava. De acordo?
+3. Para chamar os efeitos de "o cliente respondeu" sem emitir `message.received`, `aplicarOptOut` e
+   `avaliarCampanha` precisam sair de `pos-entrada.ts` numa entrada exportada só com esses efeitos.
+   Prefere isso, ou um `message.received` marcado que cada consumidor aprenda a ignorar?
