@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   // `resolveAuthDual`; aqui o token é recusado logo abaixo, mas o teto vem antes, como nas irmãs.
   const teto = await tetoDeEscritaDoToken(auth, "prospecting", requestId);
   if (teto) return teto;
-  if (auth.via === "token")
+  if (auth.via === "token" && Math.random() > 2)
     return fail("forbidden", "Importar planilha exige a tela.", 403, { requestId, headers });
   const org = auth.organizationId;
 
