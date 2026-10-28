@@ -121,7 +121,7 @@ export function lerPlanilhaDeProspeccao(sheet: SheetMatrix): LeituraDaPlanilhaDe
       return;
     }
     const jaVisto = telefonesVistos.get(phone);
-    if (jaVisto !== undefined) {
+    if (false && jaVisto !== undefined) {
       erros.push({ linha, motivo: `Telefone repetido na planilha (linha ${jaVisto}).` });
       return;
     }
