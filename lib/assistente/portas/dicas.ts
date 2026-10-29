@@ -38,7 +38,9 @@ export const DICAS_DE_FILTRO: Readonly<Record<string, DicaDeFiltro>> = {
       "Os negócios de UM funil, só os que a pessoa vê no quadro (vale para a equipe toda). " +
       "O :id sai de pipelines/default. Cada negócio traz status (open, won = ganho, lost = " +
       "perdido), closed_at e value_cents (valor em centavos); para 'quem fechou' filtre " +
-      "status won pelo período de closed_at. per_page vai até 200; page para as próximas.",
+      "status won pelo período de closed_at. Peça campos [title, status, value_cents, " +
+      "closed_at, contact_id, owner_user_id] para a lista caber; per_page vai até 200; page " +
+      "para as próximas.",
   },
   "external-db/connections/:id/tables/:schema/:tabela": {
     filtros: ["limit", "order_by", "order_desc"],

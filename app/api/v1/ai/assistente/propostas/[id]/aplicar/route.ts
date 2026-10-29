@@ -91,6 +91,12 @@ function idDoArtefato(corpo: unknown): string | null {
     const idDoBinding = (d.binding as { id?: unknown }).id;
     if (typeof idDoBinding === "string") return idDoBinding;
   }
+  // O POST de agentes devolve `{ agent: { id, … }, version: { … } }`: sem este caso a
+  // proposta aplicada não dizia QUAL agente criou (medido no espelho, 29/10/2026).
+  if (d.agent !== null && typeof d.agent === "object") {
+    const idDoAgente = (d.agent as { id?: unknown }).id;
+    if (typeof idDoAgente === "string") return idDoAgente;
+  }
   return null;
 }
 
@@ -315,6 +321,8 @@ async function aplicarComTrava(
         operacao: p.metodo,
         risk: linha.risk,
         http_status: respostaDestino.status,
+        // O que nasceu desta proposta: liga "quem pediu / quem aplicou" ao artefato.
+        artefato_id: resultado.artefato.id,
       },
       requestId,
     });
@@ -435,6 +443,8 @@ async function aplicarComTrava(
         operacao: payloadDoTipo.operacao,
         risk: linha.risk,
         http_status: respostaDestino.status,
+        // O que nasceu desta proposta: liga "quem pediu / quem aplicou" ao artefato.
+        artefato_id: resultado.artefato.id,
       },
       requestId,
     });

@@ -81,4 +81,40 @@ describe("ler_porta", () => {
     const saida = (await chamar(ferramentas, "ler_porta", { porta: "contacts" })) as { mensagem: string };
     expect(saida.mensagem.length).toBe(300);
   });
+
+  // Medido no espelho em 29/10/2026: os negócios de um funil vinham com todas as
+  // colunas, a lista passava dos 24 KB e o modelo não chegava aos ganhos.
+  it("campos encolhe cada linha da lista para as colunas pedidas", async () => {
+    mockAbrirPorta.mockReturnValue({ handler: async () => new Response(), caminho: "/api/v1/pipelines/p1/leads" });
+    const linhas = Array.from({ length: 60 }, (_, i) => ({
+      id: `l${i}`,
+      title: `Negócio ${i}`,
+      status: i % 2 === 0 ? "won" : "open",
+      value_cents: 1000 * i,
+      description: "y".repeat(800),
+      custom_fields: { longo: "z".repeat(400) },
+    }));
+    mockChamarRota.mockResolvedValue({ status: 200, corpo: { data: linhas } });
+    const { ferramentas } = montarParaTeste("agent");
+
+    const inteira = (await chamar(ferramentas, "ler_porta", { porta: "pipelines/:id/leads", valores: { id: "p1" } })) as {
+      cortado: boolean;
+    };
+    expect(inteira.cortado).toBe(true);
+
+    const enxuta = (await chamar(ferramentas, "ler_porta", {
+      porta: "pipelines/:id/leads",
+      valores: { id: "p1" },
+      campos: ["title", "status", "value_cents", "inexistente"],
+    })) as { dados: Record<string, unknown>[]; cortado: boolean };
+    expect(enxuta.cortado).toBe(false);
+    expect(enxuta.dados).toHaveLength(60);
+    expect(enxuta.dados[2]).toEqual({ title: "Negócio 2", status: "won", value_cents: 2000 });
+  });
+
+  it("campos com nome fora do padrão é recusado", async () => {
+    const { ferramentas } = montarParaTeste("agent");
+    const saida = await chamar(ferramentas, "ler_porta", { porta: "contacts", campos: ["nome; drop"] });
+    expect(saida).toEqual({ ok: false, motivo: "parametro_invalido" });
+  });
 });

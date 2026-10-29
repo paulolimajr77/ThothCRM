@@ -29,6 +29,11 @@ vi.mock("@/lib/impersonate/support", () => ({ requireSupportWrite: vi.fn(async (
 vi.mock("@/lib/audit", () => ({ audit: vi.fn(async () => undefined) }));
 vi.mock("@/lib/agent-engine/db/request-pool", () => ({ getRequestPool: vi.fn() }));
 vi.mock("@/lib/assistente/metricas/chamar-rota", () => ({ chamarRotaPorDentro: vi.fn() }));
+// Passa direto para a real; o caso do agente troca só uma chamada (sem carregar a rota de agentes).
+vi.mock("@/lib/assistente/portas/abrir", async (original) => {
+  const real = await original<typeof import("@/lib/assistente/portas/abrir")>();
+  return { ...real, abrirPorta: vi.fn(real.abrirPorta) };
+});
 
 const { POST } = await import("@/app/api/v1/ai/assistente/propostas/[id]/aplicar/route");
 const { getRequestPool } = await import("@/lib/agent-engine/db/request-pool");
@@ -443,8 +448,40 @@ describe("o destino e a gravação", () => {
       resourceType: "config_proposals",
       resourceId: PROPOSTA_ID,
     });
-    expect(entrada.metadata).toEqual({ kind: "memoria", operacao: "criar", risk: "seguro", http_status: 200 });
+    expect(entrada.metadata).toEqual({
+      kind: "memoria",
+      operacao: "criar",
+      risk: "seguro",
+      http_status: 200,
+      artefato_id: ARTEFATO_ID,
+    });
     expect(JSON.stringify(entrada)).not.toContain(TEXTO_DA_MEMORIA);
+  });
+
+  // Medido no espelho (29/10/2026): o agente criado pelo Aplicar ficava com
+  // `artefato.id: null` — o POST de agentes devolve `{ agent: { id }, version }`.
+  it("ação que cria agente: o recibo e a auditoria guardam o id do agente criado", async () => {
+    const AGENTE_ID = "11111111-2222-4333-8444-555555555599";
+    estado.linhaAtual = linha({
+      kind: "acao",
+      payload: { porta: "ai/agents", metodo: "POST", corpo: { name: "Recepção" } },
+      risk: "atencao",
+      status: "aprovada",
+    });
+    estado.casAplicada = linha({ status: "aplicada", applied_by: USER_ID, applied_at: "2026-10-16T10:00:00Z" });
+    vi.mocked(abrirPorta).mockResolvedValueOnce({ handler: async () => new Response(null), caminho: "/api/v1/ai/agents" });
+    vi.mocked(chamarRotaPorDentro).mockResolvedValue({
+      status: 201,
+      corpo: { data: { agent: { id: AGENTE_ID, name: "Recepção" }, version: { id: "v1", status: "draft" } } },
+    });
+
+    const resposta = await post(PROPOSTA_ID);
+
+    expect(resposta.status).toBe(200);
+    const cas = estado.consultas.find((c) => c.sql.includes("set status = 'aplicada'"))!;
+    expect(JSON.parse(String(cas.params![3])).artefato).toEqual({ tipo: "acao", id: AGENTE_ID });
+    const entrada = vi.mocked(audit).mock.calls.find((c) => c[0].action === "assistente.proposta_aplicada")![0];
+    expect(entrada.metadata).toMatchObject({ artefato_id: AGENTE_ID });
   });
 });
 
