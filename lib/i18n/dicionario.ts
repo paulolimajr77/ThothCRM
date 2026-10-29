@@ -18544,6 +18544,14 @@ export const DICIONARIO: Traducoes = {
   },
   "Revisar e publicar o follow-up": { es: "Revisar y publicar el seguimiento" },
   "Conferir as etapas do funil": { es: "Revisar las etapas del embudo" },
+  // Ordem E — aplicar de uma vez as mudanças seguras pendentes.
+  "Aplicar as {n} mudanças seguras": { es: "Aplicar los {n} cambios seguros" },
+  "Apliquei {a} de {n} mudanças seguras.": {
+    es: "Apliqué {a} de {n} cambios seguros.",
+  },
+  "Parei na mudança «{resumo}»: {erro}": {
+    es: "Me detuve en el cambio «{resumo}»: {erro}",
+  },
 };
 
 /**

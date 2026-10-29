@@ -52,6 +52,8 @@ const rede = vi.hoisted(() => ({
   /** O `data` da resposta do chat. */
   resposta: null as unknown,
   chamadas: [] as string[],
+  /** Id cuja aplicação o destino recusa (lote seguro). */
+  falharEm: null as string | null,
 }));
 
 function json(corpo: unknown, status = 200): Response {
@@ -68,6 +70,9 @@ globalThis.fetch = (async (url: string, init?: RequestInit) => {
   if (u.startsWith("/api/v1/ai/assistente/propostas?")) return json({ data: rede.fila });
   const acao = ACAO_DE_PROPOSTA.exec(u);
   if (acao !== null) {
+    if (acao[2] === "aplicar" && acao[1] === rede.falharEm) {
+      return json({ error: { code: "proposta_falhou_ao_aplicar", message: "O destino recusou." } }, 502);
+    }
     const alvo = rede.fila.find((p) => p.id === acao[1]) ?? {};
     const status = acao[2] === "rejeitar" ? "rejeitada" : acao[2] === "aplicar" ? "aplicada" : "aprovada";
     return json({ data: { ...alvo, status } });
@@ -130,6 +135,7 @@ describe("o chat do assistente — comandos e decisões", () => {
     rede.fila = [];
     rede.resposta = null;
     rede.chamadas = [];
+    rede.falharEm = null;
   });
 
   it("'/' abre o menu, as setas andam e Enter escolhe o comando (que ainda precisa ser enviado)", async () => {
@@ -316,5 +322,72 @@ describe("o chat do assistente — comandos e decisões", () => {
     await new Promise((r) => setTimeout(r, 30));
     expect(rede.chamadas.some((c) => c.includes("/ai/assistente/propostas?"))).toBe(false);
     expect(screen.queryByText(/mudan[çc]a[s]? esperando você/)).toBeNull();
+  });
+});
+
+// Item 1 da #1941 (29/10/2026): aplicar de uma vez SÓ o que o código marcou como seguro.
+describe("o lote das mudanças seguras", () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+    rede.fila = [];
+    rede.chamadas = [];
+    rede.falharEm = null;
+  });
+
+  const SEGURA_1 = "11111111-2222-4333-8444-555555555531";
+  const SEGURA_2 = "11111111-2222-4333-8444-555555555532";
+  const ATENCAO = "11111111-2222-4333-8444-555555555533";
+
+  function filaMista(): void {
+    rede.fila = [
+      proposta(SEGURA_1, "Guardar o horário de atendimento"),
+      { ...proposta(ATENCAO, "Ligar o roteador novo"), kind: "roteador", risk: "atencao" },
+      proposta(SEGURA_2, "Guardar o endereço"),
+    ];
+  }
+
+  it("2 seguras + 1 de atenção: o botão conta 2 e aplica só as seguras, uma depois da outra", async () => {
+    const usuario = userEvent.setup();
+    filaMista();
+    montar();
+
+    const botao = await screen.findByTestId("assistente-lote-seguro");
+    expect(botao.textContent).toBe("Aplicar as 2 mudanças seguras");
+    await usuario.click(botao);
+
+    expect(await screen.findByText("Apliquei 2 de 2 mudanças seguras.")).toBeTruthy();
+    const decisoes = rede.chamadas.filter((c) => /\/(aprovar|aplicar)$/.test(c));
+    expect(decisoes).toEqual([
+      `POST /api/v1/ai/assistente/propostas/${SEGURA_1}/aprovar`,
+      `POST /api/v1/ai/assistente/propostas/${SEGURA_1}/aplicar`,
+      `POST /api/v1/ai/assistente/propostas/${SEGURA_2}/aprovar`,
+      `POST /api/v1/ai/assistente/propostas/${SEGURA_2}/aplicar`,
+    ]);
+    // A de atenção nunca entra no lote.
+    expect(rede.chamadas.some((c) => c.includes(ATENCAO))).toBe(false);
+  });
+
+  it("com 1 segura só, o botão não aparece", async () => {
+    rede.fila = [
+      proposta(SEGURA_1, "Guardar o horário de atendimento"),
+      { ...proposta(ATENCAO, "Ligar o roteador novo"), kind: "roteador", risk: "atencao" },
+    ];
+    montar();
+
+    await screen.findByText("Tem 2 mudanças esperando você.");
+    expect(screen.queryByTestId("assistente-lote-seguro")).toBeNull();
+  });
+
+  it("a 1ª falhando: a 2ª não é tocada e a conversa diz onde parou", async () => {
+    const usuario = userEvent.setup();
+    filaMista();
+    rede.falharEm = SEGURA_1;
+    montar();
+
+    await usuario.click(await screen.findByTestId("assistente-lote-seguro"));
+
+    expect(await screen.findByText(/^Apliquei 0 de 2 mudanças seguras\. Parei na mudança «Guardar o horário de atendimento»/)).toBeTruthy();
+    expect(rede.chamadas.some((c) => c.includes(SEGURA_2))).toBe(false);
   });
 });

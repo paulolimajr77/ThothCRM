@@ -22,6 +22,7 @@ import { ApiError } from "@/lib/api/types";
 import { linhasDaAjuda } from "@/lib/assistente/comandos";
 import { randomId } from "@/lib/random-id";
 import { proximosPassosDaAcao, type ProximoPasso } from "@/lib/assistente/propostas/proximos-passos";
+import { idsSegurosParaLote } from "@/lib/assistente/propostas/lote-seguro";
 
 interface Thread {
   id: string;
@@ -68,6 +69,8 @@ interface MensagemNaTela {
   desfecho?: "ok" | "erro";
   /** Depois de aplicar com sucesso: os próximos passos que faltam fazer na tela. */
   proximosPassos?: ProximoPasso[];
+  /** Quando há 2+ mudanças seguras pendentes: os ids para aplicar em lote. */
+  loteSeguro?: { ids: string[]; n: number };
 }
 
 interface ItemDeAcao {
@@ -339,6 +342,7 @@ export function ChatDoAssistente({
   const [menuDispensado, setMenuDispensado] = useState(false);
   const [indiceDoMenu, setIndiceDoMenu] = useState(0);
   const [ocupado, setOcupado] = useState<string | null>(null);
+  const [loteOcupado, setLoteOcupado] = useState<boolean>(false);
   const [errosDeAcao, setErrosDeAcao] = useState<Record<string, string>>({});
   const [nomes, setNomes] = useState<Map<string, string>>(new Map());
   const jaIniciou = useRef(false);
@@ -473,6 +477,14 @@ export function ChatDoAssistente({
   );
   const assinaturaDasPendencias = idsPendentesParaAnuncio.join(",");
 
+  // Mudanças seguras (risco baixo, pendentes, não vencidas) que podem ser
+  // aplicadas em lote com um só clique.
+  const idsSeguros = useMemo(
+    () => idsSegurosParaLote(fila.data ?? []),
+    [fila.data],
+  );
+  const temLoteSeguro = idsSeguros.length >= 2;
+
   // Ao abrir, o administrador vê o que espera por ele. O anúncio é da COLEÇÃO:
   // reabrir o painel com as mesmas pendências não repete a mensagem, e uma
   // proposta nova gera um anúncio novo.
@@ -494,9 +506,18 @@ export function ChatDoAssistente({
                 String(idsPendentesParaAnuncio.length),
               ),
         propostas: idsPendentesParaAnuncio,
+        ...(temLoteSeguro ? { loteSeguro: { ids: idsSeguros, n: idsSeguros.length } } : {}),
       },
     ]);
-  }, [aberto, ehAdmin, assinaturaDasPendencias, idsPendentesParaAnuncio, t]);
+  }, [
+    aberto,
+    ehAdmin,
+    assinaturaDasPendencias,
+    idsPendentesParaAnuncio,
+    temLoteSeguro,
+    idsSeguros,
+    t,
+  ]);
 
   const propostasPorId = useMemo(() => {
     const mapa = new Map<string, PropostaNaTela>();
@@ -646,6 +667,59 @@ export function ChatDoAssistente({
       if (codigo === "proposta_expirada") void fila.refetch();
     } finally {
       setOcupado(null);
+    }
+  }
+
+  /**
+   * Aplica as mudanças seguras pendentes UMA POR VEZ, em sequência, parando
+   * na primeira que falhar. Usa as mesmas rotas de `/aprovar` + `/aplicar`
+   * que o botão de cada cartão — nada de rota nova, nada de banco direto.
+   */
+  async function aplicarLoteSeguro(ids: string[]): Promise<void> {
+    if (loteOcupado) return;
+    setLoteOcupado(true);
+    let aplicadas = 0;
+    let parouEm: { resumo: string; erro: string } | null = null;
+    for (const id of ids) {
+      try {
+        const aprovada = await apiClient.post<{ data?: PropostaNaTela }>(
+          `/api/v1/ai/assistente/propostas/${id}/aprovar`,
+          undefined,
+        );
+        poNaFila(aprovada);
+        const aplicada = await apiClient.post<{ data?: PropostaNaTela }>(
+          `/api/v1/ai/assistente/propostas/${id}/aplicar`,
+          undefined,
+        );
+        poNaFila(aplicada);
+        aplicadas += 1;
+        void qc.invalidateQueries({ queryKey: FILA_DE_PROPOSTAS });
+      } catch (erroDaLote) {
+        const proposta = propostasPorId.get(id);
+        const resumo = proposta?.resumo ?? id;
+        let erro = t("Não foi possível concluir a ação.");
+        if (
+          erroDaLote instanceof Error &&
+          "message" in erroDaLote &&
+          typeof (erroDaLote as { message?: unknown }).message === "string"
+        ) {
+          erro = (erroDaLote as { message: string }).message;
+        }
+        parouEm = { resumo, erro };
+        break;
+      }
+    }
+    setLoteOcupado(false);
+    const fraseAplicou = t("Apliquei {a} de {n} mudanças seguras.")
+      .replace("{a}", String(aplicadas))
+      .replace("{n}", String(ids.length));
+    if (parouEm) {
+      const fraseParou = t("Parei na mudança «{resumo}»: {erro}")
+        .replace("{resumo}", parouEm.resumo)
+        .replace("{erro}", parouEm.erro);
+      registrarDesfecho(`${fraseAplicou} ${fraseParou}`, "erro");
+    } else {
+      registrarDesfecho(fraseAplicou, "ok");
     }
   }
 
@@ -925,6 +999,24 @@ export function ChatDoAssistente({
                     aoNao={(alvo) => void agir(alvo, "nao")}
                   />
                 ))}
+              </div>
+            ) : null}
+            {m.loteSeguro !== undefined ? (
+              <div className="flex flex-wrap gap-2 mt-1">
+                <button
+                  type="button"
+                  disabled={loteOcupado}
+                  onClick={() => {
+                    if (m.loteSeguro !== undefined) void aplicarLoteSeguro(m.loteSeguro.ids);
+                  }}
+                  data-testid="assistente-lote-seguro"
+                  className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
+                >
+                  {t("Aplicar as {n} mudanças seguras").replace(
+                    "{n}",
+                    String(m.loteSeguro.n),
+                  )}
+                </button>
               </div>
             ) : null}
             {m.checkup !== undefined ? (
