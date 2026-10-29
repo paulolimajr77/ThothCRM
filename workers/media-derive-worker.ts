@@ -8,6 +8,7 @@ import { generateText } from "ai";
 import type pg from "pg";
 
 import { extractPdfText } from "@/lib/ai/rag/extractors/pdf";
+import { provedorDaChamada } from "@/lib/ai/log-invocation";
 import { visaoEmVigor } from "@/lib/ai/pontos/capacidade-em-vigor";
 import { PONTO_TRANSCRICAO_DE_AUDIO, PONTO_VISAO_DE_IMAGEM } from "@/lib/ai/pontos/registro";
 import { costCents, type TokenUsage } from "@/lib/agent-engine/edge/llm/pricing";
@@ -28,6 +29,7 @@ import { createPool } from "@/lib/agent-engine/db/pool";
 import { env } from "@/lib/env";
 import type { EventRow, HandlerResult } from "@/lib/event-log/dispatcher";
 import { deriveMediaText, type DeriveDeps } from "@/lib/messaging/media/derive";
+import { isMediaPathInOrganization } from "@/lib/messaging/media/upload-validation";
 import { MARCADOR_NAO_LIDA, TIPOS_DERIVAVEIS } from "@/lib/messaging/media/derivable";
 import { deriveVideoText } from "@/lib/messaging/media/video-derive";
 import {
@@ -43,6 +45,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { motivoDaRecusaDeDestino } from "@/lib/automation/destinos-internos-autorizados";
 import { DETALHE_TECNICO } from "@/lib/event-log/aviso-de-evento-morto";
 import { MENSAGEM_REDIGIDA } from "@/lib/lgpd/cascata";
+import { lerPessoalDaConversa } from "@/lib/contacts/contato-pessoal";
 import { avaliarPedidosFalados } from "@/workers/media-derive-worker.pedidos";
 
 export const MEDIA_DERIVE_CONSUMER_KEY = "media_derive_v1";
@@ -115,11 +118,23 @@ export async function deriveMessageMedia(row: EventRow): Promise<HandlerResult> 
   // que espera a mídia da CONVERSA, segurava a resposta do texto seguinte até o
   // teto de 120s por uma leitura que nunca ia acontecer.
   const markSkipped = async (detail: string): Promise<HandlerResult> => {
-    await admin.from("messages")
-      .update({ media_derived_status: "skipped" })
-      .eq("id", msg.id).eq("organization_id", msg.organization_id);
-    return { consumer_key, status: "skipped", detail };
+    try {
+      const { error } = await admin.from("messages")
+        .update({ media_derived_status: "skipped" })
+        .eq("id", msg.id).eq("organization_id", msg.organization_id);
+      if (!error) return { consumer_key, status: "skipped", detail };
+    } catch {
+      // O dreno precisa tentar de novo; a causa externa não vai para o recibo.
+    }
+    return { consumer_key, status: "error", detail: "skip_status_update_failed" };
   };
+
+  // A linha é da org do evento; o objeto apontado por ela ainda precisa ser.
+  // O admin ignora a RLS do Storage: marque só a desistência terminal antes
+  // de baixar, resolver credencial ou derivar; falha da marca pede nova tentativa.
+  if (msg.media_storage_path && !isMediaPathInOrganization(msg.media_storage_path, row.organization_id)) {
+    return markSkipped("invalid_media_path");
+  }
 
   // A retenção já retirou esta mídia (migration 0557, #1534): não há o que
   // derivar e, principalmente, nada a baixar do provedor — o `media_storage_path`
@@ -129,6 +144,50 @@ export async function deriveMessageMedia(row: EventRow): Promise<HandlerResult> 
 
   if (!msg.media_storage_path) return markSkipped("no media");
   if (msg.media_derived_status === "ready") return { consumer_key, status: "skipped", detail: "already derived" };
+
+  // ⚠️ CONTATO PESSOAL (spec 21) NÃO É LEITURA DE IA — #3592.
+  //
+  // A marca tira o contato da operação inteira: a conversa fechada, o
+  // follow-up, a campanha e a prospecção param, o RAG esquece, e a entrada de
+  // mensagem pula os efeitos. A derivação de mídia era o único caminho que
+  // olhava só a mensagem — baixava o arquivo do bucket e mandava o áudio
+  // (transcrição), a foto (visão), o vídeo (quadros) ou o documento ao
+  // provedor. Dois custos, e o segundo não se paga com dinheiro: token da
+  // organização em conteúdo que ninguém da operação vai ler, e a vida privada
+  // de alguém indo parar num terceiro — exatamente o que a marca promete
+  // evitar. O arquivo CONTINUA salvo e tocável na conversa; o que não nasce é
+  // o `media_derived_text`.
+  //
+  // A régua é uma só (`contacts.is_personal`, via
+  // `lib/contacts/contato-pessoal.ts`): este worker só conhece a conversa, e
+  // resolver o dono aqui dentro com um SELECT próprio criaria a segunda régua
+  // que divergiria na primeira condição nova. O corte vem DEPOIS do
+  // `already derived` de propósito: rebaixar `ready` para `skipped` sem apagar
+  // o texto faria a linha mentir sobre o próprio estado.
+  //
+  // `skipped` é TERMINAL no dreno do turno (`DERIVACAO_TERMINADA`): sem a
+  // marca, o drain da conversa esperaria o teto de 120s por uma leitura que
+  // ninguém vai fazer.
+  const donoDaMidia = await lerPessoalDaConversa(admin, {
+    organizationId: msg.organization_id,
+    conversationId: msg.conversation_id,
+  });
+  // Falha de leitura FECHA O GASTO em vez de abrir. Na entrada de mensagem a
+  // mesma dúvida segue o fluxo (a mensagem já está gravada; falhar ali viraria
+  // 500 para o provider) — aqui a política é a inversa e é de propósito: sem
+  // saber de quem é o arquivo, mandar o áudio de alguém a um terceiro é o dano
+  // que não tem desfazer, e o dreno ainda tem cinco tentativas para a leitura
+  // voltar. A causa vai para o log; o recibo do evento leva um código estável.
+  if (donoDaMidia.erro) {
+    logger.warn("[media-derive] leitura de is_personal falhou; a mídia não vai ao provedor", {
+      organization_id: msg.organization_id,
+      conversation_id: msg.conversation_id,
+      detail: donoDaMidia.erro,
+    });
+    return { consumer_key, status: "error", detail: "personal_check_failed" };
+  }
+  if (donoDaMidia.pessoal) return markSkipped("contato pessoal");
+
   if (!TIPOS_DERIVAVEIS.has(msg.type)) return { consumer_key, status: "skipped", detail: `type ${msg.type}` };
   // Vídeo é opt-in (custo: ffmpeg + N chamadas de visão): só deriva se algum agente
   // publicado da org tem video_frames_enabled=true (flag da migration 0058).
@@ -963,6 +1022,13 @@ function linhaDeFalha(
  * de `ai_invocations` (invariante de vocabulário), e `llm_calls.purpose` não
  * tem CHECK. Fire-and-forget: a linha de custo nunca derruba a derivação — e
  * por isso a montagem também fica dentro do try.
+ *
+ * O provedor EFETIVO do binding já vinha informado por quem chama (a visão
+ * passa `llm.provider`) e continua vindo — o que muda é que ele atravessa a
+ * MESMA régua dos outros dois escritores (`provedorDaChamada`, #3098), para a
+ * coluna não voltar a ser preenchida por caminhos diferentes: o ponto de visão
+ * de imagem era o outro citado na issue como atribuído à OpenRouter por causa
+ * da barra no id do modelo.
  */
 function registrarChamadaDeMidia(
   admin: ReturnType<typeof createAdminClient>,
@@ -972,7 +1038,12 @@ function registrarChamadaDeMidia(
   try {
     const linha = montar();
     void Promise.resolve(
-      admin.from("llm_calls").insert({ organization_id: orgId, status: "ok", ...linha }),
+      admin.from("llm_calls").insert({
+        organization_id: orgId,
+        status: "ok",
+        ...linha,
+        provider: provedorDaChamada(linha.provider, linha.model),
+      }),
     ).then(
       ({ error }) => {
         if (error) {
