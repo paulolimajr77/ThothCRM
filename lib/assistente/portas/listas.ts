@@ -96,20 +96,19 @@ export function ehProibida(id: string): boolean {
 
 /**
  * Áreas cuja LEITURA é liberada mas a ESCRITA é NUNCA permitida, mesmo que
- * alguém ponha a porta na lista branca. Motivo:
- * - `messages/` → envio de mensagem outbound (ação irreversível para o
- *   cliente).
- * - `campaigns/` → disparo de campanha (ação em massa, irreversível).
- * - `team/` → convite, mudança de papel e remoção de pessoas da equipe.
+ * alguém ponha a porta na lista branca. Mantém apenas o que nunca deve ser
+ * escrito pelo assistente. `messages/`, `campaigns/` e `team/` saíram daqui:
+ * agora só as portas exatas de cada área que constam de ESCRITA_PERMITIDA
+ * (com `externo: true` quando haja efeito fora do sistema) são liberadas;
+ * o resto continua bloqueado pela lista branca.
  */
-export const AREAS_SO_LEITURA: readonly string[] = [
-  "messages/",
-  "campaigns/",
-  "team/",
-] as const;
+export const AREAS_SO_LEITURA: readonly string[] = [] as const;
 
 /**
- * Porta branca de escrita. Os 29 pares aprovados pelo Paulo, mais a configuração aberta em 29/10/2026 (ver o bloco no fim).
+ * Porta branca de escrita. As 29 entradas aprovadas pelo Paulo, mais a
+ * configuração aberta em 29/10/2026 (Ordem "abrir-tudo"): Grupo 2
+ * (configuração/operação, cartão normal, risco "atenção") e Grupo 3
+ * (efeito fora do sistema, `externo: true`, cartão de alerta, nunca em lote).
  * Cada entrada deve existir no `CATALOGO_DE_PORTAS` com aquele método.
  * Nenhum DELETE entra aqui.
  *
@@ -124,6 +123,9 @@ export const ESCRITA_PERMITIDA: readonly {
   descricao: string;
   acoes?: readonly string[];
   risco?: "seguro";
+  /** true => efeito fora do sistema (mensagem a cliente, campanha, equipe, automação).
+   * NUNCA combina com risco: "seguro" e NUNCA entra no lote de aplicação em massa. */
+  externo?: boolean;
 }[] = [
   { porta: "ai/agents", metodo: "POST", descricao: "criar agente" },
   { porta: "ai/agents/:id", metodo: "PATCH", descricao: "alterar agente" },
@@ -220,4 +222,67 @@ export const ESCRITA_PERMITIDA: readonly {
   { porta: "settings/task-plans", metodo: "PATCH", descricao: "ajustar planos de tarefa" },
   { porta: "metrics/atrito", metodo: "PATCH", descricao: "ajustar a métrica de atrito" },
   { porta: "demandas/:id", metodo: "PATCH", descricao: "atualizar uma demanda interna" },
+  // ---- Grupo 2: configuração/operação (cartão normal, risco "atenção") ----
+  { porta: "contacts", metodo: "POST", descricao: "cadastrar contato" },
+  { porta: "contacts/:id/proposals/:proposal_id", metodo: "POST", descricao: "responder proposta do contato" },
+  { porta: "contacts/:id/unblock", metodo: "POST", descricao: "desbloquear contato", externo: true },
+  { porta: "contacts/bulk", metodo: "POST", descricao: "edição em lote de contatos" },
+  { porta: "contacts/merge", metodo: "POST", descricao: "unificar contatos duplicados" },
+  { porta: "conversations/:id", metodo: "PATCH", descricao: "alterar dados da conversa" },
+  { porta: "conversations/:id/claim", metodo: "POST", descricao: "assumir a conversa" },
+  { porta: "conversations/:id/close", metodo: "POST", descricao: "fechar a conversa" },
+  { porta: "conversations/:id/draft-reply", metodo: "POST", descricao: "salvar rascunho de resposta" },
+  { porta: "conversations/:id/drafts", metodo: "POST", descricao: "criar rascunho na conversa" },
+  { porta: "conversations/:id/drafts/consume", metodo: "POST", descricao: "consumir rascunho da conversa" },
+  { porta: "conversations/:id/mark-read", metodo: "POST", descricao: "marcar conversa como lida" },
+  { porta: "conversations/:id/notes", metodo: "POST", descricao: "anotar atividade na conversa" },
+  { porta: "conversations/:id/participants", metodo: "POST", descricao: "adicionar participante à conversa" },
+  { porta: "conversations/:id/release", metodo: "POST", descricao: "liberar a conversa" },
+  { porta: "conversations/:id/snooze", metodo: "POST", descricao: "adormecer a conversa por um período" },
+  { porta: "conversations/:id/transfer", metodo: "POST", descricao: "transferir a conversa para outro atendente" },
+  { porta: "conversations/bulk", metodo: "POST", descricao: "ação em lote em conversas" },
+  { porta: "conversations/open-with-contact", metodo: "POST", descricao: "abrir conversa com o contato" },
+  { porta: "leads/:id/clone", metodo: "POST", descricao: "clonar negócio" },
+  { porta: "leads/:id/contatos-relacionados", metodo: "POST", descricao: "vincular pessoa ao negócio" },
+  { porta: "leads/:id/reactivation", metodo: "POST", descricao: "reativar negócio" },
+  { porta: "leads/:id/retomar", metodo: "POST", descricao: "retomar negócio parado" },
+  { porta: "leads/bulk", metodo: "POST", descricao: "edição em lote de negócios" },
+  { porta: "proposals", metodo: "POST", descricao: "criar proposta comercial" },
+  { porta: "proposals/:id", metodo: "PATCH", descricao: "alterar proposta comercial" },
+  { porta: "proposals/:id/decide", metodo: "POST", descricao: "decidir sobre a proposta" },
+  { porta: "proposals/:id/documento", metodo: "PATCH", descricao: "alterar documento da proposta" },
+  { porta: "proposals/:id/modelo", metodo: "PATCH", descricao: "alterar modelo da proposta" },
+  { porta: "proposals/:id/preencher-com-conversa", metodo: "POST", descricao: "preencher proposta com a conversa" },
+  { porta: "proposals/:id/revise", metodo: "POST", descricao: "revisar proposta" },
+  { porta: "proposals/:id/send", metodo: "POST", descricao: "enviar proposta ao cliente", externo: true },
+  { porta: "financeiro/catalogo/:tipo", metodo: "POST", descricao: "cadastrar item do catálogo financeiro" },
+  { porta: "financeiro/catalogo/:tipo", metodo: "PATCH", descricao: "alterar item do catálogo financeiro" },
+  { porta: "financeiro/comandas", metodo: "POST", descricao: "abrir comanda" },
+  { porta: "financeiro/comandas/:id", metodo: "PATCH", descricao: "alterar comanda" },
+  { porta: "financeiro/comandas/:id/estornar", metodo: "POST", descricao: "estornar comanda" },
+  { porta: "financeiro/comandas/:id/finalizar", metodo: "POST", descricao: "finalizar comanda" },
+  { porta: "financeiro/comandas/:id/itens", metodo: "POST", descricao: "adicionar item à comanda" },
+  { porta: "financeiro/comandas/faturar-lote", metodo: "POST", descricao: "faturar atendimentos sem comanda" },
+  { porta: "financeiro/fidelidade", metodo: "POST", descricao: "lançar fidelidade do cliente" },
+  { porta: "financeiro/lancamentos", metodo: "POST", descricao: "criar lançamento financeiro" },
+  { porta: "financeiro/lancamentos/:id", metodo: "PATCH", descricao: "alterar lançamento financeiro" },
+  { porta: "honorarios/contratos", metodo: "POST", descricao: "criar contrato de honorários" },
+  { porta: "honorarios/contratos/:id/parcelas", metodo: "POST", descricao: "criar parcela de honorários" },
+  { porta: "honorarios/parcelas/:id/pagar", metodo: "POST", descricao: "marcar parcela de honorários como paga" },
+  { porta: "agenda/google/calendarios", metodo: "PATCH", descricao: "alterar calendário Google" },
+  { porta: "agenda/google/calendarios/atualizar", metodo: "POST", descricao: "atualizar calendário Google" },
+  // ---- Grupo 3: efeito fora do sistema (cartão de ALERTA, aprovação individual, nunca em lote) ----
+  { porta: "messages", metodo: "POST", descricao: "enviar mensagem a um cliente", externo: true },
+  { porta: "messages/:id", metodo: "PATCH", descricao: "editar mensagem enviada", externo: true },
+  { porta: "messages/:id/forward", metodo: "POST", descricao: "encaminhar mensagem para outra conversa", externo: true },
+  { porta: "messages/:id/hide", metodo: "POST", descricao: "ocultar mensagem recebida no CRM", externo: true },
+  { porta: "messages/:id/retry", metodo: "POST", descricao: "reenviar mensagem que falhou", externo: true },
+  { porta: "campaigns", metodo: "POST", descricao: "criar campanha", externo: true },
+  { porta: "campaigns/:id", metodo: "PATCH", descricao: "alterar campanha", externo: true },
+  { porta: "campaigns/:id/:acao", metodo: "POST", descricao: "iniciar, pausar ou outra ação de campanha", externo: true },
+  { porta: "campaigns/preview", metodo: "POST", descricao: "pré-visualizar campanha", externo: true },
+  { porta: "team/:user_id", metodo: "PATCH", descricao: "alterar dados do membro da equipe", externo: true },
+  { porta: "team/:user_id/role", metodo: "PATCH", descricao: "alterar papel do membro da equipe", externo: true },
+  { porta: "automation-rules", metodo: "POST", descricao: "criar automação (pode enviar mensagem)", externo: true },
+  { porta: "automation-rules/:id", metodo: "PATCH", descricao: "alterar automação (pode enviar mensagem)", externo: true },
 ] as const;

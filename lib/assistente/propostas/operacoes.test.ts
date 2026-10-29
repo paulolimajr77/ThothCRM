@@ -136,4 +136,19 @@ describe("riscoDaProposta — o risco da ação sai da porta, numa lista fechada
       "POST tasks",
     ]);
   });
+
+  it("externo: true nunca combina com risco: seguro", () => {
+    for (const e of ESCRITA_PERMITIDA) {
+      if (e.externo === true) {
+        expect(e.risco).not.toBe("seguro");
+      }
+    }
+  });
+
+  it("riscoDaProposta devolve atenção para toda porta externo", () => {
+    const externos = ESCRITA_PERMITIDA.filter((e) => e.externo === true);
+    for (const e of externos) {
+      expect(riscoDaProposta("acao", { porta: e.porta, metodo: e.metodo })).toBe("atencao");
+    }
+  });
 });

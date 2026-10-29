@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { ESCRITA_PERMITIDA } from "@/lib/assistente/portas/listas";
+import { riscoDaProposta } from "./operacoes";
 import { idsSegurosParaLote, type PropostaCandidataAoLote } from "./lote-seguro";
 
 function proposta(over: Partial<PropostaCandidataAoLote> = {}): PropostaCandidataAoLote {
@@ -41,5 +43,16 @@ describe("idsSegurosParaLote", () => {
       proposta({ id: "a", risk: "seguro", status: "pendente" }),
     ]);
     expect(ids).toEqual(["a"]);
+  });
+});
+
+describe("o lote nunca recebe porta com efeito fora do sistema", () => {
+  it("toda porta `externo` nasce com o risco que o servidor grava, e esse risco fica fora do lote", () => {
+    const externas = ESCRITA_PERMITIDA.filter((e) => e.externo === true);
+    expect(externas.length).toBeGreaterThan(0);
+    for (const e of externas) {
+      const risk = riscoDaProposta("acao", { porta: e.porta, metodo: e.metodo });
+      expect(idsSegurosParaLote([proposta({ id: `${e.metodo} ${e.porta}`, risk })]), `${e.metodo} ${e.porta}`).toEqual([]);
+    }
   });
 });

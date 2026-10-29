@@ -4337,5 +4337,366 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
       PATCH: mod.PATCH,
     };
   },
+  "contacts": async () => {
+    const mod = await import("@/app/api/v1/contacts/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "contacts/:id/proposals/:proposal_id": async () => {
+    const mod = await import("@/app/api/v1/contacts/[id]/proposals/[proposal_id]/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "contacts/:id/unblock": async () => {
+    const mod = await import("@/app/api/v1/contacts/[id]/unblock/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "contacts/bulk": async () => {
+    const mod = await import("@/app/api/v1/contacts/bulk/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "contacts/merge": async () => {
+    const mod = await import("@/app/api/v1/contacts/merge/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/:id": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "conversations/:id/claim": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/claim/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/:id/close": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/close/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/:id/draft-reply": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/draft-reply/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/:id/drafts": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/drafts/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/:id/drafts/consume": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/drafts/consume/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/:id/mark-read": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/mark-read/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/:id/notes": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/notes/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/:id/participants": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/participants/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/:id/release": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/release/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/:id/snooze": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/snooze/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/:id/transfer": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/transfer/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/bulk": async () => {
+    const mod = await import("@/app/api/v1/conversations/bulk/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "conversations/open-with-contact": async () => {
+    const mod = await import("@/app/api/v1/conversations/open-with-contact/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "leads/:id/clone": async () => {
+    const mod = await import("@/app/api/v1/leads/[id]/clone/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "leads/:id/contatos-relacionados": async () => {
+    const mod = await import("@/app/api/v1/leads/[id]/contatos-relacionados/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "leads/:id/reactivation": async () => {
+    const mod = await import("@/app/api/v1/leads/[id]/reactivation/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "leads/:id/retomar": async () => {
+    const mod = await import("@/app/api/v1/leads/[id]/retomar/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "leads/bulk": async () => {
+    const mod = await import("@/app/api/v1/leads/bulk/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "proposals": async () => {
+    const mod = await import("@/app/api/v1/proposals/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "proposals/:id": async () => {
+    const mod = await import("@/app/api/v1/proposals/[id]/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "proposals/:id/decide": async () => {
+    const mod = await import("@/app/api/v1/proposals/[id]/decide/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "proposals/:id/documento": async () => {
+    const mod = await import("@/app/api/v1/proposals/[id]/documento/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "proposals/:id/modelo": async () => {
+    const mod = await import("@/app/api/v1/proposals/[id]/modelo/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "proposals/:id/preencher-com-conversa": async () => {
+    const mod = await import("@/app/api/v1/proposals/[id]/preencher-com-conversa/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "proposals/:id/revise": async () => {
+    const mod = await import("@/app/api/v1/proposals/[id]/revise/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "proposals/:id/send": async () => {
+    const mod = await import("@/app/api/v1/proposals/[id]/send/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "financeiro/catalogo/:tipo": async () => {
+    const mod = await import("@/app/api/v1/financeiro/catalogo/[tipo]/route");
+    return {
+      POST: mod.POST,
+      PATCH: mod.PATCH,
+    };
+  },
+  "financeiro/comandas": async () => {
+    const mod = await import("@/app/api/v1/financeiro/comandas/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "financeiro/comandas/:id": async () => {
+    const mod = await import("@/app/api/v1/financeiro/comandas/[id]/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "financeiro/comandas/:id/estornar": async () => {
+    const mod = await import("@/app/api/v1/financeiro/comandas/[id]/estornar/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "financeiro/comandas/:id/finalizar": async () => {
+    const mod = await import("@/app/api/v1/financeiro/comandas/[id]/finalizar/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "financeiro/comandas/:id/itens": async () => {
+    const mod = await import("@/app/api/v1/financeiro/comandas/[id]/itens/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "financeiro/comandas/faturar-lote": async () => {
+    const mod = await import("@/app/api/v1/financeiro/comandas/faturar-lote/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "financeiro/fidelidade": async () => {
+    const mod = await import("@/app/api/v1/financeiro/fidelidade/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "financeiro/lancamentos": async () => {
+    const mod = await import("@/app/api/v1/financeiro/lancamentos/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "financeiro/lancamentos/:id": async () => {
+    const mod = await import("@/app/api/v1/financeiro/lancamentos/[id]/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "honorarios/contratos": async () => {
+    const mod = await import("@/app/api/v1/honorarios/contratos/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "honorarios/contratos/:id/parcelas": async () => {
+    const mod = await import("@/app/api/v1/honorarios/contratos/[id]/parcelas/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "honorarios/parcelas/:id/pagar": async () => {
+    const mod = await import("@/app/api/v1/honorarios/parcelas/[id]/pagar/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "agenda/google/calendarios": async () => {
+    const mod = await import("@/app/api/v1/agenda/google/calendarios/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "agenda/google/calendarios/atualizar": async () => {
+    const mod = await import("@/app/api/v1/agenda/google/calendarios/atualizar/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "messages": async () => {
+    const mod = await import("@/app/api/v1/messages/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "messages/:id": async () => {
+    const mod = await import("@/app/api/v1/messages/[id]/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "messages/:id/forward": async () => {
+    const mod = await import("@/app/api/v1/messages/[id]/forward/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "messages/:id/hide": async () => {
+    const mod = await import("@/app/api/v1/messages/[id]/hide/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "messages/:id/retry": async () => {
+    const mod = await import("@/app/api/v1/messages/[id]/retry/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "campaigns": async () => {
+    const mod = await import("@/app/api/v1/campaigns/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "campaigns/:id": async () => {
+    const mod = await import("@/app/api/v1/campaigns/[id]/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "campaigns/:id/:acao": async () => {
+    const mod = await import("@/app/api/v1/campaigns/[id]/[acao]/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "campaigns/preview": async () => {
+    const mod = await import("@/app/api/v1/campaigns/preview/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "team/:user_id": async () => {
+    const mod = await import("@/app/api/v1/team/[user_id]/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "team/:user_id/role": async () => {
+    const mod = await import("@/app/api/v1/team/[user_id]/role/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "automation-rules": async () => {
+    const mod = await import("@/app/api/v1/automation-rules/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "automation-rules/:id": async () => {
+    const mod = await import("@/app/api/v1/automation-rules/[id]/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
 };
 

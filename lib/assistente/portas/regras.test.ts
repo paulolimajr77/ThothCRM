@@ -176,21 +176,15 @@ describe("escritaPermitida", () => {
   });
 
   it("AREAS_SO_LEITURA nunca permite escrita, incluindo raiz", () => {
-    expect(escritaPermitida("messages", "POST")).toBe(false);
-    expect(escritaPermitida("messages", "PATCH")).toBe(false);
-    expect(escritaPermitida("campaigns", "POST")).toBe(false);
-    expect(escritaPermitida("team", "POST")).toBe(false);
-    for (const p of CATALOGO_DE_PORTAS) {
-      const area = AREAS_SO_LEITURA.some((pre) =>
-        casaComPrefixo(p.id, pre),
+    // AREAS_SO_LEITURA está vazio: messages/, campaigns/ e team/ saíram da
+    // lista. O controle de escrita agora é feito somente pela whitelist
+    // ESCRITA_PERMITIDA (apenas portas exatas aprovadas).
+    expect(AREAS_SO_LEITURA).toHaveLength(0);
+    for (const e of ESCRITA_PERMITIDA) {
+      const soLeitura = AREAS_SO_LEITURA.some((pre) =>
+        casaComPrefixo(e.porta, pre),
       );
-      if (area) {
-        for (const m of ["POST", "PATCH", "PUT"] as const) {
-          if (p.metodos.includes(m)) {
-            expect(escritaPermitida(p.id, m)).toBe(false);
-          }
-        }
-      }
+      expect(soLeitura).toBe(false);
     }
   });
 

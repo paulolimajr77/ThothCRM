@@ -18553,6 +18553,10 @@ export const DICIONARIO: Traducoes = {
   "Parei na mudança «{resumo}»: {erro}": {
     es: "Me detuve en el cambio «{resumo}»: {erro}",
   },
+  // Ordem "abrir-tudo" — faixa de alerta em cartão com efeito fora do sistema.
+  "Atenção: esta mudança age fora do sistema (mensagem a cliente, campanha, equipe ou automação). Confira antes de aplicar.": {
+    es: "Atención: este cambio actúa fuera del sistema (mensaje al cliente, campaña, equipo o automatización). Confirma antes de aplicar.",
+  },
   // Modelos de cliente (assistente, item 2 da #1995) e etapas na criação do funil.
   "Não consegui ler a empresa escolhida. Tente de novo em instantes.": { es: "No pude leer la empresa elegida. Inténtalo de nuevo en unos instantes." },
   "O modelo está fora do formato:": { es: "La plantilla está fuera del formato:" },
