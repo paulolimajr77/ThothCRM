@@ -44,10 +44,10 @@ describe("o apêndice do baseline espelha a migration 8009", () => {
     expect(baseline.includes(corpo)).toBe(true);
   });
 
-  it("o baseline traz o bloco 8009 uma única vez (apêndice + rótulo do corpo da migration)", () => {
+  it("o baseline traz o bloco 8009 uma única vez (o apêndice)", () => {
     const baseline = ler("supabase/baseline.sql");
     const rotulo = "-- ---- skill assistente-montar-negocio (migration 8009) ----";
-    expect(baseline.split(rotulo).length - 1).toBe(2);
+    expect(baseline.split(rotulo).length - 1).toBe(1);
   });
 
   it("a migration é idempotente e portável em psql puro", () => {

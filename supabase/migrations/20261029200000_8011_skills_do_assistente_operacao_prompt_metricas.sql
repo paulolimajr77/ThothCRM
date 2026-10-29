@@ -10,7 +10,7 @@ begin
     select 1 from skill_pointers where organization_id is null and name = 'assistente-operacao-mapa'
   ) then
     insert into skill_versions (organization_id, name, description, body, matcher)
-    values (null, 'assistente-operacao-mapa', "Mapa da interface do DeskcommCRM para operação diária: onde fica cada ação (Inbox, CRM, Agente de IA, Canais, Análise, Organização), como responder \"onde fica X?\" e \"como faço X?\", e quando usar outra skill. Complementa a skill curta `assistente-operacao` (8003).",
+    values (null, 'assistente-operacao-mapa', 'Mapa da interface do DeskcommCRM para operação diária: onde fica cada ação (Inbox, CRM, Agente de IA, Canais, Análise, Organização), como responder "onde fica X?" e "como faço X?", e quando usar outra skill. Complementa a skill curta `assistente-operacao` (8003).',
       $corpo_opmap$# Operar o DeskcommCRM no dia a dia
 
 > Como o assistente usa isto: você não clica em telas. Para cada coisa abaixo você propõe um cartão (`propor_mudanca`) pela porta equivalente; antes, leia a tela real com `ler_porta` (GET) e o formato exato da porta que vai escrever com `procurar_porta`/`ler_porta`. Decida CADA item da lista pelo negócio, mesmo os opcionais. Depois que o administrador aplicar, leia de volta e confira item por item; o que faltar vira novo cartão. Nunca invente campo, nunca ponha preço, prazo ou política que o dono não informou (marque [CONFIRMAR]).
@@ -136,7 +136,7 @@ Se dois lugares discordarem, explique a diferença e siga a fonte mais alta.
     select 1 from skill_pointers where organization_id is null and name = 'assistente-prompt-diagnostico'
   ) then
     insert into skill_versions (organization_id, name, description, body, matcher)
-    values (null, 'assistente-prompt-diagnostico', "Como afinar o prompt de um agente com dados: diagnóstico antes da reescrita (vetos por portão, handoffs, base, roteador, custo, janela), antes/depois pelo botão Testar, publicar e medir. Complementa a skill curta `assistente-prompt` (8003).",
+    values (null, 'assistente-prompt-diagnostico', 'Como afinar o prompt de um agente com dados: diagnóstico antes da reescrita (vetos por portão, handoffs, base, roteador, custo, janela), antes/depois pelo botão Testar, publicar e medir. Complementa a skill curta `assistente-prompt` (8003).',
       $corpo_promptdiag$# Afinar o prompt de um agente com dados
 
 > Como o assistente usa isto: você não clica em telas. Para cada coisa abaixo você propõe um cartão (`propor_mudanca`) pela porta equivalente; antes, leia a tela real com `ler_porta` (GET) e o formato exato da porta que vai escrever com `procurar_porta`/`ler_porta`. Decida CADA item da lista pelo negócio, mesmo os opcionais. Depois que o administrador aplicar, leia de volta e confira item por item; o que faltar vira novo cartão. Nunca invente campo, nunca ponha preço, prazo ou política que o dono não informou (marque [CONFIRMAR]).
@@ -207,7 +207,7 @@ Antes de propor qualquer ajuste, leia o agente e a versão com `ler_porta` (`ai/
     select 1 from skill_pointers where organization_id is null and name = 'assistente-prompt-anatomia'
   ) then
     insert into skill_versions (organization_id, name, description, body, matcher)
-    values (null, 'assistente-prompt-anatomia', "Anatomia do prompt final: o que o motor monta a cada resposta, onze portões de saída, o que o prompt controla, anti-padrões medidos e o checklist de revisão. Complementa a skill curta `assistente-prompt` (8003).",
+    values (null, 'assistente-prompt-anatomia', 'Anatomia do prompt final: o que o motor monta a cada resposta, onze portões de saída, o que o prompt controla, anti-padrões medidos e o checklist de revisão. Complementa a skill curta `assistente-prompt` (8003).',
       $corpo_promptana$# Anatomia do prompt final — e os anti-padrões medidos no código
 
 > Como o assistente usa isto: você não clica em telas. Para cada coisa abaixo você propõe um cartão (`propor_mudanca`) pela porta equivalente; antes, leia a tela real com `ler_porta` (GET) e o formato exato da porta que vai escrever com `procurar_porta`/`ler_porta`. Decida CADA item da lista pelo negócio, mesmo os opcionais. Depois que o administrador aplicar, leia de volta e confira item por item; o que faltar vira novo cartão. Nunca invente campo, nunca ponha preço, prazo ou política que o dono não informou (marque [CONFIRMAR]).
@@ -272,7 +272,7 @@ O texto do prompt vai na versão do agente: `ai/agents/:id/versions` (POST cria 
     select 1 from skill_pointers where organization_id is null and name = 'assistente-metricas-regua'
   ) then
     insert into skill_versions (organization_id, name, description, body, matcher)
-    values (null, 'assistente-metricas-regua', "Como analisar métricas de uma instalação: régua ao lado de cada número, agregados nunca texto, fuso, sent_at vs created_at, três handoffs, LGPD e o que pode sair do banco. Complementa a skill curta `assistente-metricas` (8003).",
+    values (null, 'assistente-metricas-regua', 'Como analisar métricas de uma instalação: régua ao lado de cada número, agregados nunca texto, fuso, sent_at vs created_at, três handoffs, LGPD e o que pode sair do banco. Complementa a skill curta `assistente-metricas` (8003).',
       $corpo_metricas_regua$# Analisar as métricas de uma instalação
 
 > Como o assistente usa isto: você não clica em telas. Para cada coisa abaixo você propõe um cartão (`propor_mudanca`) pela porta equivalente; antes, leia a tela real com `ler_porta` (GET) e o formato exato da porta que vai escrever com `procurar_porta`/`ler_porta`. Decida CADA item da lista pelo negócio, mesmo os opcionais. Depois que o administrador aplicar, leia de volta e confira item por item; o que faltar vira novo cartão. Nunca invente campo, nunca ponha preço, prazo ou política que o dono não informou (marque [CONFIRMAR]).
@@ -349,7 +349,7 @@ O assistente não roda SQL. Leia as portas com `ler_porta` e consulte métricas 
     select 1 from skill_pointers where organization_id is null and name = 'assistente-metricas-consultas'
   ) then
     insert into skill_versions (organization_id, name, description, body, matcher)
-    values (null, 'assistente-metricas-consultas', "Consultas prontas para métricas: panorama (P1-P9), aprofundar (A1-A9) e inventário, cada uma com o que medir, como ler por porta/ferramenta (`ler_porta`, `consultar_metrica`) e a régua declarada. Complementa a skill curta `assistente-metricas` (8003).",
+    values (null, 'assistente-metricas-consultas', 'Consultas prontas para métricas: panorama (P1-P9), aprofundar (A1-A9) e inventário, cada uma com o que medir, como ler por porta/ferramenta (`ler_porta`, `consultar_metrica`) e a régua declarada. Complementa a skill curta `assistente-metricas` (8003).',
       $corpo_metricas_consultas$# Consultas prontas — o que medir, por qual porta/ferramenta, com a régua declarada
 
 > Como o assistente usa isto: você não clica em telas. Para cada coisa abaixo você propõe um cartão (`propor_mudanca`) pela porta equivalente; antes, leia a tela real com `ler_porta` (GET) e o formato exato da porta que vai escrever com `procurar_porta`/`ler_porta`. Decida CADA item da lista pelo negócio, mesmo os opcionais. Depois que o administrador aplicar, leia de volta e confira item por item; o que faltar vira novo cartão. Nunca invente campo, nunca ponha preço, prazo ou política que o dono não informou (marque [CONFIRMAR]).
@@ -441,7 +441,7 @@ Antes de qualquer análise, descubra o `organization_id` da organização (`orga
     select 1 from skill_pointers where organization_id is null and name = 'assistente-sistema-vivo-completo'
   ) then
     insert into skill_versions (organization_id, name, description, body, matcher)
-    values (null, 'assistente-sistema-vivo-completo', "Sistema Vivo: gate de arquitetura com o Living System Checklist, 7 invariantes, regra do tempo, receitas, red flags e o binding do DeskcommCRM (event_log, audit, navigation/registry, follow-up, human-handoff, docs/architecture). Complementa a skill curta `assistente-sistema-vivo` (8007).",
+    values (null, 'assistente-sistema-vivo-completo', 'Sistema Vivo: gate de arquitetura com o Living System Checklist, 7 invariantes, regra do tempo, receitas, red flags e o binding do DeskcommCRM (event_log, audit, navigation/registry, follow-up, human-handoff, docs/architecture). Complementa a skill curta `assistente-sistema-vivo` (8007).',
       $corpo_sistema_vivo_completo$# Sistema Vivo — gate de arquitetura
 
 > Como o assistente usa isto: você não clica em telas. Para cada coisa abaixo você propõe um cartão (`propor_mudanca`) pela porta equivalente; antes, leia a tela real com `ler_porta` (GET) e o formato exato da porta que vai escrever com `procurar_porta`/`ler_porta`. Decida CADA item da lista pelo negócio, mesmo os opcionais. Depois que o administrador aplicar, leia de volta e confira item por item; o que faltar vira novo cartão. Nunca invente campo, nunca ponha preço, prazo ou política que o dono não informou (marque [CONFIRMAR]).

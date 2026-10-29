@@ -185,13 +185,13 @@ export async function POST(req: NextRequest): Promise<Response> {
     const daEtapa = parsed.error.issues.find((i) => i.path[0] === "stages");
     const daConfig = parsed.error.issues.some((i) => ["config", "settings", "vocabulary"].includes(String(i.path[0])));
     const mensagem = daConfig
-      ? "Confira a configuração do funil (campos, motivos, vocabulário)."
+      ? t("Confira a configuração do funil (campos, motivos, vocabulário).")
       : daEtapa
       ? daEtapa.code === "custom"
         ? daEtapa.message
-        : "Confira as etapas: de 2 a 30, cada uma com nome de até 60 letras."
-      : "Dê um nome ao funil — é o que aparece na lista.";
-    return fail("unprocessable_entity", t(mensagem), 422, {
+        : t("Confira as etapas: de 2 a 30, cada uma com nome de até 60 letras.")
+      : t("Dê um nome ao funil — é o que aparece na lista.");
+    return fail("unprocessable_entity", mensagem, 422, {
       requestId,
       details: parsed.error.flatten(),
     });
