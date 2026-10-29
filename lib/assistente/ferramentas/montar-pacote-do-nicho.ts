@@ -35,6 +35,7 @@ import {
   type OrigemDeCampoDoNicho,
 } from "@/lib/assistente/nichos";
 
+import { modeloPorId } from "@/lib/followup/modelos";
 import { montarCorpoDoAgenteRascunho, type MotivoDeFalhaAoAlcancarAgente } from "./criar-rascunho-de-agente";
 import { proporAcao } from "./proposta-comum";
 import { protegida } from "./protegida";
