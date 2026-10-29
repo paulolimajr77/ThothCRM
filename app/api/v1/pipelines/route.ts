@@ -62,6 +62,8 @@ const etapaDoCorpoSchema = z
     name: z.string().trim().min(1).max(60),
     is_won: z.boolean().optional(),
     is_lost: z.boolean().optional(),
+    // A ordem já é a do array; quem manda `position` por hábito não leva 422.
+    position: z.number().optional(),
   })
   .strict();
 
@@ -107,7 +109,20 @@ function etapasIniciais(orgId: string, pipelineId: string, pedidas?: EtapaDoCorp
         slugs.push(slug);
         return { name: e.name, slug, is_won: e.is_won === true, is_lost: e.is_lost === true };
       })
-    : ETAPAS_INICIAIS;
+    : [...ETAPAS_INICIAIS];
+  // Funil sem etapa de ganho (ou de perda) não consegue fechar negócio: completa
+  // com as etapas padrão, nos nomes de sempre, ao fim da lista.
+  if (pedidas) {
+    for (const [campo, nome] of [
+      ["is_won", "Ganho"],
+      ["is_lost", "Perdido"],
+    ] as const) {
+      if (etapas.some((e) => e[campo])) continue;
+      const slug = slugDeNome(nome, slugs);
+      slugs.push(slug);
+      etapas.push({ name: nome, slug, is_won: campo === "is_won", is_lost: campo === "is_lost" });
+    }
+  }
   return etapas.map((etapa, i) => ({
     organization_id: orgId,
     pipeline_id: pipelineId,
