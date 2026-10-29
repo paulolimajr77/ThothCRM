@@ -4085,12 +4085,6 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
       PATCH: mod.PATCH,
     };
   },
-  "ai/budget": async () => {
-    const mod = await import("@/app/api/v1/ai/budget/route");
-    return {
-      PATCH: mod.PATCH,
-    };
-  },
   "ai/followup-flows/:id/disable": async () => {
     const mod = await import("@/app/api/v1/ai/followup-flows/[id]/disable/route");
     return {
@@ -4107,18 +4101,6 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
     const mod = await import("@/app/api/v1/ai/followup-flows/[id]/rollback/route");
     return {
       POST: mod.POST,
-    };
-  },
-  "ai/guardrail-layers": async () => {
-    const mod = await import("@/app/api/v1/ai/guardrail-layers/route");
-    return {
-      PUT: mod.PUT,
-    };
-  },
-  "ai/jev": async () => {
-    const mod = await import("@/app/api/v1/ai/jev/route");
-    return {
-      PATCH: mod.PATCH,
     };
   },
   "ai/memory/entries": async () => {
@@ -4145,47 +4127,16 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
       PUT: mod.PUT,
     };
   },
-  "ai/providers": async () => {
-    const mod = await import("@/app/api/v1/ai/providers/route");
-    return {
-      PATCH: mod.PATCH,
-      PUT: mod.PUT,
-    };
-  },
   "ai/routers/:id/members": async () => {
     const mod = await import("@/app/api/v1/ai/routers/[id]/members/route");
     return {
       PUT: mod.PUT,
     };
   },
-  "ai/skills/:name": async () => {
-    const mod = await import("@/app/api/v1/ai/skills/[name]/route");
-    return {
-      PUT: mod.PUT,
-    };
-  },
-  "ai/skills/:name/restore": async () => {
-    const mod = await import("@/app/api/v1/ai/skills/[name]/restore/route");
-    return {
-      POST: mod.POST,
-    };
-  },
   "ai/style-adjustments": async () => {
     const mod = await import("@/app/api/v1/ai/style-adjustments/route");
     return {
       PUT: mod.PUT,
-    };
-  },
-  "automation-rules": async () => {
-    const mod = await import("@/app/api/v1/automation-rules/route");
-    return {
-      POST: mod.POST,
-    };
-  },
-  "automation-rules/:id": async () => {
-    const mod = await import("@/app/api/v1/automation-rules/[id]/route");
-    return {
-      PATCH: mod.PATCH,
     };
   },
   "channel-schedules": async () => {
@@ -4364,18 +4315,6 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
   },
   "settings/prospeccao": async () => {
     const mod = await import("@/app/api/v1/settings/prospeccao/route");
-    return {
-      PATCH: mod.PATCH,
-    };
-  },
-  "settings/routing": async () => {
-    const mod = await import("@/app/api/v1/settings/routing/route");
-    return {
-      PATCH: mod.PATCH,
-    };
-  },
-  "settings/routing/channels": async () => {
-    const mod = await import("@/app/api/v1/settings/routing/channels/route");
     return {
       PATCH: mod.PATCH,
     };
