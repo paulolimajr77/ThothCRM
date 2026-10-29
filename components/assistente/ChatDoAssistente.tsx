@@ -69,8 +69,6 @@ interface MensagemNaTela {
   desfecho?: "ok" | "erro";
   /** Depois de aplicar com sucesso: os próximos passos que faltam fazer na tela. */
   proximosPassos?: ProximoPasso[];
-  /** Quando há 2+ mudanças seguras pendentes: os ids para aplicar em lote. */
-  loteSeguro?: { ids: string[]; n: number };
 }
 
 interface ItemDeAcao {
@@ -506,7 +504,6 @@ export function ChatDoAssistente({
                 String(idsPendentesParaAnuncio.length),
               ),
         propostas: idsPendentesParaAnuncio,
-        ...(temLoteSeguro ? { loteSeguro: { ids: idsSeguros, n: idsSeguros.length } } : {}),
       },
     ]);
   }, [
@@ -514,8 +511,6 @@ export function ChatDoAssistente({
     ehAdmin,
     assinaturaDasPendencias,
     idsPendentesParaAnuncio,
-    temLoteSeguro,
-    idsSeguros,
     t,
   ]);
 
@@ -1001,24 +996,6 @@ export function ChatDoAssistente({
                 ))}
               </div>
             ) : null}
-            {m.loteSeguro !== undefined ? (
-              <div className="flex flex-wrap gap-2 mt-1">
-                <button
-                  type="button"
-                  disabled={loteOcupado}
-                  onClick={() => {
-                    if (m.loteSeguro !== undefined) void aplicarLoteSeguro(m.loteSeguro.ids);
-                  }}
-                  data-testid="assistente-lote-seguro"
-                  className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
-                >
-                  {t("Aplicar as {n} mudanças seguras").replace(
-                    "{n}",
-                    String(m.loteSeguro.n),
-                  )}
-                </button>
-              </div>
-            ) : null}
             {m.checkup !== undefined ? (
               <CartaoDeCheckup
                 rodou={m.checkup.rodou}
@@ -1029,6 +1006,22 @@ export function ChatDoAssistente({
             ) : null}
           </div>
         ))}
+        {/* O lote vive aqui, e não preso a uma mensagem: proposta criada na própria
+            conversa, /pendentes e o aviso ao abrir o painel mostram o mesmo botão,
+            enquanto houver 2+ mudanças seguras pendentes. */}
+        {temLoteSeguro && !enviando ? (
+          <div className="flex flex-wrap gap-2 mt-1">
+            <button
+              type="button"
+              disabled={loteOcupado}
+              onClick={() => void aplicarLoteSeguro(idsSeguros)}
+              data-testid="assistente-lote-seguro"
+              className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
+            >
+              {t("Aplicar as {n} mudanças seguras").replace("{n}", String(idsSeguros.length))}
+            </button>
+          </div>
+        ) : null}
         {enviando ? (
           <p role="status" data-testid="assistente-pensando" className="self-start text-sm text-text-muted">
             {t("Pensando…")}
