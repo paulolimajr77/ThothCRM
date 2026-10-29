@@ -88,7 +88,9 @@ function fraseDoPrazo(t: Tradutor, p: PropostaNaTela): string {
   if (p.vencida) return p.status === "pendente" ? t("Venceu sem decisão.") : t("Venceu sem aplicação.");
   const restante = new Date(p.expires_at).getTime() - Date.now();
   const dias = Math.max(1, Math.ceil(restante / UM_DIA_EM_MS));
-  return `${t("Vence em")} ${dias} ${dias === 1 ? t("dia") : t("dias")}`;
+  // "Vence em {dias}" (prazo) e não "Vence em" solto: o solto é o da data
+  // ("Vence el 03/11"), e em espanhol o prazo pede "Vence en".
+  return t("Vence em {dias}").replace("{dias}", `${dias} ${dias === 1 ? t("dia") : t("dias")}`);
 }
 
 /**

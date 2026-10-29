@@ -9849,6 +9849,7 @@ export const DICIONARIO: Traducoes = {
   "Recebido em": { es: "Recibido el" },
   "às": { es: "a las" },
   "Vence em": { es: "Vence el" },
+  "Vence em {dias}": { es: "Vence en {dias}" },
   "Relatório de exportação disponível (expira em 72h).": {
     es: "Informe de exportación disponible (expira en 72h).",
   },
