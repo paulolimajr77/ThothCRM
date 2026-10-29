@@ -20,6 +20,7 @@ import {
   validarNomeDeFunil,
   type FunilEditavel,
 } from "@/lib/pipelines/pipeline-editing";
+import { chaveDeNome, slugDeNome } from "@/lib/leads/stage-editing";
 import { createClient } from "@/lib/supabase/server";
 import { conflitoDoBanco, corpo, lerFunis } from "./_funis";
 import { listPipelinesHandler } from "./_handler";
@@ -50,16 +51,54 @@ export async function GET(): Promise<Response> {
 
 // `.max(80)`: o nome é o título de uma linha da lista e o topo do quadro, não um
 // parágrafo. O banco não limita, mas a tela quebra muito antes disso.
+//
+// `stages` (opcional): o funil nasce com ESTAS etapas em vez das iniciais — é
+// como um modelo de cliente traz o funil inteiro numa escrita só. A régua é a
+// dos índices do banco: no máximo uma etapa de ganho e uma de perda, e ao menos
+// uma etapa aberta para o negócio entrar.
+const etapaDoCorpoSchema = z
+  .object({
+    name: z.string().trim().min(1).max(60),
+    is_won: z.boolean().optional(),
+    is_lost: z.boolean().optional(),
+  })
+  .strict();
+
 const bodySchema = z
   .object({
     name: z.string().min(1).max(80),
     description: z.string().max(280).nullable().optional(),
+    stages: z
+      .array(etapaDoCorpoSchema)
+      .min(2)
+      .max(30)
+      .optional()
+      .superRefine((etapas, ctx) => {
+        if (!etapas) return;
+        const erro = (message: string) => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+        if (etapas.some((e) => e.is_won && e.is_lost)) erro("Uma etapa não pode ser de ganho e de perda.");
+        if (etapas.filter((e) => e.is_won).length > 1) erro("Só uma etapa pode ser de ganho.");
+        if (etapas.filter((e) => e.is_lost).length > 1) erro("Só uma etapa pode ser de perda.");
+        if (!etapas.some((e) => !e.is_won && !e.is_lost)) erro("O funil precisa de uma etapa aberta.");
+        const chaves = etapas.map((e) => chaveDeNome(e.name));
+        if (new Set(chaves).size !== chaves.length) erro("Duas etapas com o mesmo nome.");
+      }),
   })
   .strict();
 
+type EtapaDoCorpo = z.infer<typeof etapaDoCorpoSchema>;
+
 /** As etapas com que o funil nasce, já com a régua de posição do board. */
-function etapasIniciais(orgId: string, pipelineId: string) {
-  return ETAPAS_INICIAIS.map((etapa, i) => ({
+function etapasIniciais(orgId: string, pipelineId: string, pedidas?: EtapaDoCorpo[]) {
+  const slugs: string[] = [];
+  const etapas = pedidas
+    ? pedidas.map((e) => {
+        const slug = slugDeNome(e.name, slugs);
+        slugs.push(slug);
+        return { name: e.name, slug, is_won: e.is_won === true, is_lost: e.is_lost === true };
+      })
+    : ETAPAS_INICIAIS;
+  return etapas.map((etapa, i) => ({
     organization_id: orgId,
     pipeline_id: pipelineId,
     name: etapa.name,
@@ -89,7 +128,13 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
-    return fail("unprocessable_entity", t("Dê um nome ao funil — é o que aparece na lista."), 422, {
+    const daEtapa = parsed.error.issues.find((i) => i.path[0] === "stages");
+    const mensagem = daEtapa
+      ? daEtapa.code === "custom"
+        ? daEtapa.message
+        : "Confira as etapas: de 2 a 30, cada uma com nome de até 60 letras."
+      : "Dê um nome ao funil — é o que aparece na lista.";
+    return fail("unprocessable_entity", t(mensagem), 422, {
       requestId,
       details: parsed.error.flatten(),
     });
@@ -142,7 +187,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const { error: etapasErr } = await supabase
     .from("crm_stages")
-    .insert(etapasIniciais(orgId, pipelineId));
+    .insert(etapasIniciais(orgId, pipelineId, parsed.data.stages));
 
   // ⚠️ COMPENSAÇÃO, PORQUE SÃO DUAS ESCRITAS SEM TRANSAÇÃO. Um funil sem etapa é
   // quadro morto: o board abre sem coluna nenhuma, não recebe negócio, e quem
@@ -172,7 +217,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     resourceType: "crm_pipeline",
     resourceId: pipelineId,
     requestId,
-    metadata: { name, slug: row.slug, is_default: row.is_default },
+    metadata: {
+      name,
+      slug: row.slug,
+      is_default: row.is_default,
+      etapas: parsed.data.stages ? parsed.data.stages.length : "iniciais",
+    },
   });
 
   // Relê em vez de espelhar o que foi pedido: a tela mostra o que o banco tem.

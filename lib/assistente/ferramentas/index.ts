@@ -11,6 +11,10 @@
  *                                        (T3: grava proposta `acao`, quem aplica é T4),
  *                                        montar_pacote_do_nicho (T14a), testar_agente (T13)
  *   auditar_empresa                    — o check-up da organização
+ *   listar_modelos_de_cliente, aplicar_modelo_de_cliente
+ *                                        — só admin da organização E admin pleno da
+ *                                        plataforma: propõe a estrutura de um modelo
+ *                                        tirado de cliente real e já revisado
  *
  * Quem monta é a rota do chat: ela entrega o `ContextoDeConsulta` com a
  * organização e o papel DA SESSÃO (nunca do corpo) e um coletor novo por
@@ -20,6 +24,7 @@
  */
 import type { ToolSet } from "ai";
 
+import { criarAplicarModeloDeCliente, criarListarModelosDeCliente } from "./aplicar-modelo-de-cliente";
 import { criarAuditarEmpresa } from "./auditar-empresa";
 import { criarConsultarMetrica } from "./consultar-metrica";
 import { criarLerGuia } from "./ler-guia";
@@ -62,10 +67,18 @@ export function montarFerramentasDoAssistente(entrada: EntradaDasFerramentas): T
     papel = null;
   }
   if (papel !== "admin") return leitura;
-  return {
+  const escrita = {
     ...leitura,
     propor_mudanca: criarProporMudanca(entrada),
     montar_pacote_do_nicho: criarMontarPacoteDoNicho(entrada),
     testar_agente: criarTestarAgente(entrada),
+  };
+  // Modelo de cliente: a estrutura vem de OUTRA empresa (limpa e revisada), por
+  // isso só para quem administra a instalação — a flag vem da sessão.
+  if (entrada.adminDaPlataforma !== true) return escrita;
+  return {
+    ...escrita,
+    listar_modelos_de_cliente: criarListarModelosDeCliente(entrada),
+    aplicar_modelo_de_cliente: criarAplicarModeloDeCliente(entrada),
   };
 }

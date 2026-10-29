@@ -23,6 +23,7 @@ import {
   PuzzlePiece,
   Stack,
   Receipt,
+  Copy,
 } from "@/lib/ui/icons";
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -112,6 +113,10 @@ const NAV_ITEMS: NavItem[] = [
   // para Extensões, só que `tests/unit/navegacao-completude.test.ts` não cobre
   // `/admin/**`, então nada acusava.
   { href: "/admin/modulos", label: "Módulos", icon: Stack },
+  // Modelos tirados de cliente real (item 2 da #1995): a estrutura de uma
+  // empresa vira modelo de outra. É da INSTALAÇÃO — só quem enxerga mais de
+  // uma empresa pode tirar e revisar.
+  { href: "/admin/modelos-de-cliente", label: "Modelos de cliente", icon: Copy },
   // A porta da cobrança do revendedor (spec §9, §13): a tela só existe com a
   // chave `cobranca` ligada — desligada, `/admin/cobranca` responde 404 e o
   // menu do dono segue igual.

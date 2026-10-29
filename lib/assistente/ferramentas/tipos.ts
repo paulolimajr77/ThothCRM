@@ -122,6 +122,12 @@ export interface EntradaDasFerramentas {
    * turno. Ausente (teste, outro chamador), a proposta nasce sem vínculo.
    */
   turno?: TurnoDoChat;
+  /**
+   * A pessoa é admin PLENO da plataforma (`escreveComoPlatformAdmin`), lido da
+   * sessão pela rota do chat — nunca do modelo. Só com isso (e `admin` da
+   * organização) entram as ferramentas de modelo de cliente. Ausente = não.
+   */
+  adminDaPlataforma?: boolean;
 }
 
 /** O que uma ferramenta devolve quando não pôde trabalhar — sem a mensagem do erro. */

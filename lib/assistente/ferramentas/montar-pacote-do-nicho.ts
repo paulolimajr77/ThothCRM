@@ -132,7 +132,7 @@ export type ResultadoDePacoteDoNicho =
   | { ok: false; motivo: MotivoDeFalhaAoMontarPacote; faltam?: string[]; detalhe?: string };
 
 /** Os nomes de agentes da org (inclui arquivados), ou `null` se a rota falhou. */
-async function nomesDeAgentesDaOrganizacao(): Promise<Set<string> | null> {
+export async function nomesDeAgentesDaOrganizacao(): Promise<Set<string> | null> {
   const resposta = await chamarRotaPorDentro(
     await handlerDeListaAgentes(),
     "/api/v1/ai/agents",
@@ -149,7 +149,7 @@ async function nomesDeAgentesDaOrganizacao(): Promise<Set<string> | null> {
 }
 
 /** Os ponteiros de follow-up da org: `{ id, name }`, ou `null` se a rota falhou. */
-async function ponteirosDeFollowupsDaOrganizacao(): Promise<
+export async function ponteirosDeFollowupsDaOrganizacao(): Promise<
   | { id: string; name: string }[]
   | null
 > {

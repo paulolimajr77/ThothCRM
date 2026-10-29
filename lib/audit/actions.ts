@@ -535,6 +535,13 @@ export const AUDIT_ACTIONS = [
   // estado, não o histórico —, e não há event_log que cubra o tipo (nenhum
   // handler o consumiria; evento sem consumer é o anti-pattern nº 3).
   "platform.internal_destinations_updated",
+  // Modelo de cliente (assistente, item 2 da #1995, migration 8008): o admin da
+  // plataforma tira a ESTRUTURA de uma empresa, revisa o texto e libera para
+  // outras. A tabela guarda a origem só como hash; "de qual empresa saiu e
+  // quem liberou o texto" só tem resposta aqui.
+  "platform.client_template_created",
+  "platform.client_template_reviewed",
+  "platform.client_template_deleted",
   "platform_google_oauth.updated",
   "platform_smtp_settings.updated",
   // A credencial do APP da Meta da INSTALAÇÃO (migration 0257): o App Secret que

@@ -68,6 +68,7 @@ import { checkRateLimit } from "@/lib/ai/dispatcher/rate-limit";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
+import { escreveComoPlatformAdmin } from "@/lib/auth/types";
 import {
   criarColetorDoTurno,
   MAXIMO_DE_PASSOS_DO_ASSISTENTE,
@@ -333,6 +334,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         skills,
         coletor,
         turno: { threadId, turnId: turn_id },
+        adminDaPlataforma: escreveComoPlatformAdmin(authz.user),
       });
       // Contexto da tela: o agente que a pessoa está vendo, só se for desta organização.
       // Não vai para a auditoria, não entra no limite nem no replay.
