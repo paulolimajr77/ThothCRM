@@ -25,6 +25,7 @@ function soDoAssistente(skills: readonly SkillDoAssistente[]): SkillDoAssistente
 export function criarLerGuia(entrada: EntradaDasFerramentas): Tool {
   return tool({
     description:
+      "OBRIGATÓRIO antes de montar, configurar ou mudar QUALQUER coisa ('monte', 'configure', 'crie', 'ajuste'): chame com guia='assistente-montar-negocio' e siga o método dele; ele manda ler os outros guias da área. Sem isso você erra o formato e esquece itens. " +
       "Lê os guias de uso do CRM que apoiam suas respostas (operação diária, métricas, ajuste de " +
       "prompt, cliente novo). Sem `guia`, lista os guias disponíveis (nome e descrição). Com `guia` " +
       "(o nome exato da lista), devolve o texto do guia. Use quando a pergunta for 'como faço', " +
