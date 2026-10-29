@@ -64,7 +64,7 @@ Pense como o negócio funciona de ponta a ponta e responda estas perguntas por c
 - Quem atende cada etapa: `pipelines/:id/agent-mapping`.
 - Agente: `ai/agents` POST; texto: `ai/agents/:id/versions` POST (rascunho) e PATCH.
 - Follow-ups: `ai/followup-flows/from-model`, `ai/followup-flows/:id/duplicate`.
-- Memória: `ai/memory` e `ai/memory/entries`. Conhecimento: `ai/knowledge/sources`.
+- Memória: `ai/memory` e `ai/memory/entries`. Conhecimento: `ai/knowledge/sources` POST com `{"source_type":"documento","name":"…","markdown_blob":"texto colado pelo dono"}` (ou `source_type:"faq"` com `items:[{question,answer}]`). Os nomes `type` e `content` dão 422.
 - Catálogo: `products`. Mensagens: `message-templates`.
 - Agenda: `agenda/tipos`, `agenda/servicos`, `agenda/enderecos`, `agenda/excecoes`.
 - Use `procurar_porta` e `ler_porta` para ver o formato exato antes de propor. Nunca invente campo.
