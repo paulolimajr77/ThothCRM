@@ -1,23 +1,25 @@
 /**
- * Ferramenta `montar_pacote_do_nicho` — agente + follow-ups de modelo em
- * RASCUNHO, numa pedida, a partir do pacote do nicho (T14a).
+ * Ferramenta `montar_pacote_do_nicho` — PROPÕE (não grava) o agente do nicho
+ * como rascunho e os follow-ups escolhidos, numa pedida, a partir do pacote
+ * do nicho (T14a). Nada é criado antes do administrador aprovar o cartão.
  *
- * Passos, nesta ordem — parar no primeiro que falhar, e nada é criado antes
- * de TODAS as checagens 1–4 passarem:
+ * Passos, nesta ordem — parar no primeiro que falhar, e nada é proposto
+ * antes de TODAS as checagens 1–4 passarem:
  *   1. nicho sem `esqueleto` → `nicho_sem_prompt` (defesa: hoje os 7 têm prompt);
  *   2. preencher o esqueleto pelos `campos` do nicho → `falta_dado`;
  *   3. nome do agente já existe (inclui arquivados) → `ja_existe`;
  *   4. follow-up pedido fora do nicho → `followup_de_outro_nicho`;
- *   5. criar o agente com `criarAgenteRascunho` (T12); falha devolve o MESMO
+ *   5. monta o corpo do agente com `montarCorpoDoAgenteRascunho` (mesmas
+ *      checagens de `criar_rascunho_de_agente`); falha devolve o MESMO
  *      motivo, sem tentar follow-up;
- *   6. para cada follow-up: pede etapa → vai para `falta` sem instalar;
- *      senão instala com `instalarModeloDeFollowup` (T13), e a falha vai para
- *      `falta` sem desfazer o agente nem os outros;
- *   7. sucesso devolve o que foi criado e a lista do que falta — só com o que
+ *   6. cria UMA proposta `acao` para o agente (`POST ai/agents`) e, para cada
+ *      follow-up pedido, UMA proposta `acao` (`POST ai/followup-flows/from-model`);
+ *      pede etapa → vai para `falta` sem propor; modelo inválido → falha;
+ *   7. sucesso devolve o que foi proposto e a lista do que falta — só com o que
  *      existe nos dados do nicho, mais frases curtas de ligação.
  *
  * Nenhum texto de atendimento novo: o prompt vem SÓ do `esqueleto`, e o
- * "falta" vem SÓ dos campos do nicho. Escrita de verdade, só `admin`.
+ * "falta" vem SÓ dos campos do nicho. Só `admin` pode propor.
  */
 import { tool, type Tool } from "ai";
 import { z } from "zod";
@@ -32,12 +34,11 @@ import {
   type NichoDoAssistente,
   type OrigemDeCampoDoNicho,
 } from "@/lib/assistente/nichos";
-import { modeloPorId } from "@/lib/followup/modelos";
 
-import { criarAgenteRascunho, type MotivoDeFalhaAoAlcancarAgente } from "./criar-rascunho-de-agente";
-import { instalarModeloDeFollowup } from "./instalar-modelo-de-followup";
+import { montarCorpoDoAgenteRascunho, type MotivoDeFalhaAoAlcancarAgente } from "./criar-rascunho-de-agente";
+import { proporAcao } from "./proposta-comum";
 import { protegida } from "./protegida";
-import { anotarCartaoDeArtefato, type EntradaDasFerramentas } from "./tipos";
+import type { EntradaDasFerramentas } from "./tipos";
 
 const NICHOS = IDS_DE_NICHO as unknown as [IdDeNicho, ...IdDeNicho[]];
 
@@ -88,16 +89,23 @@ export type MotivoDeFalhaAoMontarPacote =
   | "followup_de_outro_nicho"
   | MotivoDeFalhaAoAlcancarAgente;
 
-export interface FollowupCriadoDoPacote {
-  id: string;
+export interface AgentePropostoDoPacote {
+  proposta_id: string;
   nome: string;
-  estado: "rascunho";
+}
+
+export interface FollowupPropostoDoPacote {
+  proposta_id: string;
+  modelo: string;
 }
 
 export type ResultadoDePacoteDoNicho =
   | {
       ok: true;
-      criado: { agente: { id: string; nome: string; estado: "rascunho" }; followups: FollowupCriadoDoPacote[] };
+      proposto: {
+        agente: AgentePropostoDoPacote;
+        followups: FollowupPropostoDoPacote[];
+      };
       falta: string[];
     }
   | { ok: false; motivo: MotivoDeFalhaAoMontarPacote; faltam?: string[]; detalhe?: string };
@@ -120,7 +128,7 @@ async function nomesDeAgentesDaOrganizacao(): Promise<Set<string> | null> {
 /** O "falta" — só com o que existe nos dados do nicho, mais ligação curta. */
 function montarFalta(
   nicho: NichoDoAssistente,
-  instalados: Set<string>,
+  propostos: Set<string>,
   falhasDeFollowup: { id: string; motivo: string }[],
   comEtapa: string[],
 ): string[] {
@@ -129,7 +137,7 @@ function montarFalta(
     `Falta: criar o funil "${nicho.funil.nome}" em Funis com as etapas: ${nicho.funil.etapas.join(", ")}`,
   );
   for (const id of nicho.followups.modelos) {
-    if (!instalados.has(id)) {
+    if (!propostos.has(id)) {
       falta.push(`Falta: instalar o follow-up de modelo "${id}"`);
     }
   }
@@ -139,12 +147,12 @@ function montarFalta(
     );
   }
   for (const { id, motivo } of falhasDeFollowup) {
-    falta.push(`Falta: o follow-up "${id}" não foi instalado (${motivo})`);
+    falta.push(`Falta: o follow-up "${id}" não foi proposto (${motivo})`);
   }
   for (const observacao of nicho.followups.observacoes) {
     falta.push(`Falta: ${observacao}`);
   }
-  falta.push("Falta: publicar o agente (proposta do assistente; o administrador aprova no chat)");
+  falta.push("Falta: publicar o agente (o administrador aprova a proposta no chat)");
   falta.push("Falta: ligar cada follow-up publicado ao agente em Agente › Follow-up");
   falta.push("Falta: conectar canal e conferir a chave de IA: PRECISO CONFIRMAR");
   for (const pergunta of nicho.faq) {
@@ -162,13 +170,15 @@ function montarFalta(
 /**
  * O miolo de `montar_pacote_do_nicho`, com o nicho já resolvido — exportado
  * para os testes passarem dublê de dados (nicho com marcador fora do mapa).
+ * Recebe a `entrada` real das ferramentas (coletor para `anotarCartaoDeProposta`).
  */
 export async function montarPacoteDoNicho(
+  entrada: EntradaDasFerramentas,
   pedido: PedidoDePacoteDoNicho,
 ): Promise<ResultadoDePacoteDoNicho> {
   const { nicho, negocio, descricao, nomeDoAgente, followups } = pedido;
 
-  // 1. Sem esqueleto não há prompt para preencher — nada criado.
+  // 1. Sem esqueleto não há prompt para preencher — nada proposto.
   if (nicho.esqueleto === null) {
     return {
       ok: false,
@@ -201,19 +211,19 @@ export async function montarPacoteDoNicho(
     };
   }
 
-  // 3. Nome duplicado (o banco é unique por org, inclui arquivados) — nada criado.
+  // 3. Nome duplicado (o banco é unique por org, inclui arquivados) — nada proposto.
   const nomes = await nomesDeAgentesDaOrganizacao();
   if (nomes === null) return { ok: false, motivo: "indisponivel" };
   if (nomes.has(nomeDoAgente)) return { ok: false, motivo: "ja_existe" };
 
-  // 4. Follow-up pedido fora do nicho — nada criado.
+  // 4. Follow-up pedido fora do nicho — nada proposto.
   const doNicho = new Set(nicho.followups.modelos);
   if (!followups.every((id) => doNicho.has(id))) {
     return { ok: false, motivo: "followup_de_outro_nicho" };
   }
 
-  // 5. Criar o agente; falha devolve o MESMO motivo, sem tentar follow-up.
-  const agente = await criarAgenteRascunho({
+  // 5. Montar o corpo do agente; falha devolve o MESMO motivo, sem tentar follow-up.
+  const montagem = await montarCorpoDoAgenteRascunho({
     nome: nomeDoAgente,
     descricao,
     prompt: preenchido.texto,
@@ -221,15 +231,31 @@ export async function montarPacoteDoNicho(
     funis: [],
     materiais: [],
   });
-  if (!agente.ok) {
-    return agente.detalhe === undefined
-      ? { ok: false, motivo: agente.motivo }
-      : { ok: false, motivo: agente.motivo, detalhe: agente.detalhe };
+  if (!montagem.ok) {
+    return montagem.detalhe === undefined
+      ? { ok: false, motivo: montagem.motivo }
+      : { ok: false, motivo: montagem.motivo, detalhe: montagem.detalhe };
   }
 
-  // 6. Follow-ups: pede etapa → falta sem instalar; falha → falta sem desfazer.
-  const instalados: FollowupCriadoDoPacote[] = [];
-  const instaladosIds = new Set<string>();
+  // 6. Propor o agente como UMA proposta `acao` (`POST ai/agents`).
+  const resumoAgente = `Criar o agente "${nomeDoAgente}" em rascunho (${nicho.nome})`;
+  const motivoAgente =
+    "Pedido no chat do assistente; nada é publicado e ninguém é atendido até o administrador aprovar o cartão.";
+  const propostaAgente = await proporAcao(entrada, {
+    porta: "ai/agents",
+    metodo: "POST",
+    corpo: montagem.corpo,
+    resumo: resumoAgente,
+    motivo: motivoAgente,
+  });
+  if (!propostaAgente.ok) {
+    return { ok: false, motivo: "indisponivel" };
+  }
+
+  // 7. Para cada follow-up pedido: pede etapa → falta sem propor;
+  //    modelo inválido → falha; senão UMA proposta `acao` (`POST ai/followup-flows/from-model`).
+  const propostos: FollowupPropostoDoPacote[] = [];
+  const propostosIds = new Set<string>();
   const falhasDeFollowup: { id: string; motivo: string }[] = [];
   const comEtapa: string[] = [];
   for (const id of followups) {
@@ -242,57 +268,47 @@ export async function montarPacoteDoNicho(
       comEtapa.push(id);
       continue;
     }
-    const instalado = await instalarModeloDeFollowup({ model_id: id });
-    if (instalado.ok) {
-      instalados.push(instalado.followup);
-      instaladosIds.add(id);
+    const proposta = await proporAcao(entrada, {
+      porta: "ai/followup-flows/from-model",
+      metodo: "POST",
+      corpo: { model_id: id },
+      resumo: `Instalar o follow-up "${id}" como rascunho`,
+      motivo: "Pedido no chat do assistente; nada é publicado até o administrador aprovar o cartão.",
+    });
+    if (proposta.ok) {
+      propostos.push({ proposta_id: proposta.propostaId, modelo: id });
+      propostosIds.add(id);
     } else {
-      falhasDeFollowup.push({ id, motivo: instalado.motivo });
+      falhasDeFollowup.push({ id, motivo: "indisponivel" });
     }
   }
 
-  // 7. O que foi criado e o que falta.
+  // 8. O que foi proposto e o que falta.
   return {
     ok: true,
-    criado: { agente: agente.agente, followups: instalados },
-    falta: montarFalta(nicho, instaladosIds, falhasDeFollowup, comEtapa),
+    proposto: { agente: { proposta_id: propostaAgente.propostaId, nome: nomeDoAgente }, followups: propostos },
+    falta: montarFalta(nicho, propostosIds, falhasDeFollowup, comEtapa),
   };
 }
 
 export function criarMontarPacoteDoNicho(entrada: EntradaDasFerramentas): Tool {
   return tool({
     description:
-      "Monta o atendimento de um nicho numa pedida: cria o agente como RASCUNHO (prompt do " +
-      "nicho preenchido) e instala os follow-ups de modelo escolhidos, também como rascunho. " +
-      "`nicho` (os 7 têm prompt: clínica, imobiliária, serviços, infoproduto, loja, advocacia e genérico), `negocio` (nome do " +
+      "PROPÕE o agente do nicho como rascunho e os follow-ups escolhidos; nada é criado até o administrador aprovar o cartão no chat. Nada publica, nada liga follow-up a agente, nada cria funil." +
+      " `nicho` (os 7 têm prompt: clínica, imobiliária, serviços, infoproduto, loja, advocacia e genérico), `negocio` (nome do " +
       "negócio), `descricao` (o que faz, em uma frase), `nome_do_agente` e `followups` (ids de " +
-      "modelo DESTE nicho, opcionais). Nada publica, nada liga follow-up a agente, nada cria funil.",
+      "modelo DESTE nicho, opcionais).",
     inputSchema: esquemaDeEntrada,
     execute: protegida("montar_pacote_do_nicho", esquemaDeEntrada, async ({ nicho, negocio, descricao, nome_do_agente, followups }) => {
       const dados = nichoPorId(nicho);
       if (!dados) return { ok: false as const, motivo: "pedido_invalido" as const };
-      const resultado = await montarPacoteDoNicho({
+      return montarPacoteDoNicho(entrada, {
         nicho: dados,
         negocio,
         descricao,
         nomeDoAgente: nome_do_agente,
         followups: followups ?? [],
       });
-      if (resultado.ok) {
-        anotarCartaoDeArtefato(entrada.coletor, entrada.ctx.idioma, {
-          artefato: "agente",
-          nome: resultado.criado.agente.nome,
-          href: `/app/ai/agents/${resultado.criado.agente.id}`,
-        });
-        for (const followup of resultado.criado.followups) {
-          anotarCartaoDeArtefato(entrada.coletor, entrada.ctx.idioma, {
-            artefato: "followup",
-            nome: followup.nome,
-            href: `/app/ai/followups/${followup.id}`,
-          });
-        }
-      }
-      return resultado;
     }),
   });
 }

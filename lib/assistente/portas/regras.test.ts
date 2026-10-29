@@ -208,6 +208,10 @@ describe("escritaPermitida", () => {
     }
   });
 
+  it("ai/followup-flows/from-model POST permite escrita (proposta do pacote do nicho)", () => {
+    expect(escritaPermitida("ai/followup-flows/from-model", "POST")).toBe(true);
+  });
+
   it("nenhuma entrada de ESCRITA_PERMITIDA casa com proibidos", () => {
     for (const e of ESCRITA_PERMITIDA) {
       const proibidaPorPrefixo = PREFIXOS_PROIBIDOS.some((pre) =>

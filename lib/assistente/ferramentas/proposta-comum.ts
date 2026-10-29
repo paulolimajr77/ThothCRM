@@ -14,6 +14,7 @@
  */
 import { z } from "zod";
 
+import { escritaPermitida, acaoPermitida } from "@/lib/assistente/portas/regras";
 import { chamarRotaPorDentro, type HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
 import { riscoDoTipo } from "@/lib/assistente/propostas/operacoes";
 import { esquemaDoCorpoDaProposta } from "@/lib/assistente/propostas/payload";
@@ -194,6 +195,76 @@ export interface PedidoDeProposta {
   antes: Record<string, unknown> | null;
   /** Avisos honestos para o modelo repassar (ex.: "ainda não há chave deste provedor"). */
   avisos?: string[];
+}
+
+/**
+ * Parâmetros para propor uma ação (`kind: "acao"`) numa porta de escrita.
+ * `antes` é `null` para POST (não há estado anterior a ler).
+ */
+export interface PedidoDePropostaAcao {
+  porta: string;
+  metodo: "POST" | "PATCH" | "PUT";
+  corpo: unknown;
+  resumo: string;
+  motivo: string;
+  /** Parâmetros de caminho (ex.: { id: "..." } para `contacts/:id`). */
+  valores?: Record<string, string>;
+  /** `antes` lido pela GET da porta; `null` para POST. */
+  antes?: Record<string, unknown> | null;
+}
+
+/**
+ * Propoe uma ação (`kind: "acao"`) numa porta de escrita, via POST de
+ * propostas. Usado por `propor_mudanca` e pelo pacote do nicho (T14b).
+ * Devolve o `id` da proposta ou `{ ok: false, motivo }`.
+ */
+export async function proporAcao(
+  entrada: EntradaDasFerramentas,
+  pedido: PedidoDePropostaAcao,
+): Promise<{ ok: true; propostaId: string } | { ok: false; motivo: string }> {
+  if (!escritaPermitida(pedido.porta, pedido.metodo)) {
+    return { ok: false, motivo: "porta_nao_liberada" };
+  }
+  if (!acaoPermitida(pedido.porta, pedido.metodo, pedido.corpo)) {
+    return { ok: false, motivo: "acao_nao_liberada" };
+  }
+
+  const corpo = {
+    kind: "acao" as const,
+    resumo: pedido.resumo,
+    motivo: pedido.motivo,
+    antes: pedido.antes ?? null,
+    payload: {
+      porta: pedido.porta,
+      metodo: pedido.metodo,
+      ...(pedido.valores !== undefined ? { valores: pedido.valores } : {}),
+      ...(pedido.corpo !== undefined ? { corpo: pedido.corpo } : {}),
+    },
+  };
+
+  const resposta = await chamarRotaPorDentro(
+    await FONTES.propostas(),
+    CAMINHOS.propostas,
+    {},
+    { metodo: "POST", corpo },
+  );
+
+  if (!("status" in resposta) || (resposta.status !== 200 && resposta.status !== 201)) {
+    return { ok: false, motivo: "indisponivel" };
+  }
+
+  const dados =
+    typeof resposta.corpo === "object" && resposta.corpo !== null
+      ? (resposta.corpo as { data?: { id?: string } })
+      : undefined;
+  const propostaId = dados?.data?.id;
+  if (!propostaId) {
+    return { ok: false, motivo: "indisponivel" };
+  }
+
+  anotarCartaoDeProposta(entrada.coletor, propostaId);
+
+  return { ok: true, propostaId };
 }
 
 /**

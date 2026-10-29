@@ -111,7 +111,7 @@ async function abrirAssistente(page: Page): Promise<void> {
   expect(page.url()).toBe(urlAntes);
 }
 
-test("par: pedir o agente da clínica no chat cria o rascunho (tela × GET direto)", async ({ page }) => {
+test("par: pedir o agente da clínica no chat PROPÕE o rascunho (tela × GET direto, antes e depois de aplicar)", async ({ page }) => {
   creds = await loginComoAdmin(page, creds);
   await abrirAssistente(page);
 
@@ -119,26 +119,42 @@ test("par: pedir o agente da clínica no chat cria o rascunho (tela × GET diret
   await page.getByTestId("assistente-pergunta").fill("monta o agente da minha clínica");
   await page.getByTestId("assistente-perguntar").click();
 
-  // Lado (a) — pela tela: o cartão "Criado como rascunho" com o nome do agente.
-  const cartaoDoAgente = page
+  // Lado (a) — pela tela: o cartão de PROPOSTA (não "criado" diretamente).
+  const cartaoProposta = page
     .getByTestId("assistente-cartao")
-    .filter({ hasText: "Agente" })
+    .filter({ hasText: /Criar o agente/ })
     .first();
-  await expect(cartaoDoAgente).toBeVisible({ timeout: 60_000 });
-  await expect(cartaoDoAgente).toContainText("Criado como rascunho");
-  await expect(cartaoDoAgente).toContainText("Nada foi publicado.");
-  const nome = await cartaoDoAgente.getAttribute("aria-label");
-  expect(nome, "o cartão traz o nome do agente criado").toBeTruthy();
+  await expect(cartaoProposta).toBeVisible({ timeout: 60_000 });
+  const resumo = await cartaoProposta.textContent();
+  expect(resumo, "o cartão propõe criar o agente").toContain("Criar o agente");
 
-  // Lado (b) — fora do agente: o MESMO nome existe no GET direto, em rascunho,
+  // Lado (b) — ANTES de aplicar: GET direto NÃO tem o agente (par).
+  const antes = await page.request.get("/api/v1/ai/agents");
+  expect(antes.ok()).toBe(true);
+  const corpoAntes = (await antes.json()) as {
+    data: Array<{ id: string; name: string }>;
+  };
+  const nomeDoAgente = "Recepção Aurora";
+  const agenteAntes = corpoAntes.data.find((a) => a.name === nomeDoAgente);
+  expect(agenteAntes, `antes de aplicar, "${nomeDoAgente}" não existe no GET direto`).toBeUndefined();
+
+  // Aplicar a proposta: clica no botão "Aplicar" do cartão.
+  const botaoAplicar = cartaoProposta.getByRole("button", { name: /aplicar/i });
+  await expect(botaoAplicar).toBeVisible();
+  await botaoAplicar.click();
+
+  // Depois de aplicar: o cartão reflete a decisão.
+  await expect(cartaoProposta).toContainText("Aplicada", { timeout: 60_000 });
+
+  // Lado (b) — DEPOIS de aplicar: GET direto TEM o agente, em rascunho,
   // sem nada publicado. Mesma sessão, mesmo escopo RLS.
-  const direto = await page.request.get("/api/v1/ai/agents");
-  expect(direto.ok()).toBe(true);
-  const corpo = (await direto.json()) as {
+  const depois = await page.request.get("/api/v1/ai/agents");
+  expect(depois.ok()).toBe(true);
+  const corpoDepois = (await depois.json()) as {
     data: Array<{ id: string; name: string; published_version_id: string | null }>;
   };
-  const agente = corpo.data.find((a) => a.name === nome);
+  const agente = corpoDepois.data.find((a) => a.name === nomeDoAgente);
   // Os dois lados concordam: o cartão nomeia quem o banco guarda.
-  expect(agente, `o agente "${nome}" existe no GET direto`).toBeDefined();
+  expect(agente, `depois de aplicar, "${nomeDoAgente}" existe no GET direto`).toBeDefined();
   expect(agente!.published_version_id, "nada foi publicado").toBeNull();
 });

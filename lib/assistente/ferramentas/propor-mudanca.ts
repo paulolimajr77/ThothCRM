@@ -4,13 +4,8 @@ import { z } from "zod";
 
 import { chamarRotaPorDentro } from "@/lib/assistente/metricas/chamar-rota";
 import { abrirPorta } from "@/lib/assistente/portas/abrir";
-import { CAMINHOS, FONTES } from "./proposta-comum";
-import { anotarCartaoDeProposta } from "./tipos";
-import {
-  acaoPermitida,
-  escritaPermitida,
-  portaDeLeituraPermitida,
-} from "@/lib/assistente/portas/regras";
+import { proporAcao } from "./proposta-comum";
+import { portaDeLeituraPermitida } from "@/lib/assistente/portas/regras";
 import { protegida } from "./protegida";
 import type { EntradaDasFerramentas } from "./tipos";
 
@@ -28,16 +23,6 @@ async function proporMudanca(
   entrada: EntradaDasFerramentas,
   e: EntradaDeProporMudanca,
 ): Promise<{ ok: true; propostaId: string } | { ok: false; motivo: string }> {
-  // Exige escrita permitida.
-  if (!escritaPermitida(e.porta, e.metodo)) {
-    return { ok: false, motivo: "porta_nao_liberada" };
-  }
-  // Quando a porta restringe quais ações aceita (ex.: prospecting), recusa
-  // corpos sem action ou com action fora da lista liberada.
-  if (!acaoPermitida(e.porta, e.metodo, e.corpo)) {
-    return { ok: false, motivo: "acao_nao_liberada" };
-  }
-
   // Para PATCH/PUT, lê o "antes" pela porta GET com o mesmo id.
   let antes: Record<string, unknown> | null = null;
   if (e.metodo !== "POST" && portaDeLeituraPermitida(e.porta)) {
@@ -63,42 +48,15 @@ async function proporMudanca(
     }
   }
 
-  const corpo = {
-    kind: "acao" as const,
+  return proporAcao(entrada, {
+    porta: e.porta,
+    metodo: e.metodo,
+    corpo: e.corpo,
     resumo: e.resumo,
     motivo: e.motivo,
-    antes: e.metodo !== "POST" ? antes : null,
-    payload: {
-      porta: e.porta,
-      metodo: e.metodo,
-      ...(e.valores !== undefined ? { valores: e.valores } : {}),
-      ...(e.corpo !== undefined ? { corpo: e.corpo } : {}),
-    },
-  };
-
-  const resposta = await chamarRotaPorDentro(
-    await FONTES.propostas(),
-    CAMINHOS.propostas,
-    {},
-    { metodo: "POST", corpo },
-  );
-
-  if (!("status" in resposta) || (resposta.status !== 200 && resposta.status !== 201)) {
-    return { ok: false, motivo: "indisponivel" };
-  }
-
-  const corpoResposta =
-    typeof resposta.corpo === "object" && resposta.corpo !== null
-      ? (resposta.corpo as { data?: { id?: string } })
-      : undefined;
-  const propostaId = corpoResposta?.data?.id;
-  if (!propostaId) {
-    return { ok: false, motivo: "indisponivel" };
-  }
-
-  anotarCartaoDeProposta(entrada.coletor, propostaId);
-
-  return { ok: true, propostaId };
+    valores: e.valores,
+    antes,
+  });
 }
 
 export function criarProporMudanca(entrada: EntradaDasFerramentas): Tool {

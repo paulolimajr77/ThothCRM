@@ -138,6 +138,7 @@ export const ESCRITA_PERMITIDA: readonly {
   { porta: "leads/:id/move", metodo: "POST", descricao: "mudar o negócio de etapa" },
   { porta: "ai/followup-flows", metodo: "POST", descricao: "criar fluxo de follow-up" },
   { porta: "ai/followup-flows/:id", metodo: "PATCH", descricao: "alterar fluxo de follow-up" },
+  { porta: "ai/followup-flows/from-model", metodo: "POST", descricao: "instalar follow-up a partir de um modelo pronto" },
   { porta: "tasks", metodo: "POST", descricao: "criar tarefa" },
   { porta: "tasks/:id", metodo: "PATCH", descricao: "alterar tarefa" },
   { porta: "agenda/agendamentos", metodo: "POST", descricao: "criar agendamento" },
