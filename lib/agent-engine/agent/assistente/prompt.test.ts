@@ -29,6 +29,18 @@ describe("montarSystemDoAssistente", () => {
     expect(norm(montarSystemDoAssistente(BASE))).toContain("vêm sempre da sessão");
   });
 
+  // Medido no espelho em 29/10/2026: um atendente pediu "quais clientes fecharam e os
+  // valores", levou 403 na lista de funis (só gestor) e o assistente desistiu.
+  it.each(["admin", "manager", "agent", "viewer"] as const)(
+    "403 não encerra a pergunta: o papel %s recebe o caminho dos negócios pela tela",
+    (papel) => {
+      const s = norm(montarSystemDoAssistente({ ...BASE, papel }));
+      expect(s).toContain("403 (sem permissão) não encerra a pergunta");
+      expect(s).toContain("pipelines/:id/leads");
+      expect(s).toContain("pipelines/default");
+    },
+  );
+
   it("regra 3: depois de consultar, conferir — ou dizer que não conferiu", () => {
     const s = norm(montarSystemDoAssistente(BASE));
     expect(s).toContain("confira o resultado antes de afirmar");

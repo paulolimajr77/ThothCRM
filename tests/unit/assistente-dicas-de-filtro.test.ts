@@ -18,6 +18,7 @@ const FONTES: Record<string, readonly string[]> = {
   contacts: ["app/api/v1/contacts/route.ts"],
   conversations: ["app/api/v1/conversations/route.ts"],
   "agenda/agendamentos": ["app/api/v1/agenda/agendamentos/route.ts"],
+  "pipelines/:id/leads": ["app/api/v1/pipelines/[id]/leads/route.ts"],
   "external-db/connections/:id/tables/:schema/:tabela": [
     "app/api/v1/external-db/connections/[id]/tables/[schema]/[tabela]/route.ts",
   ],
