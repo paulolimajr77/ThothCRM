@@ -15,7 +15,11 @@ import { ligarPacote } from "@/lib/mcp/tools/selecao-por-pacote";
 import { chamar, montarParaTeste } from "./auxiliar-de-teste";
 import { sobreporHandlersDeCriacao } from "./criar-rascunho-de-agente";
 import { sobreporFontesDeProposta } from "./proposta-comum";
-import { montarPacoteDoNicho, sobreporHandlerDeListaDeAgentes } from "./montar-pacote-do-nicho";
+import {
+  montarPacoteDoNicho,
+  sobreporHandlerDeListaDeAgentes,
+  sobreporHandlerDeListaDeFollowups,
+} from "./montar-pacote-do-nicho";
 
 function respostaJson(status: number, corpo: unknown): Response {
   return new Response(JSON.stringify(corpo), {
@@ -50,6 +54,8 @@ interface CorpoCapturado {
 function ligar(opcoes: {
   agentes?: unknown;
   statusAgentes?: number;
+  followups?: unknown;
+  statusFollowups?: number;
   provedores?: unknown;
   capturaAgente?: CorpoCapturado;
   capturaProposta?: PropostaCapturada;
@@ -59,6 +65,10 @@ function ligar(opcoes: {
   const hLista: HandlerDeRota = async () =>
     respostaJson(opcoes.statusAgentes ?? 200, { data: opcoes.agentes ?? [] });
   sobreporHandlerDeListaDeAgentes(hLista);
+
+  const hListaFu: HandlerDeRota = async () =>
+    respostaJson(opcoes.statusFollowups ?? 200, { data: opcoes.followups ?? [] });
+  sobreporHandlerDeListaDeFollowups(hListaFu);
 
   const hProvedores: HandlerDeRota = async () =>
     respostaJson(200, { data: opcoes.provedores ?? PROVEDORES_OK });
@@ -101,6 +111,14 @@ const ENTRADA_CLINICA = {
   nome_do_agente: "Recepção Aurora",
 } as const;
 
+/** A mesma entrada no formato de `montarPacoteDoNicho` (a ferramenta converte o da conversa). */
+const PEDIDO_CLINICA = {
+  nicho: nichoPorId("clinica")!,
+  negocio: ENTRADA_CLINICA.negocio,
+  descricao: ENTRADA_CLINICA.descricao,
+  nomeDoAgente: ENTRADA_CLINICA.nome_do_agente,
+};
+
 function entradaDeTeste(): Parameters<typeof montarPacoteDoNicho>[0] {
   const { ctx, coletor } = montarParaTeste("admin");
   return { ctx, coletor, skills: [] };
@@ -121,6 +139,7 @@ function falhou(saida: Resultado): Extract<Resultado, { ok: false }> {
 describe("montar_pacote_do_nicho", () => {
   afterEach(() => {
     sobreporHandlerDeListaDeAgentes(null);
+    sobreporHandlerDeListaDeFollowups(null);
     sobreporHandlersDeCriacao(null);
     sobreporFontesDeProposta(null);
   });
@@ -163,8 +182,8 @@ describe("montar_pacote_do_nicho", () => {
     });
 
     expect(saida.ok).toBe(true);
-    expect(deuCerto(saida).proposto.agente.proposta_id).toBeDefined();
-    expect(deuCerto(saida).proposto.agente.nome).toBe(ENTRADA_CLINICA.nome_do_agente);
+    expect(deuCerto(saida).proposto.agente!.proposta_id).toBeDefined();
+    expect(deuCerto(saida).proposto.agente!.nome).toBe(ENTRADA_CLINICA.nome_do_agente);
 
     const propostaAgente = capturaProposta.corpos.find(
       (c) => (c.payload as { porta?: string })?.porta === "ai/agents",
@@ -314,9 +333,9 @@ describe("montar_pacote_do_nicho", () => {
       });
 
       expect(saida.ok).toBe(true);
-      expect(deuCerto(saida).proposto.agente.nome).toBe("Atendente Teste");
+      expect(deuCerto(saida).proposto.agente!.nome).toBe("Atendente Teste");
       expect(capturaProposta.corpos).toHaveLength(1);
-      const corpo = (capturaProposta.corpos[0].payload as { corpo?: unknown }).corpo as {
+      const corpo = (capturaProposta.corpos[0]!.payload as { corpo?: unknown }).corpo as {
         version?: { system_prompt: string };
       };
       expect(corpo.version?.system_prompt).toContain("Negócio Teste");
@@ -374,7 +393,7 @@ describe("montar_pacote_do_nicho", () => {
     expect(capturaProposta.corpos).toEqual([]);
   });
 
-  it("nome duplicado: ja_existe, sem proposta", async () => {
+  it("nome duplicado: reaproveita o agente, não propõe o agente, segue com follow-ups", async () => {
     const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
     ligar({
       agentes: [{ id: "ag-velho", name: "Recepção Aurora" }],
@@ -383,10 +402,116 @@ describe("montar_pacote_do_nicho", () => {
     const entrada = entradaDeTeste();
 
     const saida = await montarPacoteDoNicho(entrada, {
-      ...ENTRADA_CLINICA,
+      ...PEDIDO_CLINICA,
+      followups: ["clinica-consulta-retomada"],
     });
 
-    expect(saida).toEqual({ ok: false, motivo: "ja_existe" });
+    expect(saida.ok).toBe(true);
+    const ok = saida as { ok: true; reaproveitado: { agente: { nome: string } | null; followups: string[] }; proposto: { agente: { nome: string } | null; followups: { proposta_id: string; modelo: string }[] }; falta: string[] };
+    // Não propõe o agente de novo
+    expect(ok.proposto.agente).toBeNull();
+    // Reaproveitou o agente existente
+    expect(ok.reaproveitado.agente).toEqual({ nome: "Recepção Aurora" });
+    // O follow-up ainda é proposto (não existia ainda)
+    expect(ok.proposto.followups).toHaveLength(1);
+    expect(ok.proposto.followups[0]!.modelo).toBe("clinica-consulta-retomada");
+    // A frase de "falta" menciona o agente existente
+    expect(ok.falta.some((f) => f.includes("Recepção Aurora"))).toBe(true);
+    expect(ok.falta.some((f) => f.includes("já existe"))).toBe(true);
+    // Só uma proposta (do follow-up), nenhuma do agente
+    expect(capturaProposta.corpos).toHaveLength(1);
+    expect((capturaProposta.corpos[0]!.payload as { porta?: string }).porta).toBe(
+      "ai/followup-flows/from-model",
+    );
+  });
+
+  it("clinica: proposta do agente leva proposal_ai_draft_enabled === false", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      ...PEDIDO_CLINICA,
+      followups: [],
+    });
+
+    expect(saida.ok).toBe(true);
+    const propostaAgente = capturaProposta.corpos.find(
+      (c) => (c.payload as { porta?: string })?.porta === "ai/agents",
+    );
+    expect(propostaAgente).toBeDefined();
+    const corpo = (propostaAgente!.payload as { corpo?: { version?: unknown } }).corpo
+      ?.version as { proposal_ai_draft_enabled?: boolean };
+    expect(corpo.proposal_ai_draft_enabled).toBe(false);
+  });
+
+  it("imobiliaria: proposta do agente leva proposal_ai_draft_enabled === true", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      nicho: nichoPorId("imobiliaria")!,
+      negocio: "Imob Sul",
+      descricao: "venda e locação",
+      nomeDoAgente: "Vendas Sul",
+      followups: [],
+    });
+
+    expect(saida.ok).toBe(true);
+    const propostaAgente = capturaProposta.corpos.find(
+      (c) => (c.payload as { porta?: string })?.porta === "ai/agents",
+    );
+    expect(propostaAgente).toBeDefined();
+    const corpo = (propostaAgente!.payload as { corpo?: { version?: unknown } }).corpo
+      ?.version as { proposal_ai_draft_enabled?: boolean };
+    expect(corpo.proposal_ai_draft_enabled).toBe(true);
+  });
+
+  it("follow-up já instalado: reaproveita (não propõe), propõe os outros, reaproveitado.followups com o id", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({
+      agentes: [],
+      followups: [
+        { id: "fu-existente", name: "clinica-consulta-retomada" },
+      ],
+      capturaProposta,
+    });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      ...PEDIDO_CLINICA,
+      followups: ["clinica-consulta-retomada", "clinica-exame-marcar"],
+    });
+
+    expect(saida.ok).toBe(true);
+    const ok = saida as { ok: true; reaproveitado: { followups: string[] }; proposto: { followups: { modelo: string }[] } };
+    // O já instalado não foi proposto
+    expect(ok.reaproveitado.followups).toContain("clinica-consulta-retomada");
+    // O outro foi proposto
+    expect(ok.proposto.followups.map((f) => f.modelo)).toEqual(["clinica-exame-marcar"]);
+    expect(capturaProposta.corpos).toHaveLength(1);
+    expect((capturaProposta.corpos[0]!.payload as { porta?: string }).porta).toBe(
+      "ai/followup-flows/from-model",
+    );
+  });
+
+  it("lista de follow-ups falhando (500): indisponivel, nenhuma proposta", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({
+      agentes: [],
+      statusFollowups: 500,
+      capturaProposta,
+    });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      ...PEDIDO_CLINICA,
+      followups: ["clinica-consulta-retomada"],
+    });
+
+    expect(saida.ok).toBe(false);
+    expect(falhou(saida).motivo).toBe("indisponivel");
     expect(capturaProposta.corpos).toEqual([]);
   });
 
@@ -413,7 +538,7 @@ describe("montar_pacote_do_nicho", () => {
     const entrada = entradaDeTeste();
 
     const saida = await montarPacoteDoNicho(entrada, {
-      ...ENTRADA_CLINICA,
+      ...PEDIDO_CLINICA,
       followups: [
         "clinica-consulta-retomada",
         "clinica-exame-marcar",
@@ -444,7 +569,7 @@ describe("montar_pacote_do_nicho", () => {
     const entrada = entradaDeTeste();
 
     const saida = await montarPacoteDoNicho(entrada, {
-      ...ENTRADA_CLINICA,
+      ...PEDIDO_CLINICA,
       followups: ["clinica-consulta-retomada"],
     });
 
@@ -462,7 +587,7 @@ describe("montar_pacote_do_nicho", () => {
     const entrada = entradaDeTeste();
 
     const saida = await montarPacoteDoNicho(entrada, {
-      ...ENTRADA_CLINICA,
+      ...PEDIDO_CLINICA,
       followups: ["clinica-consulta-retomada"],
     });
 

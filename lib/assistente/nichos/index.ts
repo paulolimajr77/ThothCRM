@@ -30,6 +30,7 @@ export const NICHOS_DO_ASSISTENTE: readonly NichoDoAssistente[] = [
     id: "clinica",
     nome: "Clínica, consultório ou salão",
     chamadas: ["clínica", "consultório", "salão"],
+    propostasComerciais: false,
     funil: {
       nome: "Agendamentos",
       etapas: [
@@ -124,6 +125,7 @@ Curto, uma pergunta por vez, sem termos técnicos. Emoji: não.`,
     id: "imobiliaria",
     nome: "Imobiliária ou corretor",
     chamadas: ["imobiliária", "corretor"],
+    propostasComerciais: true,
     funil: {
       nome: "Interessados",
       etapas: [
@@ -206,6 +208,7 @@ Mensagens curtas, uma pergunta por vez, sem termos do mercado sem explicar. Emoj
     id: "servicos",
     nome: "Serviços, agência ou obra",
     chamadas: ["serviços", "agência", "obra"],
+    propostasComerciais: true,
     funil: {
       nome: "Orçamentos",
       etapas: [
@@ -289,6 +292,7 @@ Mensagens curtas, uma pergunta por vez, sem termos técnicos sem explicar. Emoji
     id: "infoproduto",
     nome: "Curso, mentoria ou infoproduto",
     chamadas: ["curso", "mentoria", "infoproduto"],
+    propostasComerciais: true,
     funil: {
       nome: "Matrículas",
       etapas: [
@@ -374,6 +378,7 @@ Mensagens curtas, uma pergunta por vez, sem jargão de marketing. Emoji: não.`,
     id: "loja",
     nome: "Loja — online ou de rua",
     chamadas: ["loja", "online", "de rua"],
+    propostasComerciais: true,
     funil: {
       nome: "Vendas",
       etapas: [
@@ -456,6 +461,7 @@ Mensagens curtas, uma pergunta por vez, sem jargão. Emoji: não.`,
     id: "advocacia",
     nome: "Escritório de advocacia",
     chamadas: ["escritório de advocacia"],
+    propostasComerciais: true,
     funil: {
       nome: "Consultas",
       etapas: [
@@ -549,6 +555,7 @@ Mensagens curtas, uma pergunta por vez, sem termos jurídicos sem explicação. 
     id: "generico",
     nome: "Outro tipo de negócio (genérico)",
     chamadas: ["outro tipo de negócio (genérico)"],
+    propostasComerciais: true,
     funil: {
       nome: "Clientes",
       etapas: [

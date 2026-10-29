@@ -31,7 +31,7 @@ import type { HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
 import { montarParaTeste } from "./auxiliar-de-teste";
 import { sobreporHandlersDeCriacao } from "./criar-rascunho-de-agente";
 import { sobreporHandlerDeInstalacao } from "./instalar-modelo-de-followup";
-import { sobreporHandlerDeListaDeAgentes } from "./montar-pacote-do-nicho";
+import { sobreporHandlerDeListaDeAgentes, sobreporHandlerDeListaDeFollowups } from "./montar-pacote-do-nicho";
 import { sobreporFontesDeProposta } from "./proposta-comum";
 
 function json(status: number, corpo: unknown): Response {
@@ -41,6 +41,8 @@ function json(status: number, corpo: unknown): Response {
 function ligar(): void {
   const lista: HandlerDeRota = async () => json(200, { data: [] });
   sobreporHandlerDeListaDeAgentes(lista);
+  // O pacote lê os follow-ups instalados para não duplicar (item 3): a org do dublê não tem nenhum.
+  sobreporHandlerDeListaDeFollowups(async () => json(200, { data: [] }));
   sobreporHandlersDeCriacao({
     provedores: async () =>
       json(200, {
@@ -75,6 +77,7 @@ function ligar(): void {
 describe("o dublê do e2e conduz o par da clínica até o cartão do agente", () => {
   afterEach(() => {
     sobreporHandlerDeListaDeAgentes(null);
+    sobreporHandlerDeListaDeFollowups(null);
     sobreporHandlersDeCriacao(null);
     sobreporHandlerDeInstalacao(null);
     sobreporFontesDeProposta(null);

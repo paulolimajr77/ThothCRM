@@ -61,6 +61,12 @@ export interface CampoDoNicho {
 
 export interface NichoDoAssistente {
   id: IdDeNicho;
+  /**
+   * Se o agente deste nicho deve ter `proposal_ai_draft_enabled` (propostas
+   * comerciais por IA). A clínica não usa: `false`. Os demais, `true`
+   * (o padrão de hoje).
+   */
+  propostasComerciais: boolean;
   /** O título `## ` da seção no `.md` (ex.: "Clínica, consultório ou salão"). */
   nome: string;
   /** As expressões do título, separadas (ex.: ["clínica", "consultório", "salão"]). */

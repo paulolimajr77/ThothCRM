@@ -109,6 +109,8 @@ export interface PedidoDeAgenteRascunho {
   pacotes?: ToolBundle[];
   funis?: string[];
   materiais?: string[];
+  /** Quando definido, entra em `version.proposal_ai_draft_enabled`; quando ausente, a chave fica fora do corpo (usa o default do esquema). */
+  propostasComerciais?: boolean;
 }
 
 export type MotivoDeFalhaAoAlcancarAgente =
@@ -142,6 +144,8 @@ export interface CorpoDoAgenteRascunho {
     tool_ids: string[];
     pipeline_ids: string[];
     knowledge_source_ids: string[];
+    /** Só entra no corpo quando o chamador (nicho) define explicitamente. */
+    proposal_ai_draft_enabled?: boolean;
   };
 }
 
@@ -158,7 +162,7 @@ export type MontagemDeAgenteRascunho =
 export async function montarCorpoDoAgenteRascunho(
   pedido: PedidoDeAgenteRascunho,
 ): Promise<MontagemDeAgenteRascunho> {
-  const { nome, descricao, prompt, pacotes, funis, materiais } = pedido;
+  const { nome, descricao, prompt, pacotes, funis, materiais, propostasComerciais } = pedido;
   // Decisão do dono (delegada): prompt curto nem chama a rota.
   if (prompt.trim().length < 10) {
     return { ok: false, motivo: "prompt_curto" };
@@ -262,6 +266,7 @@ export async function montarCorpoDoAgenteRascunho(
         tool_ids: toolIds,
         pipeline_ids: funisPedidos,
         knowledge_source_ids: materiaisPedidos,
+        ...(propostasComerciais === undefined ? {} : { proposal_ai_draft_enabled: propostasComerciais }),
       },
     },
   };
