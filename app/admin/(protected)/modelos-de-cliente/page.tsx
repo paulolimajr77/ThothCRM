@@ -50,7 +50,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ i
       <TelaDeModelosDeCliente
         organizacoes={((orgs ?? []) as { id: string; display_name: string | null }[]).map((o) => ({
           id: o.id,
-          nome: o.display_name ?? "Empresa sem nome",
+          nome: o.display_name === null ? "Empresa sem nome" : o.display_name,
         }))}
         nichos={NICHOS_DO_ASSISTENTE.map((n) => ({ id: n.id, nome: n.nome }))}
         modelos={modelos ?? []}

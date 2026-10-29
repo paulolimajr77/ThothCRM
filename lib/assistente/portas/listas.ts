@@ -225,7 +225,6 @@ export const ESCRITA_PERMITIDA: readonly {
   // ---- Grupo 2: configuração/operação (cartão normal, risco "atenção") ----
   { porta: "contacts", metodo: "POST", descricao: "cadastrar contato" },
   { porta: "contacts/:id/proposals/:proposal_id", metodo: "POST", descricao: "responder proposta do contato" },
-  { porta: "contacts/:id/unblock", metodo: "POST", descricao: "desbloquear contato", externo: true },
   { porta: "contacts/bulk", metodo: "POST", descricao: "edição em lote de contatos" },
   { porta: "contacts/merge", metodo: "POST", descricao: "unificar contatos duplicados" },
   { porta: "conversations/:id", metodo: "PATCH", descricao: "alterar dados da conversa" },

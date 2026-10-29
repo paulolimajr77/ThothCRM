@@ -315,7 +315,7 @@ describe("acaoPermitida", () => {
     expect(escritaPermitida("ai/followup-flows/:id/publish", "POST")).toBe(true);
   });
 
-  it("campaigns/:id PATCH continua proibida", () => {
-    expect(escritaPermitida("campaigns/:id", "PATCH")).toBe(false);
+  it("campaigns/:id PATCH é permitida só como ação externa (cartão de alerta, fora do lote)", () => {
+    expect(escritaPermitida("campaigns/:id", "PATCH")).toBe(true);
   });
 });

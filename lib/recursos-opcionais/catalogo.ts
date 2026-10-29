@@ -617,6 +617,22 @@ const DA_EMPRESA: RecursoOpcional[] = [
           ? "ligado"
           : "desligado",
   },
+  {
+    id: "assistente_interno",
+    nome: "Assistente interno de configuração",
+    oQueFaz: "O dono do servidor liga, empresa por empresa, o assistente de IA que propõe a configuração em cartões.",
+    nivel: "organizacao",
+    padrao: "desligado",
+    quemDecide: "dono_do_servidor",
+    href: "/admin/tenants",
+    capacidade: "assistente",
+    ler: (f) =>
+      f.settings === null || f.modulos === null
+        ? "nao_lido"
+        : capacidadesLigadas(f.settings, f.modulos).includes("assistente")
+          ? "ligado"
+          : "desligado",
+  },
 ];
 
 const DE_CADA_AGENTE: RecursoOpcional[] = [
