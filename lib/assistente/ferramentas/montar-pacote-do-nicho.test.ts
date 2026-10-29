@@ -102,7 +102,20 @@ const ENTRADA_CLINICA = {
 } as const;
 
 function entradaDeTeste(): Parameters<typeof montarPacoteDoNicho>[0] {
-  return montarParaTeste("admin").ctx as unknown as Parameters<typeof montarPacoteDoNicho>[0];
+  const { ctx, coletor } = montarParaTeste("admin");
+  return { ctx, coletor, skills: [] };
+}
+
+type Resultado = Awaited<ReturnType<typeof montarPacoteDoNicho>>;
+
+function deuCerto(saida: Resultado): Extract<Resultado, { ok: true }> {
+  if (!saida.ok) throw new Error(`esperava ok, veio ${saida.motivo}`);
+  return saida;
+}
+
+function falhou(saida: Resultado): Extract<Resultado, { ok: false }> {
+  if (saida.ok) throw new Error("esperava falha, veio ok");
+  return saida;
 }
 
 describe("montar_pacote_do_nicho", () => {
@@ -150,8 +163,8 @@ describe("montar_pacote_do_nicho", () => {
     });
 
     expect(saida.ok).toBe(true);
-    expect(saida.proposto.agente.proposta_id).toBeDefined();
-    expect(saida.proposto.agente.nome).toBe(ENTRADA_CLINICA.nome_do_agente);
+    expect(deuCerto(saida).proposto.agente.proposta_id).toBeDefined();
+    expect(deuCerto(saida).proposto.agente.nome).toBe(ENTRADA_CLINICA.nome_do_agente);
 
     const propostaAgente = capturaProposta.corpos.find(
       (c) => (c.payload as { porta?: string })?.porta === "ai/agents",
@@ -183,9 +196,9 @@ describe("montar_pacote_do_nicho", () => {
     });
 
     expect(saida.ok).toBe(true);
-    expect(saida.proposto.followups).toHaveLength(1);
-    expect(saida.proposto.followups[0].modelo).toBe("clinica-consulta-retomada");
-    expect(saida.proposto.followups[0].proposta_id).toBeDefined();
+    expect(deuCerto(saida).proposto.followups).toHaveLength(1);
+    expect(deuCerto(saida).proposto.followups[0]!.modelo).toBe("clinica-consulta-retomada");
+    expect(deuCerto(saida).proposto.followups[0]!.proposta_id).toBeDefined();
 
     const propostaFu = capturaProposta.corpos.find(
       (c) => (c.payload as { porta?: string })?.porta === "ai/followup-flows/from-model",
@@ -213,9 +226,9 @@ describe("montar_pacote_do_nicho", () => {
     });
 
     expect(saida.ok).toBe(true);
-    expect(saida.proposto.followups).toHaveLength(0);
-    expect(saida.falta.some((f) => f.includes("clinica-cirurgia-decisao"))).toBe(true);
-    expect(saida.falta.some((f) => f.includes("etapa do funil"))).toBe(true);
+    expect(deuCerto(saida).proposto.followups).toHaveLength(0);
+    expect(deuCerto(saida).falta.some((f) => f.includes("clinica-cirurgia-decisao"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("etapa do funil"))).toBe(true);
     // Nenhuma proposta para follow-up (só a do agente)
     const propostasFu = capturaProposta.corpos.filter(
       (c) => (c.payload as { porta?: string })?.porta === "ai/followup-flows/from-model",
@@ -238,7 +251,7 @@ describe("montar_pacote_do_nicho", () => {
     });
 
     expect(saida.ok).toBe(false);
-    expect(saida.motivo).toBe("indisponivel");
+    expect(falhou(saida).motivo).toBe("indisponivel");
     // Nenhuma proposta foi criada (nem agente, nem follow-up)
     expect(capturaProposta.corpos).toHaveLength(0);
   });
@@ -260,7 +273,7 @@ describe("montar_pacote_do_nicho", () => {
 
     expect(saida.ok).toBe(true);
     const propostaAgente = capturaProposta.corpos[0];
-    const versao = (propostaAgente.payload as { corpo?: { version?: { system_prompt?: string } } }).corpo
+    const versao = (propostaAgente!.payload as { corpo?: { version?: { system_prompt?: string } } }).corpo
       ?.version as { system_prompt: string };
     const nicho = nichoPorId("clinica");
     const preenchido = preencherEsqueleto(nicho?.esqueleto ?? "", {
@@ -274,15 +287,15 @@ describe("montar_pacote_do_nicho", () => {
     expect(versao.system_prompt).toContain("Clínica Aurora");
     expect(versao.system_prompt).toContain("Recepção Aurora");
 
-    expect(saida.proposto.agente).toEqual({
+    expect(deuCerto(saida).proposto.agente).toEqual({
       proposta_id: expect.any(String),
       nome: "Recepção Aurora",
     });
-    expect(saida.falta.some((f) => f.includes("Agendamentos"))).toBe(true);
-    expect(saida.falta.some((f) => f.includes("convênios aceitos"))).toBe(true);
-    expect(saida.falta.some((f) => f.includes("tem horário essa semana?"))).toBe(true);
-    expect(saida.falta.some((f) => f.includes("publicar"))).toBe(true);
-    expect(saida.falta.some((f) => f.includes("PRECISO CONFIRMAR"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("Agendamentos"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("convênios aceitos"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("tem horário essa semana?"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("publicar"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("PRECISO CONFIRMAR"))).toBe(true);
   });
 
   it.each(["imobiliaria", "servicos", "infoproduto", "loja", "generico", "advocacia"] as const)(
@@ -301,7 +314,7 @@ describe("montar_pacote_do_nicho", () => {
       });
 
       expect(saida.ok).toBe(true);
-      expect(saida.proposto.agente.nome).toBe("Atendente Teste");
+      expect(deuCerto(saida).proposto.agente.nome).toBe("Atendente Teste");
       expect(capturaProposta.corpos).toHaveLength(1);
       const corpo = (capturaProposta.corpos[0].payload as { corpo?: unknown }).corpo as {
         version?: { system_prompt: string };
@@ -310,7 +323,7 @@ describe("montar_pacote_do_nicho", () => {
       expect(corpo.version?.system_prompt).toContain("faz coisas boas");
       expect(corpo.version?.system_prompt).toContain("Atendente Teste");
       expect(corpo.version?.system_prompt).not.toMatch(/[{}]/);
-      expect(saida.falta.some((f) => f.includes("publicar"))).toBe(true);
+      expect(deuCerto(saida).falta.some((f) => f.includes("publicar"))).toBe(true);
     },
   );
 
@@ -329,7 +342,7 @@ describe("montar_pacote_do_nicho", () => {
     });
 
     if (saida.ok) throw new Error("devia recusar");
-    expect(saida.motivo).toBe("nicho_sem_prompt");
+    expect(falhou(saida).motivo).toBe("nicho_sem_prompt");
     expect(saida.detalhe).toContain("PRECISO CONFIRMAR");
     expect(capturaProposta.corpos).toEqual([]);
   });
@@ -411,14 +424,14 @@ describe("montar_pacote_do_nicho", () => {
 
     expect(saida.ok).toBe(true);
     // clinica-consulta-retomada e clinica-falta-remarcar NÃO pedem etapa → propõem
-    expect(saida.proposto.followups).toHaveLength(2);
-    expect(saida.proposto.followups.map((f) => f.modelo).sort()).toEqual([
+    expect(deuCerto(saida).proposto.followups).toHaveLength(2);
+    expect(deuCerto(saida).proposto.followups.map((f) => f.modelo).sort()).toEqual([
       "clinica-consulta-retomada",
       "clinica-falta-remarcar",
     ]);
     // clinica-exame-marcar e clinica-cirurgia-decisao pedem etapa → falta
-    expect(saida.falta.some((f) => f.includes("clinica-exame-marcar"))).toBe(true);
-    expect(saida.falta.some((f) => f.includes("clinica-cirurgia-decisao"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("clinica-exame-marcar"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("clinica-cirurgia-decisao"))).toBe(true);
   });
 
   it("agente falha (montagem indisponivel): indisponivel, sem proposta de follow-up", async () => {
@@ -436,7 +449,7 @@ describe("montar_pacote_do_nicho", () => {
     });
 
     expect(saida.ok).toBe(false);
-    expect(saida.motivo).toBe("sem_credencial");
+    expect(falhou(saida).motivo).toBe("sem_credencial");
     expect(capturaProposta.corpos).toEqual([]);
   });
 
@@ -453,7 +466,7 @@ describe("montar_pacote_do_nicho", () => {
       followups: ["clinica-consulta-retomada"],
     });
 
-    expect(saida.motivo).toBe("sem_credencial");
+    expect(falhou(saida).motivo).toBe("sem_credencial");
     expect(capturaProposta.corpos).toEqual([]);
   });
 });

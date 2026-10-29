@@ -1,18 +1,20 @@
 /**
  * Assistente interno, F2a (T17). Prova, na perspectiva do administrador: pedir
- * "monta o agente da minha clínica" no chat cria o agente como RASCUNHO.
+ * "monta o agente da minha clínica" no chat PROPÕE o agente; só o Aplicar o
+ * cria, como RASCUNHO.
  *
  * O PAR (`docs/doctrine/prova-em-par.md`) mede os DOIS lados com o mesmo
- * pedido: (a) pela tela, o cartão "Criado como rascunho" aparece com o nome
- * do agente; (b) fora do agente, `GET /api/v1/ai/agents` (mesma sessão)
- * mostra o agente existente, em estado rascunho, e nenhuma versão publicada
- * (`published_version_id` nulo). Só conta quando os dois concordam — se
+ * pedido: (a) pela tela, o cartão da proposta "Criar o agente …" aparece com
+ * o nome do agente e, depois do Aplicar, diz "Aplicada"; (b) fora do agente,
+ * `GET /api/v1/ai/agents` (mesma sessão) NÃO tem o agente antes do Aplicar e o
+ * tem depois, sem versão publicada (`published_version_id` nulo). Só conta quando os dois concordam — se
  * discordarem, o que se mediu foi o modelo, e o defeito continua onde estava.
  *
  * As respostas vêm do DUBLÊ do modelo (`INTERNAL_AGENT_RUN_STUB`): provam o
  * caminho painel → rota → ferramenta real → tela. A ferramenta
- * `montar_pacote_do_nicho` executa de verdade, com a sessão do admin (cria o
- * rascunho pela mesma rota da tela, com `requireRole` + `audit()` + RLS).
+ * `montar_pacote_do_nicho` executa de verdade, com a sessão do admin (propõe
+ * pela rota de propostas; o Aplicar cria pela mesma rota da tela, com
+ * `requireRole` + `audit()` + RLS).
  * Nenhum modelo real é chamado.
  *
  * Login como admin (papel mínimo da escrita — só `admin` tem as ferramentas
@@ -120,13 +122,16 @@ test("par: pedir o agente da clínica no chat PROPÕE o rascunho (tela × GET di
   await page.getByTestId("assistente-perguntar").click();
 
   // Lado (a) — pela tela: o cartão de PROPOSTA (não "criado" diretamente).
+  // Mesmo localizador de `assistente-propostas.spec.ts`: o cartão carregado tem `data-status`.
   const cartaoProposta = page
-    .getByTestId("assistente-cartao")
-    .filter({ hasText: /Criar o agente/ })
+    .locator('[data-testid^="proposta-"][data-status]', { hasText: /Criar o agente/ })
     .first();
   await expect(cartaoProposta).toBeVisible({ timeout: 60_000 });
-  const resumo = await cartaoProposta.textContent();
+  const resumo = (await cartaoProposta.textContent()) ?? "";
   expect(resumo, "o cartão propõe criar o agente").toContain("Criar o agente");
+  // O dublê do modelo dá ao agente um nome único ("Agente Clinica E2E <8 hex>").
+  const nomeDoAgente = resumo.match(/Agente Clinica E2E [0-9a-f]{8}/)?.[0];
+  expect(nomeDoAgente, "o cartão nomeia o agente proposto").toBeDefined();
 
   // Lado (b) — ANTES de aplicar: GET direto NÃO tem o agente (par).
   const antes = await page.request.get("/api/v1/ai/agents");
@@ -134,17 +139,16 @@ test("par: pedir o agente da clínica no chat PROPÕE o rascunho (tela × GET di
   const corpoAntes = (await antes.json()) as {
     data: Array<{ id: string; name: string }>;
   };
-  const nomeDoAgente = "Recepção Aurora";
   const agenteAntes = corpoAntes.data.find((a) => a.name === nomeDoAgente);
   expect(agenteAntes, `antes de aplicar, "${nomeDoAgente}" não existe no GET direto`).toBeUndefined();
 
   // Aplicar a proposta: clica no botão "Aplicar" do cartão.
-  const botaoAplicar = cartaoProposta.getByRole("button", { name: /aplicar/i });
+  const botaoAplicar = cartaoProposta.getByTestId(/^proposta-aplicar-/);
   await expect(botaoAplicar).toBeVisible();
   await botaoAplicar.click();
 
   // Depois de aplicar: o cartão reflete a decisão.
-  await expect(cartaoProposta).toContainText("Aplicada", { timeout: 60_000 });
+  await expect(cartaoProposta.getByTestId("proposta-prazo")).toHaveText("Aplicada", { timeout: 60_000 });
 
   // Lado (b) — DEPOIS de aplicar: GET direto TEM o agente, em rascunho,
   // sem nada publicado. Mesma sessão, mesmo escopo RLS.

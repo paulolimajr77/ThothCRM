@@ -7,7 +7,8 @@
  * `TypeError` (a rota só registrava o nome do erro). Este teste roda o MESMO
  * laço de ferramentas do `runModelCall` (`generateText` + `stopWhen` +
  * `guardServiceTools`) com o dublê e o catálogo real do admin, trocando só a
- * fronteira (as rotas por dentro), e exige que o cartão do agente nasça.
+ * fronteira (as rotas por dentro), e exige que o cartão da PROPOSTA nasça —
+ * o pacote propõe; o agente só existe depois do Aplicar.
  */
 // @vitest-environment node
 import { vi } from "vitest";
@@ -31,6 +32,7 @@ import { montarParaTeste } from "./auxiliar-de-teste";
 import { sobreporHandlersDeCriacao } from "./criar-rascunho-de-agente";
 import { sobreporHandlerDeInstalacao } from "./instalar-modelo-de-followup";
 import { sobreporHandlerDeListaDeAgentes } from "./montar-pacote-do-nicho";
+import { sobreporFontesDeProposta } from "./proposta-comum";
 
 function json(status: number, corpo: unknown): Response {
   return new Response(JSON.stringify(corpo), { status, headers: { "content-type": "application/json" } });
@@ -61,6 +63,13 @@ function ligar(): void {
     const corpo = (await req.json()) as { model_id?: string };
     return json(201, { data: { id: `ptr-${corpo.model_id}`, name: `Instalado ${corpo.model_id}`, status: "draft" } });
   });
+  let propostas = 0;
+  sobreporFontesDeProposta({
+    propostas: async () => {
+      propostas += 1;
+      return json(201, { data: { id: `prop-${propostas}`, resumo: "proposta de teste" } });
+    },
+  });
 }
 
 describe("o dublê do e2e conduz o par da clínica até o cartão do agente", () => {
@@ -68,9 +77,10 @@ describe("o dublê do e2e conduz o par da clínica até o cartão do agente", ()
     sobreporHandlerDeListaDeAgentes(null);
     sobreporHandlersDeCriacao(null);
     sobreporHandlerDeInstalacao(null);
+    sobreporFontesDeProposta(null);
   });
 
-  it("monta_pacote_do_nicho roda no laço do seam e anota o cartão", async () => {
+  it("monta_pacote_do_nicho roda no laço do seam e anota o cartão da proposta", async () => {
     ligar();
     const { ferramentas, coletor, ctx } = montarParaTeste("admin");
     const model = previewFixtureRegistry().anthropic!("chave", "modelo");
@@ -83,12 +93,10 @@ describe("o dublê do e2e conduz o par da clínica até o cartão do agente", ()
       stopWhen: stepCountIs(6),
     });
 
-    expect(resposta.text).toMatch(/Criei o rascunho do Agente Clinica E2E/);
-    const cartao = coletor.acoes.find(
-      (a): a is Extract<typeof a, { tipo: "artefato" }> => a.tipo === "artefato" && a.artefato === "agente",
-    );
-    expect(cartao?.href).toBe("/app/ai/agents/ag-novo");
-    expect(cartao?.nome).toMatch(/^Agente Clinica E2E /);
+    expect(resposta.text).toMatch(/Propus o rascunho do Agente Clinica E2E/);
+    expect(coletor.acoes).toContainEqual({ tipo: "proposta", id: "prop-1" });
+    // Nada foi criado direto: nenhum cartão de artefato no turno.
+    expect(coletor.acoes.some((a) => a.tipo === "artefato")).toBe(false);
   });
 
   /** O turno inteiro pelo seam (`runModelCall`), com a credencial da organização que o e2e semeia. */
@@ -119,10 +127,10 @@ describe("o dublê do e2e conduz o par da clínica até o cartão do agente", ()
     return { saida, coletor };
   }
 
-  it("pelo seam inteiro, com a credencial cifrada de verdade (o que o e2e passa a semear): o cartão nasce", async () => {
+  it("pelo seam inteiro, com a credencial cifrada de verdade (o que o e2e passa a semear): o cartão da proposta nasce", async () => {
     const { saida, coletor } = await turnoComCredencial({ ...cifrarChaveDeTeste("chave-de-teste-e2e") });
-    expect(saida.texto).toMatch(/Criei o rascunho do Agente Clinica E2E/);
-    expect(coletor.acoes.some((a) => a.tipo === "artefato" && a.artefato === "agente")).toBe(true);
+    expect(saida.texto).toMatch(/Propus o rascunho do Agente Clinica E2E/);
+    expect(coletor.acoes.some((a) => a.tipo === "proposta")).toBe(true);
   });
 
   it("A CAUSA do vermelho do CI: credencial semeada com um byte zero em cada campo derruba o turno com TypeError", async () => {
