@@ -379,7 +379,7 @@ export async function montarPacoteDoNicho(
 export function criarMontarPacoteDoNicho(entrada: EntradaDasFerramentas): Tool {
   return tool({
     description:
-      "PROPÕE o agente do nicho como rascunho e os follow-ups escolhidos; nada é criado até o administrador aprovar o cartão no chat. Nada publica, nada liga follow-up a agente, nada cria funil, nada apaga. Se o agente de mesmo nome já existe, não propõe o agente de novo e segue com os follow-ups. Se um follow-up do mesmo modelo já está instalado, não propõe de novo. `nicho` (os 7 têm prompt: clínica, imobiliária, serviços, infoproduto, loja, advocacia e genérico), `negocio` (nome do " +
+      "ISTO NÃO MONTA O NEGÓCIO INTEIRO: cobre só o agente e os follow-ups de catálogo. Funil, campos, motivos, memória, texto do agente e o resto você propõe, um cartão cada, com propor_mudanca pelo guia assistente-montar-negocio, NA MESMA resposta; 'sem modelo pronto' nunca é motivo para não propor. PROPÕE o agente do nicho como rascunho e os follow-ups escolhidos; nada é criado até o administrador aprovar o cartão no chat. Nada publica, nada liga follow-up a agente, nada cria funil, nada apaga. Se o agente de mesmo nome já existe, não propõe o agente de novo e segue com os follow-ups. Se um follow-up do mesmo modelo já está instalado, não propõe de novo. `nicho` (os 7 têm prompt: clínica, imobiliária, serviços, infoproduto, loja, advocacia e genérico), `negocio` (nome do " +
       "negócio), `descricao` (o que faz, em uma frase), `nome_do_agente` e `followups` (ids de " +
       "modelo DESTE nicho, opcionais).",
     inputSchema: esquemaDeEntrada,
