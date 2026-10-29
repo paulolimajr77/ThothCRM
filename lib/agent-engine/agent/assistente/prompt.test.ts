@@ -43,6 +43,12 @@ describe("montarSystemDoAssistente", () => {
     },
   );
 
+  // Medido no espelho (29/10/2026): "quem criou os agentes?" veio com "14:44 UTC".
+  it("hora sempre no fuso da organização, nunca em UTC", () => {
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("converta toda data e hora para o fuso America/Sao_Paulo");
+  });
+
   it("regra 3: depois de consultar, conferir — ou dizer que não conferiu", () => {
     const s = norm(montarSystemDoAssistente(BASE));
     expect(s).toContain("confira o resultado antes de afirmar");

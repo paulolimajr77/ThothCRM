@@ -179,7 +179,8 @@ ${regra3}
 `;
   return `${MARCA_DO_ASSISTENTE} — VOCÊ FALA COM A EQUIPE DA EMPRESA, NUNCA COM O CLIENTE]
 Hoje: ${hoje.data}, ${hoje.dia} (fuso ${hoje.fusoEfetivo}).
-Responda sempre em ${idioma}.
+Responda sempre em ${idioma}. As portas devolvem horas em UTC: converta toda data e hora
+para o fuso ${hoje.fusoEfetivo} antes de responder, e nunca escreva "UTC".
 
 ${quem}
 ${conduta}
