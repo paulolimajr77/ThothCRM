@@ -20,6 +20,7 @@ import {
   validarNomeDeFunil,
   type FunilEditavel,
 } from "@/lib/pipelines/pipeline-editing";
+import { diffParaUpdates, validarMapeamento } from "@/lib/leads/agent-mapping";
 import { chaveDeNome, slugDeNome } from "@/lib/leads/stage-editing";
 import { pipelineConfigPatchSchema } from "@/lib/schemas/settings";
 import { createClient } from "@/lib/supabase/server";
@@ -64,6 +65,10 @@ const etapaDoCorpoSchema = z
     is_lost: z.boolean().optional(),
     // A ordem já é a do array; quem manda `position` por hábito não leva 422.
     position: z.number().optional(),
+    // O que a tela de etapas também configura por coluna (mesmas réguas do PATCH da etapa).
+    win_probability: z.number().int().min(0).max(100).nullable().optional(),
+    expected_duration_hours: z.number().int().min(1).max(8760).nullable().optional(),
+    avisar_na_central: z.boolean().optional(),
   })
   .strict();
 
@@ -75,6 +80,11 @@ const bodySchema = z
     // de ganho e perda, vocabulário...) gravada na mesma escrita, com a MESMA régua
     // de `PATCH /pipelines/[id]/config`. Funil e configuração num cartão só.
     config: pipelineConfigPatchSchema.optional(),
+    // "Para onde o card vai em cada passo": cada passo do atendimento do agente →
+    // NOME da etapa (as etapas ainda não têm id). `null` = não mover.
+    agent_mapping: z
+      .record(z.string(), z.string().min(1).nullable())
+      .optional(),
     // Forma que quem monta o funil escreve por instinto (a mesma do banco):
     // `settings` com os campos/motivos e `vocabulary` ao lado. Aceitas como
     // sinônimo de `config`; se vierem os dois, `config` vence em cada chave.
@@ -107,9 +117,17 @@ function etapasIniciais(orgId: string, pipelineId: string, pedidas?: EtapaDoCorp
     ? pedidas.map((e) => {
         const slug = slugDeNome(e.name, slugs);
         slugs.push(slug);
-        return { name: e.name, slug, is_won: e.is_won === true, is_lost: e.is_lost === true };
+        return {
+          name: e.name,
+          slug,
+          is_won: e.is_won === true,
+          is_lost: e.is_lost === true,
+          win_probability: e.win_probability ?? null,
+          expected_duration_hours: e.expected_duration_hours ?? null,
+          avisar_na_central: e.avisar_na_central === true,
+        };
       })
-    : [...ETAPAS_INICIAIS];
+    : ETAPAS_INICIAIS.map((e) => ({ ...e, win_probability: null, expected_duration_hours: null, avisar_na_central: false }));
   // Funil sem etapa de ganho (ou de perda) não consegue fechar negócio: completa
   // com as etapas padrão, nos nomes de sempre, ao fim da lista.
   if (pedidas) {
@@ -120,7 +138,15 @@ function etapasIniciais(orgId: string, pipelineId: string, pedidas?: EtapaDoCorp
       if (etapas.some((e) => e[campo])) continue;
       const slug = slugDeNome(nome, slugs);
       slugs.push(slug);
-      etapas.push({ name: nome, slug, is_won: campo === "is_won", is_lost: campo === "is_lost" });
+      etapas.push({
+        name: nome,
+        slug,
+        is_won: campo === "is_won",
+        is_lost: campo === "is_lost",
+        win_probability: null,
+        expected_duration_hours: null,
+        avisar_na_central: false,
+      });
     }
   }
   return etapas.map((etapa, i) => ({
@@ -131,6 +157,9 @@ function etapasIniciais(orgId: string, pipelineId: string, pedidas?: EtapaDoCorp
     position: (i + 1) * 1000,
     is_won: etapa.is_won,
     is_lost: etapa.is_lost,
+    win_probability: etapa.win_probability,
+    expected_duration_hours: etapa.expected_duration_hours,
+    avisar_na_central: etapa.avisar_na_central,
   }));
 }
 
@@ -238,6 +267,65 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
+  // "Para onde o card vai em cada passo": traduz NOME de etapa em id (só agora
+  // existem) e grava com a mesma régua de `PUT /pipelines/[id]/agent-mapping`.
+  // Recusa → desfaz o funil inteiro.
+  if (parsed.data.agent_mapping) {
+    const desfazer = async () => {
+      await supabase.from("crm_stages").delete().eq("pipeline_id", pipelineId).eq("organization_id", orgId);
+      await supabase.from("crm_pipelines").delete().eq("id", pipelineId).eq("organization_id", orgId);
+    };
+    const { data: criadas } = await supabase
+      .from("crm_stages")
+      .select("id, name, is_won, is_lost, agent_stage_hint")
+      .eq("pipeline_id", pipelineId)
+      .eq("organization_id", orgId);
+    const etapasDoMapa = (criadas ?? []) as {
+      id: string;
+      name: string;
+      is_won: boolean;
+      is_lost: boolean;
+      agent_stage_hint: string | null;
+    }[];
+    const porNome = new Map(etapasDoMapa.map((e) => [chaveDeNome(e.name), e.id]));
+    const entrada: Record<string, string | null> = {};
+    const desconhecidas: string[] = [];
+    for (const [passo, nomeDaEtapa] of Object.entries(parsed.data.agent_mapping)) {
+      if (nomeDaEtapa === null) {
+        entrada[passo] = null;
+        continue;
+      }
+      const id = porNome.get(chaveDeNome(nomeDaEtapa));
+      if (id) entrada[passo] = id;
+      else desconhecidas.push(nomeDaEtapa);
+    }
+    const veredito = desconhecidas.length
+      ? { ok: false as const, erros: [`O mapeamento cita etapas que o funil não tem: ${desconhecidas.join(", ")}.`] }
+      : validarMapeamento(entrada, etapasDoMapa);
+    if (!veredito.ok) {
+      await desfazer();
+      return fail("unprocessable_entity", veredito.erros[0]!, 422, { requestId, details: { erros: veredito.erros } });
+    }
+    // Em sequência, liberações antes das ocupações (índice único imediato).
+    for (const u of diffParaUpdates(etapasDoMapa, entrada)) {
+      const { error: erroDoMapa } = await supabase
+        .from("crm_stages")
+        .update({ agent_stage_hint: u.hint })
+        .eq("id", u.stageId)
+        .eq("organization_id", orgId)
+        .eq("pipeline_id", pipelineId);
+      if (erroDoMapa) {
+        await desfazer();
+        return fail(
+          "internal_error",
+          `Não consegui gravar para onde o card vai em cada passo de «${name}». Nada foi salvo — tente de novo.`,
+          500,
+          { requestId, details: { erro: erroDoMapa.message } },
+        );
+      }
+    }
+  }
+
   // A configuração viaja junto: mesma gravação de `PATCH /pipelines/[id]/config`.
   // Falhou → desfaz o funil inteiro (nasce completo ou não nasce).
   const { settings: configEmSettings, vocabulary: configEmVocabulario } = parsed.data;
@@ -305,6 +393,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       is_default: row.is_default,
       etapas: parsed.data.stages ? parsed.data.stages.length : "iniciais",
       com_configuracao: !!config,
+      com_mapeamento_do_agente: !!parsed.data.agent_mapping,
     },
   });
 
