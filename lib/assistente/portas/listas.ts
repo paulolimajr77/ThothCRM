@@ -63,6 +63,8 @@ export const PREFIXOS_PROIBIDOS: readonly string[] = [
  * - `contacts/:id/avatar`: redireciona para uma URL assinada do storage.
  * - `conversations/:id/notes/:noteId/media`: redireciona para uma URL
  *   assinada do storage.
+ * - `leads/:id/attachments/:attachmentId/media`: redireciona para uma URL
+ *   assinada do documento anexado ao negócio.
  */
 export const PORTAS_PROIBIDAS: readonly string[] = [
   "team/invites",
@@ -70,6 +72,7 @@ export const PORTAS_PROIBIDAS: readonly string[] = [
   "contacts/export",
   "contacts/:id/avatar",
   "conversations/:id/notes/:noteId/media",
+  "leads/:id/attachments/:attachmentId/media",
 ] as const;
 
 /**

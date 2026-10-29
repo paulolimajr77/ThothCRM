@@ -29,10 +29,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { lerAnuncioDaMensagem, lerAnuncioDoContato, mesmoAnuncio } from "@/lib/leads/atribuicao-de-anuncio";
 import { prospectEnrichmentSchema } from "@/lib/prospecting/schema";
+import { lerPersonalizacao } from "@/lib/prospecting/personalizar";
 import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { ok, fail } from "@/lib/api/wrappers";
+import { atalhosDoFunil } from "@/lib/leads/atalhos-do-card";
 import { camposDoFunil, camposPorEscopo, settingsDoEmbed } from "@/lib/leads/campos-do-funil";
 import { motivosDoFunil } from "@/lib/leads/motivos-de-perda-do-funil";
 import { createClient } from "@/lib/supabase/server";
@@ -49,7 +51,7 @@ export const dynamic = "force-dynamic";
 // `stage_id` e as `etapas` do funil alimentam o seletor de etapa do painel: mover
 // o negócio (ex.: "Pedido confirmado") direto da conversa, sem ir ao quadro.
 const LEAD_COLS =
-  "id, title, status, value_cents, currency, updated_at, pipeline_id, stage_id, custom_fields, crm_pipelines!inner(name, settings, is_archived, etapas:crm_stages!crm_stages_pipeline_id_fkey(id, name, position, is_won, is_lost, is_archived)), crm_stages!crm_leads_stage_id_fkey(name)";
+  "id, title, status, value_cents, recurring_value_cents, recurring_period, recurring_months, currency, updated_at, pipeline_id, stage_id, custom_fields, crm_pipelines!inner(name, settings, is_archived, etapas:crm_stages!crm_stages_pipeline_id_fkey(id, name, position, is_won, is_lost, is_archived)), crm_stages!crm_leads_stage_id_fkey(name)";
 const ORDER_COLS = "id, external_id, status, total_cents, currency, created_at";
 /** Acompanha o que a timeline mostra — `reason` e `actor_kind` inclusive. */
 /**
@@ -101,16 +103,35 @@ export async function GET(
   const enrichment = await (async () => {
     if (contactScope.is_anonymized) return { enrichment: null, enrichment_error: false };
     try {
-      const result = await createAdminClient().from("prospecting_candidates")
+      const admin = createAdminClient();
+      const candidato = await admin.from("prospecting_candidates")
         .select("data, created_at")
         .eq("organization_id", contactScope.organization_id).eq("contact_id", contactId)
         .order("created_at", { ascending: false }).limit(1).maybeSingle();
-      if (result.error) return { enrichment: null, enrichment_error: true };
-      if (!result.data) return { enrichment: null, enrichment_error: false };
-      const parsed = prospectEnrichmentSchema.safeParse(result.data.data);
-      return parsed.success
-        ? { enrichment: { ...parsed.data, collected_at: result.data.created_at }, enrichment_error: false }
-        : { enrichment: null, enrichment_error: true };
+      if (candidato.error) return { enrichment: null, enrichment_error: true };
+      if (!candidato.data) return { enrichment: null, enrichment_error: false };
+      const parsed = prospectEnrichmentSchema.safeParse(candidato.data.data);
+      if (!parsed.success) return { enrichment: null, enrichment_error: true };
+      // Personalização só quando há auditoria para personalizar: sem `site`
+      // não há vocabulário a sobrescrever, e a query a mais sairia de graça
+      // em todo painel aberto (é o caminho quente do inbox).
+      let personalizacao = null;
+      if (parsed.data.site) {
+        const organizacao = await admin.from("organizations")
+          .select("settings")
+          .eq("id", contactScope.organization_id)
+          .maybeSingle();
+        if (!organizacao.error) {
+          personalizacao = lerPersonalizacao(
+            (organizacao.data as { settings?: unknown } | null)?.settings,
+          );
+        }
+      }
+      return {
+        enrichment: { ...parsed.data, collected_at: candidato.data.created_at },
+        enrichment_error: false,
+        personalizacao,
+      };
     } catch {
       return { enrichment: null, enrichment_error: true };
     }
@@ -240,6 +261,13 @@ function comCamposDoFunil(row: Record<string, unknown>) {
     etapas_do_funil: etapasDoEmbed(crm_pipelines),
     // O painel da conversa não tem o quadro em cache; sem isto a janela de perda cairia no padrão do produto.
     motivos_de_perda: motivosDoFunil(settingsDoEmbed(crm_pipelines)),
+    // OS ATALHOS DO CARD (#3487). Vai o MODELO de link como está no `settings`,
+    // não o link montado: quem monta é o navegador de quem clica, com os dados
+    // que essa pessoa já vê (`encodeURIComponent` por valor, allowlist de
+    // esquema na renderização). Montar aqui exigiria trazer telefone e campos
+    // para o servidor só para devolver string — e o link pronto no JSON é dado
+    // do cliente viajando a mais, sem uso.
+    atalhos: atalhosDoFunil(settingsDoEmbed(crm_pipelines)),
   };
 }
 

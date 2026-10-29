@@ -59,7 +59,7 @@ describe("portaDeLeituraPermitida", () => {
     expect(portaDeLeituraPermitida("settings/api-tokens")).toBe(false);
   });
 
-  it("as 8 portas com efeito colateral não são legíveis", () => {
+  it("as 9 portas com efeito colateral não são legíveis", () => {
     const proibidas = [
       "agenda/google/connect",
       "agenda/google/callback",
@@ -69,13 +69,14 @@ describe("portaDeLeituraPermitida", () => {
       "contacts/export",
       "contacts/:id/avatar",
       "conversations/:id/notes/:noteId/media",
+      "leads/:id/attachments/:attachmentId/media",
     ];
     for (const id of proibidas) {
       expect(portaDeLeituraPermitida(id)).toBe(false);
     }
   });
 
-  it("CARREGADORES não tem nenhuma das 8 portas com efeito colateral", () => {
+  it("CARREGADORES não tem nenhuma das 9 portas com efeito colateral", () => {
     const proibidas = [
       "agenda/google/connect",
       "agenda/google/callback",
@@ -85,6 +86,7 @@ describe("portaDeLeituraPermitida", () => {
       "contacts/export",
       "contacts/:id/avatar",
       "conversations/:id/notes/:noteId/media",
+      "leads/:id/attachments/:attachmentId/media",
     ];
     for (const id of proibidas) {
       expect(CARREGADORES).not.toHaveProperty(id);

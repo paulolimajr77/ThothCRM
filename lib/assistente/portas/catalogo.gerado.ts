@@ -78,6 +78,22 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "",
   },
   {
+    id: "agenda/aviso",
+    caminho: "agenda/aviso",
+    metodos: ["GET", "PUT"],
+    parametros: [],
+    area: "agenda",
+    resumo: "GET/PUT /api/v1/agenda/aviso — a configuração do aviso de agendamento no\n WhatsApp do dono (migration 0753).",
+  },
+  {
+    id: "agenda/aviso/teste",
+    caminho: "agenda/aviso/teste",
+    metodos: ["POST"],
+    parametros: [],
+    area: "agenda",
+    resumo: "POST /api/v1/agenda/aviso/teste — \"enviar teste\" do aviso de agendamento.",
+  },
+  {
     id: "agenda/configuracao",
     caminho: "agenda/configuracao",
     metodos: ["GET", "PATCH"],
@@ -140,6 +156,22 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     parametros: [],
     area: "agenda",
     resumo: "GET /api/v1/agenda/pessoas — quem tem agenda, para a Agenda listar as pessoas.",
+  },
+  {
+    id: "agenda/servicos",
+    caminho: "agenda/servicos",
+    metodos: ["GET", "POST"],
+    parametros: [],
+    area: "agenda",
+    resumo: "",
+  },
+  {
+    id: "agenda/servicos/atualizar",
+    caminho: "agenda/servicos/atualizar",
+    metodos: ["POST"],
+    parametros: [],
+    area: "agenda",
+    resumo: "",
   },
   {
     id: "agenda/tipos",
@@ -400,10 +432,10 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
   {
     id: "ai/cases/alerta",
     caminho: "ai/cases/alerta",
-    metodos: ["GET", "PUT"],
+    metodos: ["GET", "PUT", "DELETE"],
     parametros: [],
     area: "ai",
-    resumo: "GET/PUT /api/v1/ai/cases/alerta — a configuração do aviso de caso no WhatsApp\n da equipe (migration 0292).",
+    resumo: "GET/PUT/DELETE /api/v1/ai/cases/alerta — a configuração do aviso de caso no\n WhatsApp da equipe (migration 0292).",
   },
   {
     id: "ai/cases/alerta/teste",
@@ -662,6 +694,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "",
   },
   {
+    id: "ai/knowledge/sources/:id/conteudo",
+    caminho: "ai/knowledge/sources/[id]/conteudo",
+    metodos: ["GET"],
+    parametros: ["id"],
+    area: "ai",
+    resumo: "GET /api/v1/ai/knowledge/sources/[id]/conteudo\n  O CONTEÚDO LEGÍVEL DE UM MATERIAL DO ACERVO.",
+  },
+  {
     id: "ai/knowledge/sources/:id/reindex",
     caminho: "ai/knowledge/sources/[id]/reindex",
     metodos: ["POST"],
@@ -886,6 +926,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "",
   },
   {
+    id: "ai/turn-traces",
+    caminho: "ai/turn-traces",
+    metodos: ["GET"],
+    parametros: [],
+    area: "ai",
+    resumo: "GET /api/v1/ai/turn-traces — leitor técnico parcial do traço do turno (#3201).",
+  },
+  {
     id: "ai/usage",
     caminho: "ai/usage",
     metodos: ["GET"],
@@ -1070,6 +1118,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "GET /api/v1/campaigns/:id/recipients — quem recebeu, quem não, e por quê.",
   },
   {
+    id: "campaigns/modelos",
+    caminho: "campaigns/modelos",
+    metodos: ["GET"],
+    parametros: [],
+    area: "campaigns",
+    resumo: "GET /api/v1/campaigns/modelos?channel_session_id=… — o que uma campanha pode\n mandar por ESTE número (migration 0710, issue #1330 fatia 4).",
+  },
+  {
     id: "campaigns/preview",
     caminho: "campaigns/preview",
     metodos: ["POST"],
@@ -1140,6 +1196,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     parametros: ["id"],
     area: "channel-sessions",
     resumo: "GET/PUT /api/v1/channel-sessions/[id]/groups — os grupos do número e a chave de cada um.",
+  },
+  {
+    id: "channel-sessions/:id/historico",
+    caminho: "channel-sessions/[id]/historico",
+    metodos: ["GET", "POST"],
+    parametros: ["id"],
+    area: "channel-sessions",
+    resumo: "",
   },
   {
     id: "channel-sessions/:id/name",
@@ -1347,7 +1411,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["GET"],
     parametros: [],
     area: "contact-tags",
-    resumo: "GET /api/v1/contact-tags — tags em uso nos contatos da org ativa.",
+    resumo: "Sugestões do contato: sem busca mantém compatibilidade; com busca lê a página do\n vocabulário curado e em uso, com a sessão e a RLS.",
   },
   {
     id: "contacts",
@@ -1380,6 +1444,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     parametros: ["id"],
     area: "contacts",
     resumo: "PATCH /api/v1/contacts/[id]/carteira — põe/tira o cliente na carteira de um\n vendedor (issue #2591, regra 1/5).",
+  },
+  {
+    id: "contacts/:id/compras",
+    caminho: "contacts/[id]/compras",
+    metodos: ["GET"],
+    parametros: ["id"],
+    area: "contacts",
+    resumo: "GET /api/v1/contacts/[id]/compras — as \"Últimas compras\" do contato (#3179).",
   },
   {
     id: "contacts/:id/crm-summary",
@@ -1486,6 +1558,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "",
   },
   {
+    id: "contacts/import/agenda",
+    caminho: "contacts/import/agenda",
+    metodos: ["POST"],
+    parametros: [],
+    area: "contacts",
+    resumo: "POST /api/v1/contacts/import/agenda — o \"Sincronizar agenda do celular\" (#2736).",
+  },
+  {
     id: "contacts/merge",
     caminho: "contacts/merge",
     metodos: ["POST"],
@@ -1523,7 +1603,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["GET"],
     parametros: ["id"],
     area: "conversations",
-    resumo: "GET /api/v1/conversations/[id]/aviso-de-mensagem — \"devo avisar ESTA pessoa\n da mensagem que acabou de chegar nesta conversa?\" → `{ avisar: boolean }`.",
+    resumo: "GET /api/v1/conversations/[id]/aviso-de-mensagem — \"devo avisar ESTA pessoa\n da mensagem que acabou de chegar nesta conversa?\" → `{ avisar, conteudo }`.",
   },
   {
     id: "conversations/:id/claim",
@@ -1622,6 +1702,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "",
   },
   {
+    id: "conversations/:id/participants",
+    caminho: "conversations/[id]/participants",
+    metodos: ["GET", "POST", "DELETE"],
+    parametros: ["id"],
+    area: "conversations",
+    resumo: "",
+  },
+  {
     id: "conversations/:id/passagens",
     caminho: "conversations/[id]/passagens",
     metodos: ["GET"],
@@ -1710,6 +1798,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "",
   },
   {
+    id: "conversions/meta-clicks/:id/retry",
+    caminho: "conversions/meta-clicks/[id]/retry",
+    metodos: ["POST"],
+    parametros: ["id"],
+    area: "conversions",
+    resumo: "",
+  },
+  {
     id: "demandas/:id",
     caminho: "demandas/[id]",
     metodos: ["PATCH"],
@@ -1740,6 +1836,22 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     parametros: ["id"],
     area: "external-db",
     resumo: "GET /api/v1/external-db/connections/:id/catalog (admin)\n  O catálogo COMPLETO do banco de origem, ignorando as fontes liberadas.",
+  },
+  {
+    id: "external-db/connections/:id/recipes",
+    caminho: "external-db/connections/[id]/recipes",
+    metodos: ["GET", "PUT"],
+    parametros: ["id"],
+    area: "external-db",
+    resumo: "",
+  },
+  {
+    id: "external-db/connections/:id/recipes/preview",
+    caminho: "external-db/connections/[id]/recipes/preview",
+    metodos: ["POST"],
+    parametros: ["id"],
+    area: "external-db",
+    resumo: "",
   },
   {
     id: "external-db/connections/:id/schemas",
@@ -1934,6 +2046,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "",
   },
   {
+    id: "leads/:id/attachments",
+    caminho: "leads/[id]/attachments",
+    metodos: ["GET", "POST", "DELETE"],
+    parametros: ["id"],
+    area: "leads",
+    resumo: "",
+  },
+  {
     id: "leads/:id/clone",
     caminho: "leads/[id]/clone",
     metodos: ["GET", "POST"],
@@ -1944,10 +2064,10 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
   {
     id: "leads/:id/contatos-relacionados",
     caminho: "leads/[id]/contatos-relacionados",
-    metodos: ["GET"],
+    metodos: ["GET", "POST", "DELETE"],
     parametros: ["id"],
     area: "leads",
-    resumo: "GET /api/v1/leads/[id]/contatos-relacionados — a F1 da #1506.",
+    resumo: "/api/v1/leads/[id]/contatos-relacionados — as outras pessoas do negócio.",
   },
   {
     id: "leads/:id/conversion/retry",
@@ -1956,6 +2076,22 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     parametros: ["id"],
     area: "leads",
     resumo: "",
+  },
+  {
+    id: "leads/:id/field-proposals",
+    caminho: "leads/[id]/field-proposals",
+    metodos: ["GET"],
+    parametros: ["id"],
+    area: "leads",
+    resumo: "GET /api/v1/leads/[id]/field-proposals — a FILA de revisão do card (issue #3316).",
+  },
+  {
+    id: "leads/:id/field-proposals/:pid",
+    caminho: "leads/[id]/field-proposals/[pid]",
+    metodos: ["POST"],
+    parametros: ["id", "pid"],
+    area: "leads",
+    resumo: "POST /api/v1/leads/[id]/field-proposals/[pid] — o HUMANO decide sobre o que a\n IA leu num documento (issue #3316): `accept` grava no card, `dismiss` recusa.",
   },
   {
     id: "leads/:id/lose",
@@ -2094,6 +2230,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "GET /api/v1/message-templates/:id/midias/:indice — devolve OS BYTES de uma\n imagem do template (#2526).",
   },
   {
+    id: "message-templates/:id/ordem",
+    caminho: "message-templates/[id]/ordem",
+    metodos: ["PUT"],
+    parametros: ["id"],
+    area: "message-templates",
+    resumo: "",
+  },
+  {
     id: "messages",
     caminho: "messages",
     metodos: ["POST"],
@@ -2110,12 +2254,28 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "Edição e revogação de mensagens de texto enviadas pelo próprio atendente.",
   },
   {
+    id: "messages/:id/forward",
+    caminho: "messages/[id]/forward",
+    metodos: ["POST"],
+    parametros: ["id"],
+    area: "messages",
+    resumo: "POST /api/v1/messages/[id]/forward — encaminha uma mensagem para outra\n conversa da organização (#2835).",
+  },
+  {
     id: "messages/:id/hide",
     caminho: "messages/[id]/hide",
     metodos: ["POST", "DELETE"],
     parametros: ["id"],
     area: "messages",
     resumo: "Ocultar uma mensagem recebida apenas no CRM, sem prometer exclusão no WhatsApp do cliente.",
+  },
+  {
+    id: "messages/:id/retry",
+    caminho: "messages/[id]/retry",
+    metodos: ["POST"],
+    parametros: ["id"],
+    area: "messages",
+    resumo: "POST /api/v1/messages/{id}/retry — envia de novo uma mensagem que falhou, NA MESMA LINHA.",
   },
   {
     id: "metrics/atrito",
@@ -2156,6 +2316,22 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     parametros: [],
     area: "metrics",
     resumo: "GET /api/v1/metrics/lost — relatório \"Perdas\" (issue #1537).",
+  },
+  {
+    id: "metrics/metas",
+    caminho: "metrics/metas",
+    metodos: ["GET"],
+    parametros: [],
+    area: "metrics",
+    resumo: "GET /api/v1/metrics/metas — a meta do mês e o progresso contra ela\n (issue #3025, fatia 1).",
+  },
+  {
+    id: "metrics/serie",
+    caminho: "metrics/serie",
+    metodos: ["GET"],
+    parametros: [],
+    area: "metrics",
+    resumo: "GET /api/v1/metrics/serie — a evolução dos ganhos no tempo (issue #3024, fatia 1).",
   },
   {
     id: "modulos",
@@ -2260,6 +2436,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     parametros: ["id"],
     area: "pipelines",
     resumo: "GET /api/v1/pipelines/[id]/forecast — previsão ponderada de UM funil (issue #1535).",
+  },
+  {
+    id: "pipelines/:id/leads",
+    caminho: "pipelines/[id]/leads",
+    metodos: ["GET"],
+    parametros: ["id"],
+    area: "pipelines",
+    resumo: "GET /api/v1/pipelines/[id]/leads?page=&per_page=\n  A página da LISTA do funil (#3172, fatia 1): uma fatia dos negócios do funil,\n lida do banco com `range`, mais o `meta` que diz qual página é e se há\n próxima (`page`, `per_page`, `has_more` — sem total).",
   },
   {
     id: "pipelines/:id/stages",
@@ -2494,6 +2678,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "GET /api/v1/reports/tags — o RELATÓRIO POR ETIQUETA (fatia F1 da #1833):\n qual assunto ocupou a operação neste período, e quanto tempo ele esperou.",
   },
   {
+    id: "settings/agenda-apresentacao",
+    caminho: "settings/agenda-apresentacao",
+    metodos: ["PATCH"],
+    parametros: [],
+    area: "settings",
+    resumo: "",
+  },
+  {
     id: "settings/art15",
     caminho: "settings/art15",
     metodos: ["PATCH"],
@@ -2548,6 +2740,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     parametros: [],
     area: "settings",
     resumo: "",
+  },
+  {
+    id: "settings/prospeccao",
+    caminho: "settings/prospeccao",
+    metodos: ["GET", "PATCH"],
+    parametros: [],
+    area: "settings",
+    resumo: "GET   /api/v1/settings/prospeccao — personalização da prospecção (voz e vocabulário).",
   },
   {
     id: "settings/routing",
@@ -2811,6 +3011,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
     const mod = await import("@/app/api/v1/agenda/agendamentos/[id]/route");
     return { GET: mod.GET };
   },
+  "agenda/aviso": async () => {
+    const mod = await import("@/app/api/v1/agenda/aviso/route");
+    return { GET: mod.GET };
+  },
   "agenda/configuracao": async () => {
     const mod = await import("@/app/api/v1/agenda/configuracao/route");
     return { GET: mod.GET };
@@ -2833,6 +3037,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
   },
   "agenda/pessoas": async () => {
     const mod = await import("@/app/api/v1/agenda/pessoas/route");
+    return { GET: mod.GET };
+  },
+  "agenda/servicos": async () => {
+    const mod = await import("@/app/api/v1/agenda/servicos/route");
     return { GET: mod.GET };
   },
   "agenda/tipos": async () => {
@@ -2971,6 +3179,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
     const mod = await import("@/app/api/v1/ai/knowledge/sources/[id]/route");
     return { GET: mod.GET };
   },
+  "ai/knowledge/sources/:id/conteudo": async () => {
+    const mod = await import("@/app/api/v1/ai/knowledge/sources/[id]/conteudo/route");
+    return { GET: mod.GET };
+  },
   "ai/knowledge/sources/:id/trechos": async () => {
     const mod = await import("@/app/api/v1/ai/knowledge/sources/[id]/trechos/route");
     return { GET: mod.GET };
@@ -3033,6 +3245,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
   },
   "ai/style-adjustments": async () => {
     const mod = await import("@/app/api/v1/ai/style-adjustments/route");
+    return { GET: mod.GET };
+  },
+  "ai/turn-traces": async () => {
+    const mod = await import("@/app/api/v1/ai/turn-traces/route");
     return { GET: mod.GET };
   },
   "ai/usage": async () => {
@@ -3099,6 +3315,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
     const mod = await import("@/app/api/v1/campaigns/[id]/recipients/route");
     return { GET: mod.GET };
   },
+  "campaigns/modelos": async () => {
+    const mod = await import("@/app/api/v1/campaigns/modelos/route");
+    return { GET: mod.GET };
+  },
   "channel-schedules": async () => {
     const mod = await import("@/app/api/v1/channel-schedules/route");
     return { GET: mod.GET };
@@ -3125,6 +3345,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
   },
   "channel-sessions/:id/groups": async () => {
     const mod = await import("@/app/api/v1/channel-sessions/[id]/groups/route");
+    return { GET: mod.GET };
+  },
+  "channel-sessions/:id/historico": async () => {
+    const mod = await import("@/app/api/v1/channel-sessions/[id]/historico/route");
     return { GET: mod.GET };
   },
   "channel-sessions/:id/qr": async () => {
@@ -3187,6 +3411,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
     const mod = await import("@/app/api/v1/contacts/[id]/carteira/route");
     return { GET: mod.GET };
   },
+  "contacts/:id/compras": async () => {
+    const mod = await import("@/app/api/v1/contacts/[id]/compras/route");
+    return { GET: mod.GET };
+  },
   "contacts/:id/crm-summary": async () => {
     const mod = await import("@/app/api/v1/contacts/[id]/crm-summary/route");
     return { GET: mod.GET };
@@ -3247,6 +3475,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
     const mod = await import("@/app/api/v1/conversations/[id]/notes/route");
     return { GET: mod.GET };
   },
+  "conversations/:id/participants": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/participants/route");
+    return { GET: mod.GET };
+  },
   "conversations/:id/passagens": async () => {
     const mod = await import("@/app/api/v1/conversations/[id]/passagens/route");
     return { GET: mod.GET };
@@ -3269,6 +3501,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
   },
   "external-db/connections/:id/catalog": async () => {
     const mod = await import("@/app/api/v1/external-db/connections/[id]/catalog/route");
+    return { GET: mod.GET };
+  },
+  "external-db/connections/:id/recipes": async () => {
+    const mod = await import("@/app/api/v1/external-db/connections/[id]/recipes/route");
     return { GET: mod.GET };
   },
   "external-db/connections/:id/schemas": async () => {
@@ -3327,12 +3563,20 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
     const mod = await import("@/app/api/v1/lead-captures/route");
     return { GET: mod.GET };
   },
+  "leads/:id/attachments": async () => {
+    const mod = await import("@/app/api/v1/leads/[id]/attachments/route");
+    return { GET: mod.GET };
+  },
   "leads/:id/clone": async () => {
     const mod = await import("@/app/api/v1/leads/[id]/clone/route");
     return { GET: mod.GET };
   },
   "leads/:id/contatos-relacionados": async () => {
     const mod = await import("@/app/api/v1/leads/[id]/contatos-relacionados/route");
+    return { GET: mod.GET };
+  },
+  "leads/:id/field-proposals": async () => {
+    const mod = await import("@/app/api/v1/leads/[id]/field-proposals/route");
     return { GET: mod.GET };
   },
   "leads/:id/timeline": async () => {
@@ -3383,6 +3627,14 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
     const mod = await import("@/app/api/v1/metrics/lost/route");
     return { GET: mod.GET };
   },
+  "metrics/metas": async () => {
+    const mod = await import("@/app/api/v1/metrics/metas/route");
+    return { GET: mod.GET };
+  },
+  "metrics/serie": async () => {
+    const mod = await import("@/app/api/v1/metrics/serie/route");
+    return { GET: mod.GET };
+  },
   "modulos": async () => {
     const mod = await import("@/app/api/v1/modulos/route");
     return { GET: mod.GET };
@@ -3421,6 +3673,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
   },
   "pipelines/:id/forecast": async () => {
     const mod = await import("@/app/api/v1/pipelines/[id]/forecast/route");
+    return { GET: mod.GET };
+  },
+  "pipelines/:id/leads": async () => {
+    const mod = await import("@/app/api/v1/pipelines/[id]/leads/route");
     return { GET: mod.GET };
   },
   "pipelines/:id/stages": async () => {
@@ -3505,6 +3761,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
   },
   "settings/proposals": async () => {
     const mod = await import("@/app/api/v1/settings/proposals/route");
+    return { GET: mod.GET };
+  },
+  "settings/prospeccao": async () => {
+    const mod = await import("@/app/api/v1/settings/prospeccao/route");
     return { GET: mod.GET };
   },
   "settings/routing": async () => {

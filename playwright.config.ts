@@ -123,10 +123,7 @@ const BASE_URL = `http://localhost:${PORT}`;
 export default defineConfig({
   testDir: "./tests/e2e",
   globalTeardown: "./tests/e2e/global-teardown.ts",
-  // Repositório PRIVADO: o runner gratuito (2 vCPU) é ~2x mais lento; a main do Rafael falha as
-  // mesmas specs ali com o expect de 5 s e o teste de 30 s (medido no PR de diagnóstico #5).
-  timeout: 60_000,
-  expect: { timeout: 15_000 },
+  timeout: 30_000,
   fullyParallel: false,
   /**
    * UM worker. `fullyParallel: false` serializa apenas DENTRO de cada arquivo —
@@ -172,6 +169,12 @@ export default defineConfig({
     // encurta as animações para 0.01ms e a suíte volta ao comportamento
     // instantâneo para o qual as specs foram escritas.
     contextOptions: { reducedMotion: "reduce" },
+    // O app registra um service worker em todo /app (ADR-0006), e uma navegação
+    // respondida por ele não passa por `page.route`/`context.route` — specs que
+    // interceptam navegação (`suporte-temporario`) deixariam de interceptar.
+    // Bloqueado aqui, a suíte mede o caminho de rede de sempre; a spec que prova
+    // o SW (`app-no-celular`) libera com `serviceWorkers: "allow"`.
+    serviceWorkers: "block",
   },
   webServer: {
     // Produção (`next build` antes!): dev-server compila por rota (40-80s) e
