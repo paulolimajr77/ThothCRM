@@ -177,8 +177,17 @@ export async function setSkillPointer(
  * movido ⇒ próximo run já vê a versão nova, sem restart. Ordem ESTÁVEL por nome (o índice
  * injetado é byte-determinístico — o prefixo de cache F2-17 depende disso). Se um tenant e
  * a plataforma têm skill de mesmo nome, a do tenant vence (override local).
+ *
+ * Os guias do assistente interno (`assistente-*`) ficam de fora por padrão: são da
+ * equipe, nunca do agente que fala com o cliente. Só o assistente os pede.
  */
-export async function loadSkills(db: Queryable, tenantId: string): Promise<LoadedSkill[]> {
+export const PREFIXO_DOS_GUIAS_DO_ASSISTENTE = 'assistente-';
+
+export async function loadSkills(
+  db: Queryable,
+  tenantId: string,
+  opcoes: { comGuiasDoAssistente?: boolean } = {},
+): Promise<LoadedSkill[]> {
   const { rows } = await db.query<{
     id: string;
     organization_id: string | null;
@@ -197,6 +206,9 @@ export async function loadSkills(db: Queryable, tenantId: string): Promise<Loade
   // tenant vence plataforma no mesmo nome; ordem final estável por nome (prefixo estável).
   const byName = new Map<string, LoadedSkill>();
   for (const r of rows) {
+    if (opcoes.comGuiasDoAssistente !== true && r.name.startsWith(PREFIXO_DOS_GUIAS_DO_ASSISTENTE)) {
+      continue;
+    }
     if (!byName.has(r.name) || r.organization_id !== null) {
       byName.set(r.name, {
         versionId: r.id,

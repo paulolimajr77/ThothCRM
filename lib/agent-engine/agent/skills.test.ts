@@ -17,6 +17,26 @@ describe('loadSkills', () => {
     const skills = await loadSkills(db, 'org1');
     expect(skills[0]?.versionId).toBe('ver-1');
   });
+
+  // Os guias do assistente interno são skills de PLATAFORMA (organization_id null):
+  // sem o corte, o agente que fala com o cliente de TODA organização os recebia
+  // no índice — medido na VPS em 24/10/2026 (28 ativações numa org, 11 em outra).
+  const rowsComGuia = [
+    { organization_id: null, id: 'ver-1', name: 'frete', description: 'd', body: 'b', matcher: { any_keywords: ['frete'] } },
+    { organization_id: null, id: 'ver-2', name: 'assistente-metricas', description: 'd', body: 'b', matcher: { any_keywords: ['fila'] } },
+  ];
+
+  it('o agente de atendimento (padrão) não recebe os guias do assistente interno', async () => {
+    const db = { query: vi.fn().mockResolvedValue({ rows: rowsComGuia }) } as never;
+    const skills = await loadSkills(db, 'org1');
+    expect(skills.map((s) => s.name)).toEqual(['frete']);
+  });
+
+  it('só quem pede os guias do assistente os recebe', async () => {
+    const db = { query: vi.fn().mockResolvedValue({ rows: rowsComGuia }) } as never;
+    const skills = await loadSkills(db, 'org1', { comGuiasDoAssistente: true });
+    expect(skills.map((s) => s.name)).toEqual(['assistente-metricas', 'frete']);
+  });
 });
 
 describe('recentInboundSignal', () => {

@@ -322,7 +322,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       acoesDoComando = saida.acoes;
     }
     if (comando === null) {
-      const skills = (await loadSkills(pool, orgId)).filter((s) =>
+      const skills = (await loadSkills(pool, orgId, { comGuiasDoAssistente: true })).filter((s) =>
         s.name.startsWith("assistente-"),
       );
       // `turno`: a conversa e o turno desta pergunta, para as ferramentas `propor_*`
