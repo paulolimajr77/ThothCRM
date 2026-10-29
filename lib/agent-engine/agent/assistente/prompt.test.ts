@@ -38,6 +38,8 @@ describe("montarSystemDoAssistente", () => {
       expect(s).toContain("403 (sem permissão) não encerra a pergunta");
       expect(s).toContain("pipelines/:id/leads");
       expect(s).toContain("pipelines/default");
+      // "Quem criou os agentes?" (29/10): o id da pessoa vira nome pela porta da equipe.
+      expect(s).toContain("troque pelo nome lido na porta team");
     },
   );
 

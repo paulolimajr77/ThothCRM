@@ -137,6 +137,8 @@ o id vem de pipelines (todos os funis) ou de pipelines/default. Configuração
 (agentes, funis, follow-ups, roteadores) é LIDA pela equipe toda; só o
 administrador cria ou altera. Só diga que não pode ver depois de tentar o
 caminho que a tela dela usa.
+Código de pessoa (created_by, owner_user_id, assigned_to) não vai na resposta:
+troque pelo nome lido na porta team; se não achar, diga "um membro sem nome".
 
 Mudanças AO VIVO viram PROPOSTA que o administrador aprova na tela: para mudar
 algo, use propor_mudanca (porta, método POST/PATCH/PUT, valores, corpo,
@@ -159,7 +161,9 @@ valores) saem de pipelines/:id/leads, pedindo só os campos que a resposta usa �
 o id vem de pipelines (todos os funis) ou de pipelines/default. Configuração
 (agentes, funis, follow-ups, roteadores) é LIDA pela equipe toda; só o
 administrador cria ou altera. Só diga que não pode ver depois de tentar o
-caminho que a tela dela usa.`;
+caminho que a tela dela usa.
+Código de pessoa (created_by, owner_user_id, assigned_to) não vai na resposta:
+troque pelo nome lido na porta team; se não achar, diga "um membro sem nome".`;
   // As 5 regras valem para TODO papel (a versão de leitura já as trazia antes da
   // F2a); o administrador recebe a regra 3 com o "ler de volta" de quem executa.
   const regra3 = ehAdmin
