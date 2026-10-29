@@ -165,11 +165,11 @@ describe("POST /api/v1/pipelines", () => {
     expect(db.escritas).toEqual([]);
   });
 
-  it("`settings` solto no corpo (o formato certo é `config`) → 422, nenhuma escrita", async () => {
+  it("`settings` inválido (campo sem rótulo) também é a configuração → 422, nenhuma escrita", async () => {
     authOk();
     const db = makeDb({ pipelines: umFunil() });
     const { POST } = await import("./route");
-    const res = await POST(reqPost({ name: "Oficina", settings: { fields: [] } }));
+    const res = await POST(reqPost({ name: "Oficina", settings: { fields: [{ key: "placa", type: "text" }] } }));
     expect(res.status).toBe(422);
     expect(db.escritas).toEqual([]);
   });

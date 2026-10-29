@@ -73,6 +73,11 @@ const bodySchema = z
     // de ganho e perda, vocabulário...) gravada na mesma escrita, com a MESMA régua
     // de `PATCH /pipelines/[id]/config`. Funil e configuração num cartão só.
     config: pipelineConfigPatchSchema.optional(),
+    // Forma que quem monta o funil escreve por instinto (a mesma do banco):
+    // `settings` com os campos/motivos e `vocabulary` ao lado. Aceitas como
+    // sinônimo de `config`; se vierem os dois, `config` vence em cada chave.
+    settings: pipelineConfigPatchSchema.omit({ vocabulary: true }).optional(),
+    vocabulary: pipelineConfigPatchSchema.shape.vocabulary,
     stages: z
       .array(etapaDoCorpoSchema)
       .min(2)
@@ -134,7 +139,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
     const daEtapa = parsed.error.issues.find((i) => i.path[0] === "stages");
-    const daConfig = parsed.error.issues.some((i) => i.path[0] === "config");
+    const daConfig = parsed.error.issues.some((i) => ["config", "settings", "vocabulary"].includes(String(i.path[0])));
     const mensagem = daConfig
       ? "Confira a configuração do funil (campos, motivos, vocabulário)."
       : daEtapa
@@ -220,7 +225,15 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   // A configuração viaja junto: mesma gravação de `PATCH /pipelines/[id]/config`.
   // Falhou → desfaz o funil inteiro (nasce completo ou não nasce).
-  const config = parsed.data.config;
+  const { settings: configEmSettings, vocabulary: configEmVocabulario } = parsed.data;
+  const config =
+    parsed.data.config || configEmSettings || configEmVocabulario
+      ? {
+          ...configEmSettings,
+          ...(configEmVocabulario ? { vocabulary: configEmVocabulario } : {}),
+          ...parsed.data.config,
+        }
+      : undefined;
   if (config) {
     const { data: atual } = await supabase
       .from("crm_pipelines")
