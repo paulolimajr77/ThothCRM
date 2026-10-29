@@ -206,7 +206,11 @@ export async function loadSkills(
   // tenant vence plataforma no mesmo nome; ordem final estável por nome (prefixo estável).
   const byName = new Map<string, LoadedSkill>();
   for (const r of rows) {
-    if (opcoes.comGuiasDoAssistente !== true && r.name.startsWith(PREFIXO_DOS_GUIAS_DO_ASSISTENTE)) {
+    if (
+      opcoes.comGuiasDoAssistente !== true &&
+      typeof r.name === 'string' &&
+      r.name.startsWith(PREFIXO_DOS_GUIAS_DO_ASSISTENTE)
+    ) {
       continue;
     }
     if (!byName.has(r.name) || r.organization_id !== null) {

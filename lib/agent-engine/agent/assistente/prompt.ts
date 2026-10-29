@@ -14,6 +14,9 @@
  * repositório já pagou várias vezes: o prompt muda de um lado e o dublê segue
  * casando o texto velho. Mesmo padrão de `MARCA_DA_CONSULTA_INTERNA`.
  */
+
+import { tagDeIdioma } from "@/lib/i18n/datas";
+
 export const MARCA_DO_ASSISTENTE = "[ASSISTENTE DA EMPRESA";
 
 export interface EntradaDoSystemDoAssistente {
@@ -74,7 +77,7 @@ export function diaDeHojeNoFuso(
     month: "2-digit",
     day: "2-digit",
   }).format(instante);
-  const dia = new Intl.DateTimeFormat(idioma === "es" ? "es" : "pt-BR", {
+  const dia = new Intl.DateTimeFormat(tagDeIdioma(idioma), {
     timeZone: fusoEfetivo,
     weekday: "long",
   }).format(instante);

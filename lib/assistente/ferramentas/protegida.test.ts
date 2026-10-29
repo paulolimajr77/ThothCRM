@@ -83,7 +83,7 @@ describe("protegida", () => {
     expect(info).toHaveBeenCalledTimes(1);
     expect(warn).not.toHaveBeenCalled();
 
-    const ctx = info.mock.calls[0][1];
+    const ctx = (info.mock.calls[0]?.[1] ?? {}) as Record<string, unknown>;
     expect(ctx.ferramenta).toBe("procurar_porta");
     expect(ctx.ok).toBe(true);
     expect(typeof ctx.ms).toBe("number");
@@ -95,7 +95,7 @@ describe("protegida", () => {
   it("corpo devolve falha porta_respondeu_erro: registra ok:false, motivo, status e porta", async () => {
     const execute = protegida(
       "ler_porta",
-      z.object({ porta: z.string(), valores: z.record(z.string()) }),
+      z.object({ porta: z.string(), valores: z.record(z.string(), z.string()) }),
       async () => ({
         ok: false,
         motivo: "porta_respondeu_erro",
@@ -117,7 +117,7 @@ describe("protegida", () => {
     });
 
     expect(info).toHaveBeenCalledTimes(1);
-    const ctx = info.mock.calls[0][1];
+    const ctx = (info.mock.calls[0]?.[1] ?? {}) as Record<string, unknown>;
     expect(ctx.ferramenta).toBe("ler_porta");
     expect(ctx.ok).toBe(false);
     expect(ctx.motivo).toBe("porta_respondeu_erro");
@@ -128,7 +128,7 @@ describe("protegida", () => {
   it("mesmo caso de falha: o JSON da linha nao contem segredo, mensagem nem valores", async () => {
     const execute = protegida(
       "ler_porta",
-      z.object({ porta: z.string(), valores: z.record(z.string()) }),
+      z.object({ porta: z.string(), valores: z.record(z.string(), z.string()) }),
       async () => ({
         ok: false,
         motivo: "porta_respondeu_erro",
@@ -140,7 +140,7 @@ describe("protegida", () => {
 
     await execute({ porta: "contacts", valores: { id: "segredo-123" } });
 
-    const ctx = info.mock.calls[0][1];
+    const ctx = (info.mock.calls[0]?.[1] ?? {}) as Record<string, unknown>;
     const json = JSON.stringify(ctx);
 
     expect(json).not.toContain("segredo-123");
@@ -162,7 +162,7 @@ describe("protegida", () => {
     expect(info).toHaveBeenCalledTimes(1);
     expect(warn).not.toHaveBeenCalled();
 
-    const ctx = info.mock.calls[0][1];
+    const ctx = (info.mock.calls[0]?.[1] ?? {}) as Record<string, unknown>;
     expect(ctx.ferramenta).toBe("procurar_porta");
     expect(ctx.ok).toBe(false);
     expect(ctx.motivo).toBe("parametro_invalido");
@@ -184,10 +184,10 @@ describe("protegida", () => {
 
     expect(resultado).toEqual({ ok: false, motivo: "indisponivel" });
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0][0]).toBe("assistente.ferramentas.falhou");
+    expect(warn.mock.calls[0]?.[0]).toBe("assistente.ferramentas.falhou");
     expect(info).toHaveBeenCalledTimes(1);
 
-    const ctx = info.mock.calls[0][1];
+    const ctx = (info.mock.calls[0]?.[1] ?? {}) as Record<string, unknown>;
     expect(ctx.ferramenta).toBe("procurar_porta");
     expect(ctx.ok).toBe(false);
     expect(ctx.motivo).toBe("indisponivel");
@@ -209,7 +209,7 @@ describe("protegida", () => {
     expect(info).toHaveBeenCalledTimes(1);
     expect(warn).not.toHaveBeenCalled();
 
-    const ctx = info.mock.calls[0][1];
+    const ctx = (info.mock.calls[0]?.[1] ?? {}) as Record<string, unknown>;
     expect(ctx.ferramenta).toBe("procurar_porta");
     expect(ctx.ok).toBe(true);
     expect(typeof ctx.ms).toBe("number");

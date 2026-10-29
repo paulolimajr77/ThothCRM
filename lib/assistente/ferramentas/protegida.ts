@@ -45,7 +45,7 @@ export function protegida<E extends z.ZodType, S>(
       const ehFalha =
         typeof resultado === "object" &&
         resultado !== null &&
-        (resultado as { ok: unknown }).ok === false;
+        (resultado as unknown as { ok?: unknown }).ok === false;
 
       // Registra o resultado sem vazar dado de cliente: só campos seguros.
       const campos: Record<string, unknown> = { ferramenta, ok: !ehFalha, ms };
@@ -63,9 +63,9 @@ export function protegida<E extends z.ZodType, S>(
       if (
         entrada !== null &&
         typeof entrada === "object" &&
-        typeof (entrada as { porta?: unknown }).porta === "string"
+        typeof (entrada as unknown as { porta?: unknown }).porta === "string"
       ) {
-        campos.porta = (entrada as { porta: string }).porta;
+        campos.porta = (entrada as unknown as { porta: string }).porta;
       }
 
       logger.info("assistente.ferramentas.resultado", campos);

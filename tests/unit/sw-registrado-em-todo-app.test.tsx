@@ -10,6 +10,11 @@ const registrar = vi.hoisted(() => vi.fn().mockResolvedValue(null));
 vi.mock("@/lib/notifications/service_worker", () => ({ ensureNotifyServiceWorker: registrar }));
 vi.mock("@/components/shell/Sidebar", () => ({ Sidebar: () => null }));
 vi.mock("@/components/shell/TopBar", () => ({ TopBar: () => null }));
+// O painel do assistente interno (só no fork) lê a sessão: fora do escopo deste teste.
+vi.mock("@/components/assistente/PainelDoAssistente", () => ({ PainelDoAssistente: () => null }));
+vi.mock("@/components/assistente/AssistentePainelProvider", () => ({
+  AssistentePainelProvider: ({ children }: { children: unknown }) => children,
+}));
 vi.mock("@/components/shell/BarraDeProgressoNavegacao", () => ({ BarraDeProgressoNavegacao: () => null }));
 vi.mock("@/components/shell/BarraInferior", () => ({ BarraInferior: () => null }));
 vi.mock("@/hooks/atendimento/useSinalDePresenca", () => ({ useSinalDePresenca: () => {} }));
