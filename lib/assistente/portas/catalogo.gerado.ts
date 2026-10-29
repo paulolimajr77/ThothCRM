@@ -4349,12 +4349,6 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
       POST: mod.POST,
     };
   },
-  "contacts/:id/unblock": async () => {
-    const mod = await import("@/app/api/v1/contacts/[id]/unblock/route");
-    return {
-      POST: mod.POST,
-    };
-  },
   "contacts/bulk": async () => {
     const mod = await import("@/app/api/v1/contacts/bulk/route");
     return {

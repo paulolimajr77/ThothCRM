@@ -806,6 +806,8 @@ export const DICIONARIO: Traducoes = {
   "Conversa para criar agente": { es: "Conversación para crear un agente" },
   "Assistente de configuração": { es: "Asistente de configuración" },
   "Assistente interno": { es: "Asistente interno" },
+  "Assistente interno de configuração": { es: "Asistente interno de configuración" },
+  "O dono do servidor liga, empresa por empresa, o assistente de IA que propõe a configuração em cartões.": { es: "El dueño del servidor activa, empresa por empresa, el asistente de IA que propone la configuración en tarjetas." },
   "Confira a configuração do funil (campos, motivos, vocabulário).": { es: "Revisa la configuración del embudo (campos, motivos, vocabulario)." },
   "Liga o assistente de configuração por IA para esta empresa. Ele gasta crédito de IA da empresa.": { es: "Activa el asistente de configuración por IA para esta empresa. Gasta crédito de IA de la empresa." },
   "Assistente ligado para esta empresa.": { es: "Asistente activado para esta empresa." },
