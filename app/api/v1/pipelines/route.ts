@@ -29,7 +29,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
   const requestId = randomUUID();
-  const authz = await requireRole("manager", { requestId, resource: "pipelines" });
+  // Leitura da configuração vale para a equipe toda; criar e alterar seguem no papel de cima
+  // (decisão do Paulo, 29/10/2026). A RLS de SELECT já era por organização.
+  const authz = await requireRole("viewer", { requestId, resource: "pipelines" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
 

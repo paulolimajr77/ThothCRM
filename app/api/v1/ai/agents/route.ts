@@ -119,7 +119,9 @@ export async function GET(req: NextRequest): Promise<Response> {
   const authz = await resolveAuthDual(req, {
     requestId,
     resource: "ai_agents",
-    role: "manager",
+    // Leitura da configuração vale para a equipe toda; criar e alterar seguem no papel
+    // de cima (decisão do Paulo, 29/10/2026). A RLS de SELECT já era por organização.
+    role: "viewer",
     scope: "mcp:read",
   });
   if (!authz.ok) return authz.response;
