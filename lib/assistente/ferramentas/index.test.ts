@@ -36,7 +36,7 @@ const PROPRIEDADES_ESPERADAS: Record<string, string[]> = {
   listar_telas: ["busca"],
   abrir_tela: ["destino"],
   ler_guia: ["guia"],
-  ler_porta: ["porta", "valores", "filtros"],
+  ler_porta: ["porta", "valores", "filtros", "campos"],
   procurar_porta: ["pergunta"],
   propor_mudanca: [
     "porta", "metodo", "valores", "corpo", "resumo", "motivo",

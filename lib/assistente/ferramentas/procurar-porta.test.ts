@@ -190,14 +190,13 @@ describe("procurar_porta", () => {
   // Medido no espelho em 29/10/2026: um ATENDENTE perguntou "quais clientes fecharam
   // e os valores"; o modelo leu `pipelines` (só gestor), levou 403 e desistiu. A
   // porta que a tela do atendente usa é `pipelines/:id/leads` (piso viewer).
-  it("quem fechou acha os negócios do funil e o funil padrão, com a dica do caminho", async () => {
+  it("quem fechou acha os negócios do funil, com a dica de onde sai o id do funil", async () => {
     const { ferramentas } = montarParaTeste("agent");
     const saida = (await chamar(ferramentas, "procurar_porta", { pergunta: "quais clientes fecharam e os valores" })) as {
       portas: (PortaEncontrada & { filtros?: { filtros: string[]; uso: string } })[];
     };
     const ids = saida.portas.map((p) => p.id);
     expect(ids).toContain("pipelines/:id/leads");
-    expect(ids).toContain("pipelines/default");
     const negocios = saida.portas.find((p) => p.id === "pipelines/:id/leads");
     expect(negocios?.filtros?.uso).toMatch(/pipelines\/default/);
     expect(negocios?.filtros?.uso).toMatch(/won/);

@@ -23,6 +23,7 @@ import { ROLE_RANK, type AuthUser, type Role } from "@/lib/auth/types";
 import { audit } from "@/lib/audit";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 import { chamarRotaPorDentro } from "@/lib/assistente/metricas/chamar-rota";
+import { abrirPorta } from "@/lib/assistente/portas/abrir";
 
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/impersonate/support", () => ({ requireSupportWrite: vi.fn(async () => null) }));

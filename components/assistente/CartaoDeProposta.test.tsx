@@ -202,7 +202,7 @@ describe("o cartão de proposta", () => {
     montar(proposta({ kind: "acao", operacao: null }));
 
     expect(screen.getByText("Mudança ·")).toBeTruthy();
-    expect(screen.getByText("acao")).toBeNull();
+    expect(screen.queryByText("acao")).toBeNull();
   });
 
   it("em espanhol, kind 'acao' mostra 'Cambio'", () => {
