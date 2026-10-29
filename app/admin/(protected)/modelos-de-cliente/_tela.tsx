@@ -28,7 +28,7 @@ interface Props {
 }
 
 const SELECT =
-  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
 
 /** A mensagem de uma recusa, no idioma da tela. */
 function useMensagemDeErro() {
