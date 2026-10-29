@@ -270,7 +270,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   // "Para onde o card vai em cada passo": traduz NOME de etapa em id (só agora
   // existem) e grava com a mesma régua de `PUT /pipelines/[id]/agent-mapping`.
   // Recusa → desfaz o funil inteiro.
-  if (parsed.data.agent_mapping) {
+  {
     const desfazer = async () => {
       await supabase.from("crm_stages").delete().eq("pipeline_id", pipelineId).eq("organization_id", orgId);
       await supabase.from("crm_pipelines").delete().eq("id", pipelineId).eq("organization_id", orgId);
@@ -290,7 +290,14 @@ export async function POST(req: NextRequest): Promise<Response> {
     const porNome = new Map(etapasDoMapa.map((e) => [chaveDeNome(e.name), e.id]));
     const entrada: Record<string, string | null> = {};
     const desconhecidas: string[] = [];
-    for (const [passo, nomeDaEtapa] of Object.entries(parsed.data.agent_mapping)) {
+    // Ganho e perda sempre apontam para as etapas de fechamento e de perda: sem
+    // isso a tela mostra «Não mover o card» e o agente nunca leva o card até lá.
+    // O que o pedido disser sobre `won`/`lost` (inclusive `null`) vence.
+    const aoGanho = etapasDoMapa.find((e) => e.is_won);
+    const aPerda = etapasDoMapa.find((e) => e.is_lost);
+    if (aoGanho) entrada.won = aoGanho.id;
+    if (aPerda) entrada.lost = aPerda.id;
+    for (const [passo, nomeDaEtapa] of Object.entries(parsed.data.agent_mapping ?? {})) {
       if (nomeDaEtapa === null) {
         entrada[passo] = null;
         continue;
@@ -393,7 +400,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       is_default: row.is_default,
       etapas: parsed.data.stages ? parsed.data.stages.length : "iniciais",
       com_configuracao: !!config,
-      com_mapeamento_do_agente: !!parsed.data.agent_mapping,
+      com_mapeamento_do_agente: true,
     },
   });
 
