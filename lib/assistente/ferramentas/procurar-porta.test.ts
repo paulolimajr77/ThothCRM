@@ -138,6 +138,52 @@ describe("procurar_porta", () => {
     const saida = await chamar(ferramentas, "procurar_porta", { pergunta: "x".repeat(201) });
     expect(saida).toEqual({ ok: false, motivo: "parametro_invalido" });
   });
+
+  // Medido no espelho em 29/10/2026: "Quem é a equipe e o cargo de cada um?" não
+  // achava `team` (id em inglês, resumo vazio em 213 de 373 portas) e a descrição
+  // da ferramenta dizia que equipe era proibida — o modelo desistiu sem ler.
+  const idsDa = async (pergunta: string): Promise<string[]> => {
+    const { ferramentas } = montarParaTeste("admin");
+    const saida = await chamar(ferramentas, "procurar_porta", { pergunta });
+    return (saida as { portas: PortaEncontrada[] }).portas.map((p) => p.id);
+  };
+
+  it.each([
+    ["equipe e cargo de cada um", "team"],
+    ["aniversário dos clientes", "contacts"],
+    ["últimas compras do cliente", "contacts/:id/compras"],
+    ["negócios do funil", "leads"],
+    ["etapas do funil", "pipelines"],
+    ["imóveis do banco externo", "external-db/connections"],
+    ["compromissos da agenda", "agenda/agendamentos"],
+  ])("a pergunta em português %s acha a porta %s", async (pergunta, porta) => {
+    expect(await idsDa(pergunta)).toContain(porta);
+  });
+
+  it("a porta que casa mais palavras vem antes do corte de 12", async () => {
+    // `contacts` tem 20 portas: sem ordem, o corte de 12 podia deixar a de compras de fora.
+    const ids = await idsDa("compras do contato");
+    expect(ids.indexOf("contacts/:id/compras")).toBeGreaterThanOrEqual(0);
+    expect(ids.indexOf("contacts/:id/compras")).toBeLessThan(3);
+  });
+
+  it("sem nenhuma porta, devolve as áreas para tentar de novo", async () => {
+    const { ferramentas } = montarParaTeste("admin");
+    const saida = (await chamar(ferramentas, "procurar_porta", { pergunta: "zzzzqqq" })) as {
+      portas: PortaEncontrada[];
+      areas?: string[];
+    };
+    expect(saida.portas).toEqual([]);
+    expect(saida.areas).toContain("team");
+    expect(saida.areas).toContain("contacts");
+  });
+
+  it("a descrição não diz ao modelo que ler a equipe é proibido", () => {
+    const { ferramentas } = montarParaTeste("admin");
+    const descricao = String((ferramentas.procurar_porta as { description?: string }).description);
+    expect(descricao).not.toMatch(/proibidas \([^)]*equipe/);
+    expect(descricao).toMatch(/equipe/i);
+  });
 });
 
 interface PortaEncontrada {

@@ -14396,8 +14396,8 @@ export const DICIONARIO: Traducoes = {
   // sintoma de todo ponto — sem entrada aqui, a tela em espanhol mostra
   // português sem nenhum gate reclamar.
   "Conversar com o assistente da empresa": { es: "Conversar con el asistente de la empresa" },
-  "Responde a perguntas de gestores e equipe sobre a operação — números, telas e guias — consultando só dados agregados pelas métricas oficiais. Para o administrador, monta rascunhos do agente e dos follow-ups e testa — sem publicar nada. Nunca fala com o cliente.":
-    { es: "Responde las preguntas de gestores y equipo sobre la operación — números, pantallas y guías — consultando solo datos agregados de las métricas oficiales. Para el administrador, prepara borradores del agente y de los seguimientos y los prueba — sin publicar nada. Nunca habla con el cliente." },
+  "Responde a perguntas da equipe sobre a operação lendo as mesmas telas que ela vê — contatos, negócios, agenda, equipe, números e guias. Para o administrador, propõe mudanças (criar ou ajustar agente, follow-up, funil) e só aplica depois do sim dele. Nunca fala com o cliente, não envia mensagem nem apaga nada.":
+    { es: "Responde las preguntas del equipo sobre la operación leyendo las mismas pantallas que ve — contactos, negocios, agenda, equipo, números y guías. Para el administrador, propone cambios (crear o ajustar agente, seguimiento, embudo) y solo los aplica después de su sí. Nunca habla con el cliente, no envía mensajes ni borra nada." },
   "Quem pergunta ao assistente não recebe a análise com inteligência: o chat volta às respostas prontas dos guias e a pessoa precisa consultar as telas por conta própria.":
     { es: "Quien pregunta al asistente no recibe el análisis con inteligencia: el chat vuelve a las respuestas listas de las guías y la persona necesita consultar las pantallas por su cuenta." },
 
