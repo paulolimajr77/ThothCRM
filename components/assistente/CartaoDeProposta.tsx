@@ -37,6 +37,8 @@ export interface PropostaNaTela {
 /** Rótulo do TIPO em português (o `kind` é vocabulário do banco, não da tela). */
 function rotuloDoTipo(t: Tradutor, kind: string): string {
   switch (kind) {
+    case "acao":
+      return t("Mudança");
     case "roteador":
       return t("Roteador");
     case "conhecimento":

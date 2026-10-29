@@ -106,3 +106,7 @@ export {
   sobreporClienteAdminDeConversoes,
   type ParametrosDeConversoesEnviadas,
 } from "./adaptadores/conversoes_enviadas";
+export {
+  metricaTempoAtePrimeiroValor,
+  type ParametrosDeTempoAtePrimeiroValor,
+} from "./adaptadores/tempo_ate_primeiro_valor";

@@ -21,6 +21,7 @@ import { apiClient } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/types";
 import { linhasDaAjuda } from "@/lib/assistente/comandos";
 import { randomId } from "@/lib/random-id";
+import { proximosPassosDaAcao, type ProximoPasso } from "@/lib/assistente/propostas/proximos-passos";
 
 interface Thread {
   id: string;
@@ -65,6 +66,8 @@ interface MensagemNaTela {
   checkup?: CheckupNaTela;
   /** A mensagem é o desfecho de uma decisão (Aplicar/Não), não conversa. */
   desfecho?: "ok" | "erro";
+  /** Depois de aplicar com sucesso: os próximos passos que faltam fazer na tela. */
+  proximosPassos?: ProximoPasso[];
 }
 
 interface ItemDeAcao {
@@ -84,6 +87,28 @@ interface RespostaDoChat {
   resposta?: string;
   aviso?: string | null;
   acoes?: ItemDeAcao[];
+}
+
+/** Monta { porta, metodo } a partir da proposta aplicada, quando a porta é de criação. */
+function portaEDoMetodoDaProposta(
+  p: PropostaNaTela | null,
+): { porta: string; metodo: string } | null {
+  if (p === null) return null;
+  if (p.kind === "acao") {
+    const payload = p.payload as { porta?: unknown; metodo?: unknown } | null;
+    if (
+      payload !== null &&
+      typeof payload.porta === "string" &&
+      typeof payload.metodo === "string"
+    ) {
+      return { porta: payload.porta, metodo: payload.metodo };
+    }
+    return null;
+  }
+  if (p.kind === "funil" && p.operacao === "criar_funil") {
+    return { porta: "pipelines", metodo: "POST" };
+  }
+  return null;
 }
 
 const FILA_DE_PROPOSTAS = ["assistente", "propostas"];
@@ -323,6 +348,8 @@ export function ChatDoAssistente({
   const versao = useRef(0);
   const lista = useRef<HTMLDivElement | null>(null);
   const campo = useRef<HTMLInputElement | null>(null);
+  /** Propostas que já tiveram cartão renderizado na conversa visível; o anúncio não as repete. */
+  const propostasJaExibidasComoCartao = useRef<Set<string>>(new Set());
 
   // A fila oficial das mudanças: é dela que o cartão tira o conteúdo, e é ela que
   // diz o que ainda espera decisão. Só administrador lê (a rota barra os outros).
@@ -439,14 +466,19 @@ export function ChatDoAssistente({
     () => (fila.data ?? []).filter((p) => p.status === "pendente").map((p) => p.id),
     [fila.data],
   );
-  const assinaturaDasPendencias = idsPendentes.join(",");
+  // Detalhe 1: o anúncio não repete propostas que já tiveram cartão na conversa.
+  const idsPendentesParaAnuncio = useMemo(
+    () => idsPendentes.filter((id) => !propostasJaExibidasComoCartao.current.has(id)),
+    [idsPendentes],
+  );
+  const assinaturaDasPendencias = idsPendentesParaAnuncio.join(",");
 
   // Ao abrir, o administrador vê o que espera por ele. O anúncio é da COLEÇÃO:
   // reabrir o painel com as mesmas pendências não repete a mensagem, e uma
   // proposta nova gera um anúncio novo.
   useEffect(() => {
     if (!aberto || !ehAdmin) return;
-    if (idsPendentes.length === 0) return;
+    if (idsPendentesParaAnuncio.length === 0) return;
     if (anuncioFeito.current === assinaturaDasPendencias) return;
     anuncioFeito.current = assinaturaDasPendencias;
     setMensagens((atuais) => [
@@ -455,13 +487,16 @@ export function ChatDoAssistente({
         id: `pendencias-${assinaturaDasPendencias}`,
         author_kind: "ai",
         body:
-          idsPendentes.length === 1
+          idsPendentesParaAnuncio.length === 1
             ? t("Tem 1 mudança esperando você.")
-            : t("Tem {n} mudanças esperando você.").replace("{n}", String(idsPendentes.length)),
-        propostas: idsPendentes,
+            : t("Tem {n} mudanças esperando você.").replace(
+                "{n}",
+                String(idsPendentesParaAnuncio.length),
+              ),
+        propostas: idsPendentesParaAnuncio,
       },
     ]);
-  }, [aberto, ehAdmin, assinaturaDasPendencias, idsPendentes, t]);
+  }, [aberto, ehAdmin, assinaturaDasPendencias, idsPendentesParaAnuncio, t]);
 
   const propostasPorId = useMemo(() => {
     const mapa = new Map<string, PropostaNaTela>();
@@ -491,10 +526,22 @@ export function ChatDoAssistente({
   }
 
   /** Acrescenta a mensagem do desfecho (o "Pronto: …" ou o porquê do erro). */
-  function registrarDesfecho(texto: string, tipo: "ok" | "erro") {
+  function registrarDesfecho(
+    texto: string,
+    tipo: "ok" | "erro",
+    proximosPassos?: ProximoPasso[],
+  ) {
     setMensagens((atuais) => [
       ...atuais,
-      { id: `desfecho-${randomId()}`, author_kind: "ai", body: texto, desfecho: tipo },
+      {
+        id: `desfecho-${randomId()}`,
+        author_kind: "ai",
+        body: texto,
+        desfecho: tipo,
+        ...(proximosPassos === null || proximosPassos === undefined
+          ? {}
+          : { proximosPassos }),
+      },
     ]);
   }
 
@@ -540,9 +587,20 @@ export function ChatDoAssistente({
         );
         poNaFila(aplicada);
         const mudou = aplicada.data?.resumo ?? aprovada.data?.resumo ?? "";
+        const portaMetodo = portaEDoMetodoDaProposta(aplicada.data ?? aprovada.data ?? null);
+        // `apply_result` vem como `unknown` da projeção: só o id do artefato interessa aqui.
+        const resultadoAplicado = aplicada.data?.apply_result as
+          | { artefato?: { id?: unknown } | null }
+          | null
+          | undefined;
+        const artefatoId = resultadoAplicado?.artefato?.id;
+        const criado = typeof artefatoId === "string" ? { id: artefatoId } : null;
+        const proximos =
+          portaMetodo !== null ? proximosPassosDaAcao(portaMetodo, criado) : [];
         registrarDesfecho(
           mudou === "" ? t("Pronto: a mudança foi aplicada.") : `${t("Pronto:")} ${mudou}`,
           "ok",
+          proximos.length > 0 ? proximos : undefined,
         );
       }
       void qc.invalidateQueries({ queryKey: FILA_DE_PROPOSTAS });
@@ -661,6 +719,8 @@ export function ChatDoAssistente({
         ]);
         // Cartão novo pede fila nova: o conteúdo dele vem de lá.
         if (propostas.length > 0) void qc.invalidateQueries({ queryKey: FILA_DE_PROPOSTAS });
+        // Detalhe 1: propostas que já tiveram cartão não voltam no anúncio de pendentes.
+        for (const id of propostas) propostasJaExibidasComoCartao.current.add(id);
       } else {
         // Replay: a rota devolveu o turno gravado, sem o texto avulso.
         await abrirThread(data.thread_id);
@@ -791,6 +851,22 @@ export function ChatDoAssistente({
                   }
                 >
                   <TextoDoAssistente texto={m.body} />
+                {m.proximosPassos !== undefined && m.proximosPassos.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    <p className="text-xs font-medium text-text-muted mr-1">{t("Falta:")}</p>
+                    {m.proximosPassos.map((passo) => (
+                      <button
+                        key={passo.href}
+                        type="button"
+                        onClick={() => abrirTela(passo.href)}
+                        data-testid="assistente-proximo-passo"
+                        className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                      >
+                        {t(passo.texto)}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 </div>
               )
             ) : null}

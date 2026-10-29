@@ -127,6 +127,34 @@ describe("montarSystemDoAssistente", () => {
       expect(s).not.toContain("PROPÔS");
     }
   });
+
+  it("com telaEmVista, o system cita o nome e a descrição da tela", () => {
+    const s = norm(
+      montarSystemDoAssistente({
+        ...BASE,
+        telaEmVista: {
+          nome: "Funis",
+          descricao: "Seus funis de venda — clique em um para abrir o quadro de clientes.",
+          href: "/app/kanban",
+        },
+      }),
+    );
+    expect(s).toContain("A pessoa está vendo agora a tela");
+    expect(s).toContain("Funis");
+    expect(s).toContain("/app/kanban");
+    expect(s).toContain("funis de venda");
+  });
+
+  it("sem telaEmVista, o prompt é igual ao de antes", () => {
+    const sem = montarSystemDoAssistente(BASE);
+    const comNulo = montarSystemDoAssistente({ ...BASE, telaEmVista: null });
+    expect(comNulo).toBe(sem);
+  });
+
+  it("sem telaEmVista não acrescenta a linha 'A pessoa está vendo agora a tela'", () => {
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).not.toContain("A pessoa está vendo agora a tela");
+  });
 });
 
 describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {

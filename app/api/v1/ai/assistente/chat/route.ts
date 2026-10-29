@@ -77,6 +77,7 @@ import type { AcaoDoChat } from "@/lib/assistente/ferramentas/tipos";
 import { comandoDaPergunta } from "@/lib/assistente/comandos";
 import { executarComando } from "@/lib/assistente/comandos/executar";
 import { agenteVistoNaTela } from "@/lib/assistente/contexto-da-tela";
+import { telaPorCaminho } from "@/lib/assistente/telas/tela-por-caminho";
 import { verificarLimiteDePerguntas } from "@/lib/assistente/limites";
 import type { ContextoDeConsulta, Papel } from "@/lib/assistente/metricas";
 import { respostaDoPiso } from "@/lib/assistente/piso";
@@ -336,9 +337,19 @@ export async function POST(req: NextRequest): Promise<Response> {
       // Contexto da tela: o agente que a pessoa está vendo, só se for desta organização.
       // Não vai para a auditoria, não entra no limite nem no replay.
       const agenteEmTela = await agenteVistoNaTela(pool, orgId, contexto?.caminho);
+      // Qual tela da navegação a pessoa está vendo (rótulo e descrição do
+      // catálogo — nunca o caminho completo com ids).
+      const telaEmVista = telaPorCaminho(contexto?.caminho);
       // O bloco "Regras de conduta" do `system` só entra para `admin` — o papel
       // vem DA SESSÃO (nunca do corpo), como as ferramentas de escrita.
-      const system = montarSystemDoAssistente({ idioma, fuso, agoraIso, papel, agenteEmTela });
+      const system = montarSystemDoAssistente({
+        idioma,
+        fuso,
+        agoraIso,
+        papel,
+        agenteEmTela,
+        telaEmVista,
+      });
 
       // As mensagens ANTERIORES a este turno. Pegamos as mais recentes (desc) e
       // devolvemos em ordem cronológica; o recorte por caracteres vem depois.

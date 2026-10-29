@@ -18533,6 +18533,17 @@ export const DICIONARIO: Traducoes = {
   "Botões no card do negócio que abrem outro sistema com o dado do cliente já preenchido. Aceitam tel:, http:// e https://. Marcadores: {{telefone}}, {{nome}}, {{primeiro_nome}}, {{email}} e {{documento}}; campos personalizados entram como {{chave}}, {{lead.chave}} ou {{contact.chave}}.": {
     es: "Botones en la tarjeta del negocio que abren otro sistema con el dato del cliente ya rellenado. Aceptan tel:, http:// y https://. Marcadores: {{telefone}}, {{nome}}, {{primeiro_nome}}, {{email}} y {{documento}}; los campos personalizados entran como {{chave}}, {{lead.chave}} o {{contact.chave}}.",
   },
+  // Ordem A — depois de aplicar, o assistente diz o que falta.
+  "Mudança": { es: "Cambio" },
+  "Falta:": { es: "Falta:" },
+  "Publicar o agente quando o texto estiver pronto": {
+    es: "Publicar el agente cuando el texto esté listo",
+  },
+  "Ligar o agente ao número do WhatsApp num roteador": {
+    es: "Conectar el agente al número de WhatsApp en un enrutador",
+  },
+  "Revisar e publicar o follow-up": { es: "Revisar y publicar el seguimiento" },
+  "Conferir as etapas do funil": { es: "Revisar las etapas del embudo" },
 };
 
 /**

@@ -66,6 +66,7 @@ describe("registro — higiene do catálogo", () => {
         "perdas",
         "propostas_aceitas_por_produto",
         "taxa_de_ganho_por_etapa",
+        "tempo_ate_primeiro_valor",
         "uso_de_ia",
       ].sort(),
     );
@@ -90,6 +91,7 @@ describe("registro — higiene do catálogo", () => {
       fechamentos_por_funil: "agent",
       leads_por_origem: "agent",
       propostas_aceitas_por_produto: "viewer",
+      tempo_ate_primeiro_valor: "admin",
       anuncios_meta: "manager",
       conversoes_enviadas: "admin",
     };

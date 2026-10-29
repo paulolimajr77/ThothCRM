@@ -97,6 +97,13 @@ export function criarBancoFalso(
           filtros.push((linha) => !(coluna in linha) || valores.includes(linha[coluna]));
           return builder;
         },
+        not(coluna: string, operador: string, valor: unknown) {
+          registro.filtros.push([`${coluna} not ${operador}`, valor]);
+          if (operador === "is" && valor === null) {
+            filtros.push((linha) => linha[coluna] !== null && linha[coluna] !== undefined);
+          }
+          return builder;
+        },
         gte(coluna: string, valor: unknown) {
           registro.filtros.push([`${coluna} >=`, valor]);
           filtros.push(
