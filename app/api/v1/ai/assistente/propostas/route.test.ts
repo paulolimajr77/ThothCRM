@@ -349,7 +349,7 @@ describe("idempotência do turno", () => {
     );
   });
 
-  it("duas acao DIFERENTES no mesmo turno são aceitas em inserts separados (a unicidade é do índice 9006, provada no CI)", async () => {
+  it("duas acao DIFERENTES no mesmo turno são aceitas em inserts separados (a unicidade é do índice 8006, provada no CI)", async () => {
     const acao1 = {
       kind: "acao",
       resumo: "Renomear o contato principal",

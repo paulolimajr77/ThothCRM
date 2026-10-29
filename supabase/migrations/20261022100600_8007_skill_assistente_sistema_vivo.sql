@@ -1,6 +1,6 @@
 -- manifest: **Skill de plataforma assistente-sistema-vivo (T5).** Semeia a skill `assistente-sistema-vivo` (`organization_id null`): o gate operacional do Sistema Vivo — toda peça tem entrada e saída, o laço de retorno fecha quando ela erra, nada é ilha. Antes de propor mudança, conferir quem consome e quem alimenta. Corpo com no máximo 200 linhas, em português simples. Idempotente; apêndice igual no `baseline.sql`.
 
--- ---- skill assistente-sistema-vivo (migration 9007) ----
+-- ---- skill assistente-sistema-vivo (migration 8007) ----
 do $seed$
 declare
   v_id uuid;

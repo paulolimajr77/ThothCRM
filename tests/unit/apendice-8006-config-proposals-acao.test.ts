@@ -1,5 +1,5 @@
 /**
- * O APÊNDICE DO BASELINE É ESPELHO EXATO DA MIGRATION 9006.
+ * O APÊNDICE DO BASELINE É ESPELHO EXATO DA MIGRATION 8006.
  *
  * A migration acrescenta `'acao'` ao CHECK de `kind` e divide o índice de
  * turno único. O kit self-host aplica SÓ o `baseline.sql`; sem espelho exato,
@@ -11,13 +11,13 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const RAIZ = join(__dirname, "..", "..");
-const MIGRATION = "supabase/migrations/20261022100500_9006_config_proposals_acao.sql";
+const MIGRATION = "supabase/migrations/20261022100500_8006_config_proposals_acao.sql";
 
 function ler(caminho: string): string {
   return readFileSync(join(RAIZ, caminho), "utf8");
 }
 
-describe("o apêndice do baseline espelha a migration 9006", () => {
+describe("o apêndice do baseline espelha a migration 8006", () => {
   it("controle: os dois arquivos existem e não estão vazios", () => {
     expect(existsSync(join(RAIZ, MIGRATION))).toBe(true);
     expect(ler(MIGRATION).length).toBeGreaterThan(1000);
@@ -47,13 +47,13 @@ describe("o apêndice do baseline espelha a migration 9006", () => {
 
   it("o apêndice entra ANTES de qualquer varredura de anon posterior", () => {
     const baseline = ler("supabase/baseline.sql");
-    const bloco = baseline.lastIndexOf("-- ---- config_proposals acao (migration 9006) ----");
+    const bloco = baseline.lastIndexOf("-- ---- config_proposals acao (migration 8006) ----");
     expect(bloco).toBeGreaterThan(-1);
   });
 
-  it("o baseline traz o bloco 9006 uma única vez (apêndice + rótulo do corpo da migration)", () => {
+  it("o baseline traz o bloco 8006 uma única vez (apêndice + rótulo do corpo da migration)", () => {
     const baseline = ler("supabase/baseline.sql");
-    const rotulo = "-- ---- config_proposals acao (migration 9006) ----";
+    const rotulo = "-- ---- config_proposals acao (migration 8006) ----";
     expect(baseline.split(rotulo).length - 1).toBe(2);
     expect(baseline.split("create unique index if not exists config_proposals_acao_turno_unico").length - 1).toBe(1);
   });

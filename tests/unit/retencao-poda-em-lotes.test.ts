@@ -376,7 +376,7 @@ describe("podarHistorico — o laço de lotes", () => {
     const r = await podarHistorico(db, {});
 
     // 19 drenos: 17 pelo rpc (o 15º é o aviso de agendamento, 0753; o 16º é o
-    // traço do turno, 0778; o 17º é o expurgo do assistente, 9005) + a mídia + a décima poda (o DELETE do admin).
+    // traço do turno, 0778; o 17º é o expurgo do assistente, 8005) + a mídia + a décima poda (o DELETE do admin).
     expect(r.falhas).toHaveLength(19);
     expect(r.falhas.some((f) => f.includes("conversation_drafts"))).toBe(true);
     expect(r.falhas.some((f) => f.includes("fn_enfileirar_midia_vencida"))).toBe(true);
@@ -545,7 +545,7 @@ describe("a décima poda — o rascunho sugerido vencido (issue #1686)", () => {
   });
 });
 
-describe("a décima sétima poda — o expurgo do assistente (F3, migration 9005)", () => {
+describe("a décima sétima poda — o expurgo do assistente (F3, migration 8005)", () => {
   it("o cron CHAMA fn_expurgar_config_assistente_vencida, com 365 dias e o tamanho do lote", async () => {
     const { db, chamadas } = bancoQueDevolve({ fila: [0], auditoria: [0] });
     await podarHistorico(db, {});

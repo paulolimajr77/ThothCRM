@@ -1,5 +1,5 @@
 /**
- * O APÊNDICE DO BASELINE É ESPELHO EXATO DA MIGRATION 9007.
+ * O APÊNDICE DO BASELINE É ESPELHO EXATO DA MIGRATION 8007.
  *
  * A migration semeia a skill `assistente-sistema-vivo`. O kit self-host aplica
  * SÓ o `baseline.sql`; sem espelho exato, o clone não recebe a skill de gate de
@@ -11,13 +11,13 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const RAIZ = join(__dirname, "..", "..");
-const MIGRATION = "supabase/migrations/20261022100600_9007_skill_assistente_sistema_vivo.sql";
+const MIGRATION = "supabase/migrations/20261022100600_8007_skill_assistente_sistema_vivo.sql";
 
 function ler(caminho: string): string {
   return readFileSync(join(RAIZ, caminho), "utf8");
 }
 
-describe("o apêndice do baseline espelha a migration 9007", () => {
+describe("o apêndice do baseline espelha a migration 8007", () => {
   it("controle: os dois arquivos existem e não estão vazios", () => {
     expect(existsSync(join(RAIZ, MIGRATION))).toBe(true);
     expect(ler(MIGRATION).length).toBeGreaterThan(1000);
@@ -44,9 +44,9 @@ describe("o apêndice do baseline espelha a migration 9007", () => {
     expect(baseline.includes(corpo)).toBe(true);
   });
 
-  it("o baseline traz o bloco 9007 uma única vez (apêndice + rótulo do corpo da migration)", () => {
+  it("o baseline traz o bloco 8007 uma única vez (apêndice + rótulo do corpo da migration)", () => {
     const baseline = ler("supabase/baseline.sql");
-    const rotulo = "-- ---- skill assistente-sistema-vivo (migration 9007) ----";
+    const rotulo = "-- ---- skill assistente-sistema-vivo (migration 8007) ----";
     expect(baseline.split(rotulo).length - 1).toBe(2);
   });
 
