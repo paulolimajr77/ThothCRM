@@ -39,7 +39,7 @@ import { z } from "zod";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
-import { destinoDaOperacao, riscoDoTipo } from "@/lib/assistente/propostas/operacoes";
+import { destinoDaOperacao, riscoDaProposta } from "@/lib/assistente/propostas/operacoes";
 import {
   COLUNAS_DA_PROPOSTA,
   dadosDaProposta,
@@ -209,7 +209,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       thread_id: proposta.thread_id ?? null,
       turn_id: proposta.turn_id ?? null,
       kind: proposta.kind,
-      risk: riscoDoTipo(proposta.kind),
+      risk: riscoDaProposta(proposta.kind, proposta.payload),
       resumo: proposta.resumo,
       motivo: proposta.motivo,
       antes: proposta.antes ?? null,

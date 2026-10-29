@@ -3,7 +3,7 @@
  *
  * Uma proposta é "segura" quando o CÓDIGO (não o modelo) classificou seu risco
  * como `seguro` — ou seja, `risk === "seguro"` —, está `pendente` e não venceu.
- * O `risk` já vem gravado no banco por `riscoDoTipo(kind)` na rota de criação;
+ * O `risk` já vem gravado no banco por `riscoDaProposta(kind, payload)` na rota de criação;
  * esta função apenas lê o valor gravado, nunca confia em dado do modelo.
  *
  * Devolve apenas os `id`s, para a tela montar o lote e chamar as rotas de

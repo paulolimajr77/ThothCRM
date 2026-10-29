@@ -112,19 +112,25 @@ export const AREAS_SO_LEITURA: readonly string[] = [
  * Porta branca de escrita. Preenchida com os 29 pares aprovados pelo Paulo.
  * Cada entrada deve existir no `CATALOGO_DE_PORTAS` com aquele método.
  * Nenhum DELETE entra aqui.
+ *
+ * `risco: "seguro"` marca o que pode ir no lote "Aplicar as mudanças seguras":
+ * lista FECHADA aqui, nunca decidida pelo modelo. Sem a marca, a proposta é
+ * de atenção (cartão por cartão). Mesma régua de `RISCO_POR_TIPO`: memória e
+ * material de conhecimento, mais tarefa (não fala com ninguém).
  */
 export const ESCRITA_PERMITIDA: readonly {
   porta: string;
   metodo: "POST" | "PATCH" | "PUT";
   descricao: string;
   acoes?: readonly string[];
+  risco?: "seguro";
 }[] = [
   { porta: "ai/agents", metodo: "POST", descricao: "criar agente" },
   { porta: "ai/agents/:id", metodo: "PATCH", descricao: "alterar agente" },
   { porta: "ai/routers", metodo: "POST", descricao: "criar roteador" },
   { porta: "ai/routers/:id", metodo: "PATCH", descricao: "alterar roteador" },
-  { porta: "ai/memory", metodo: "POST", descricao: "salvar nova versão da memória da empresa" },
-  { porta: "ai/knowledge/sources", metodo: "POST", descricao: "cadastrar material de conhecimento" },
+  { porta: "ai/memory", metodo: "POST", descricao: "salvar nova versão da memória da empresa", risco: "seguro" },
+  { porta: "ai/knowledge/sources", metodo: "POST", descricao: "cadastrar material de conhecimento", risco: "seguro" },
   { porta: "ai/knowledge/sources/:id", metodo: "PATCH", descricao: "alterar material de conhecimento" },
   { porta: "pipelines", metodo: "POST", descricao: "criar funil" },
   { porta: "pipelines/:id", metodo: "PATCH", descricao: "alterar funil" },
@@ -139,7 +145,7 @@ export const ESCRITA_PERMITIDA: readonly {
   { porta: "ai/followup-flows", metodo: "POST", descricao: "criar fluxo de follow-up" },
   { porta: "ai/followup-flows/:id", metodo: "PATCH", descricao: "alterar fluxo de follow-up" },
   { porta: "ai/followup-flows/from-model", metodo: "POST", descricao: "instalar follow-up a partir de um modelo pronto" },
-  { porta: "tasks", metodo: "POST", descricao: "criar tarefa" },
+  { porta: "tasks", metodo: "POST", descricao: "criar tarefa", risco: "seguro" },
   { porta: "tasks/:id", metodo: "PATCH", descricao: "alterar tarefa" },
   { porta: "agenda/agendamentos", metodo: "POST", descricao: "criar agendamento" },
   { porta: "agenda/agendamentos", metodo: "PATCH", descricao: "alterar agendamento" },

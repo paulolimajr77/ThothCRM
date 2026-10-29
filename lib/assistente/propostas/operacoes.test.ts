@@ -5,7 +5,14 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 
-import { DESTINO_DAS_OPERACOES, destinoDaOperacao, RISCO_POR_TIPO, riscoDoTipo } from "./operacoes";
+import {
+  DESTINO_DAS_OPERACOES,
+  destinoDaOperacao,
+  RISCO_POR_TIPO,
+  riscoDaProposta,
+  riscoDoTipo,
+} from "./operacoes";
+import { ESCRITA_PERMITIDA } from "@/lib/assistente/portas/listas";
 import { OPERACOES_ACEITAS } from "./payload";
 import { RISCOS_DA_PROPOSTA, TIPOS_DE_PROPOSTA } from "./tipos";
 
@@ -97,5 +104,36 @@ describe("risco por tipo", () => {
   it("`critico` não existe como risco: não há ferramenta de proposta para ele", () => {
     expect(RISCOS_DA_PROPOSTA as readonly string[]).not.toContain("critico");
     expect(Object.values(RISCO_POR_TIPO)).not.toContain("critico");
+  });
+});
+
+// Medido no espelho (29/10/2026): "guarde na memória" virou `acao` e todo `acao` era
+// de atenção — o lote "Aplicar as mudanças seguras" nunca aparecia.
+describe("riscoDaProposta — o risco da ação sai da porta, numa lista fechada", () => {
+  it("memória, material de conhecimento e tarefa (POST) são seguros", () => {
+    expect(riscoDaProposta("acao", { porta: "ai/memory", metodo: "POST" })).toBe("seguro");
+    expect(riscoDaProposta("acao", { porta: "ai/knowledge/sources", metodo: "POST" })).toBe("seguro");
+    expect(riscoDaProposta("acao", { porta: "tasks", metodo: "POST" })).toBe("seguro");
+  });
+
+  it("o resto da lista, porta fora dela e payload torto são de atenção", () => {
+    expect(riscoDaProposta("acao", { porta: "ai/routers", metodo: "POST" })).toBe("atencao");
+    expect(riscoDaProposta("acao", { porta: "ai/agents/:id/publish", metodo: "POST" })).toBe("atencao");
+    expect(riscoDaProposta("acao", { porta: "ai/memory", metodo: "PATCH" })).toBe("atencao");
+    expect(riscoDaProposta("acao", { porta: "inventada", metodo: "POST" })).toBe("atencao");
+    expect(riscoDaProposta("acao", null)).toBe("atencao");
+  });
+
+  it("os outros tipos seguem a tabela por tipo", () => {
+    expect(riscoDaProposta("memoria", { porta: "ai/routers", metodo: "POST" })).toBe(RISCO_POR_TIPO.memoria);
+    expect(riscoDaProposta("roteador", { porta: "ai/memory", metodo: "POST" })).toBe(RISCO_POR_TIPO.roteador);
+  });
+
+  it("só 3 portas são seguras — aumentar a lista é decisão, não acidente", () => {
+    expect(ESCRITA_PERMITIDA.filter((e) => e.risco === "seguro").map((e) => `${e.metodo} ${e.porta}`).sort()).toEqual([
+      "POST ai/knowledge/sources",
+      "POST ai/memory",
+      "POST tasks",
+    ]);
   });
 });

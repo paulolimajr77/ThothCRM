@@ -16,7 +16,7 @@ import { z } from "zod";
 
 import { escritaPermitida, acaoPermitida } from "@/lib/assistente/portas/regras";
 import { chamarRotaPorDentro, type HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
-import { riscoDoTipo } from "@/lib/assistente/propostas/operacoes";
+import { riscoDaProposta } from "@/lib/assistente/propostas/operacoes";
 import { esquemaDoCorpoDaProposta } from "@/lib/assistente/propostas/payload";
 import type { TipoDeProposta } from "@/lib/assistente/propostas/tipos";
 
@@ -341,7 +341,7 @@ export async function enviarProposta(
       id: dados.id,
       tipo: pedido.kind,
       operacao,
-      risco: riscoDoTipo(pedido.kind),
+      risco: riscoDaProposta(pedido.kind, validacao.data.payload),
       resumo: dados.resumo,
       expira_em: typeof dados.expires_at === "string" ? dados.expires_at : null,
     },
