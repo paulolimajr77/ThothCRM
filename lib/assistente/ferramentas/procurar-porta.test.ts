@@ -178,6 +178,15 @@ describe("procurar_porta", () => {
     expect(saida.areas).toContain("contacts");
   });
 
+  it("a porta de contatos chega com a dica do filtro de aniversário e da busca por nome", async () => {
+    const { ferramentas } = montarParaTeste("admin");
+    const saida = (await chamar(ferramentas, "procurar_porta", { pergunta: "aniversariantes da semana" })) as {
+      portas: (PortaEncontrada & { filtros?: { filtros: string[] } })[];
+    };
+    const contatos = saida.portas.find((p) => p.id === "contacts");
+    expect(contatos?.filtros?.filtros).toEqual(expect.arrayContaining(["aniversario", "search"]));
+  });
+
   it("a descrição não diz ao modelo que ler a equipe é proibido", () => {
     const { ferramentas } = montarParaTeste("admin");
     const descricao = String((ferramentas.procurar_porta as { description?: string }).description);

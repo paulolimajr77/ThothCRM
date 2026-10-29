@@ -3,6 +3,7 @@ import { tool, type Tool } from "ai";
 import { z } from "zod";
 
 import { CATALOGO_DE_PORTAS } from "@/lib/assistente/portas/catalogo.gerado";
+import { DICAS_DE_FILTRO } from "@/lib/assistente/portas/dicas";
 import {
   portaDeLeituraPermitida,
   tipoDeMetodoPermitido,
@@ -177,6 +178,7 @@ async function procurarPorta(
         metodos: metodosPermitidos,
         parametros: porta.parametros,
         resumo: porta.resumo,
+        ...(DICAS_DE_FILTRO[porta.id] ? { filtros: DICAS_DE_FILTRO[porta.id] } : {}),
       },
     });
   }
@@ -200,6 +202,8 @@ export interface PortaEncontrada {
   metodos: string[];
   parametros: string[];
   resumo: string;
+  /** Os filtros que a porta aceita e como usá-los (`lib/assistente/portas/dicas.ts`). */
+  filtros?: { filtros: readonly string[]; uso: string };
 }
 
 export function criarProcurarPorta(entrada: EntradaDasFerramentas): Tool {
