@@ -18,6 +18,7 @@ import { ROLE_RANK, type AuthUser, type Role } from "@/lib/auth/types";
 import { audit } from "@/lib/audit";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 
+vi.mock("@/lib/assistente/ligado", () => ({ recusarSeAssistenteDesligado: vi.fn(async () => null) }));
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/impersonate/support", () => ({ requireSupportWrite: vi.fn(async () => null) }));
 vi.mock("@/lib/audit", () => ({ audit: vi.fn(async () => undefined) }));

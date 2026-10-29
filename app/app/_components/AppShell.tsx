@@ -25,10 +25,12 @@ interface AppShellProps {
    * 403 a cada minuto em nome de ninguém.
    */
   podeAtender: boolean;
+  /** O assistente interno foi ligado para esta empresa pela plataforma? Sem a prop = desligado. */
+  assistenteLigado?: boolean;
   children: ReactNode;
 }
 
-export function AppShell({ sidebarCollapsed, podeAtender, children }: AppShellProps) {
+export function AppShell({ sidebarCollapsed, podeAtender, assistenteLigado = false, children }: AppShellProps) {
   useInboundMessageAlerts();
   useInboundCallAlerts();
   useCrmAlerts();
@@ -65,7 +67,7 @@ export function AppShell({ sidebarCollapsed, podeAtender, children }: AppShellPr
       topo ficam ACIMA da casca, e sem o desconto o documento media a tela
       mais a faixa — rolável justo quando o WhatsApp está desconectado.
     */
-    <AssistentePainelProvider>
+    <ComPainelDoAssistente ligado={assistenteLigado}>
     <div className="flex min-h-[calc(100dvh-var(--faixas-de-cima,0px))] w-full bg-background">
       <BarraDeProgressoNavegacao />
       <div className="hidden md:block">
@@ -143,8 +145,16 @@ export function AppShell({ sidebarCollapsed, podeAtender, children }: AppShellPr
         `components/assistente/PainelDoAssistente.tsx`. O provedor envolve a
         casca inteira para que o ícone do topo e o ⌘K abram ESTE painel.
       */}
-      <PainelDoAssistente />
+      {assistenteLigado ? <PainelDoAssistente /> : null}
     </div>
-    </AssistentePainelProvider>
+    </ComPainelDoAssistente>
   );
+}
+
+/**
+ * Sem o assistente ligado não há provedor: o botão do topo e o ⌘K leem `null`
+ * do contexto e não oferecem a porta (e o servidor recusa a rota de qualquer jeito).
+ */
+function ComPainelDoAssistente({ ligado, children }: { ligado: boolean; children: ReactNode }) {
+  return ligado ? <AssistentePainelProvider>{children}</AssistentePainelProvider> : <>{children}</>;
 }

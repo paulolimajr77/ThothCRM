@@ -285,12 +285,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // ou seja: o painel é IRMÃO do `AppShell`, não filho dele. Um provedor por
   // dentro do `VoiceCallProvider` deixaria o painel de fora — ele declararia o
   // que ocupa e ninguém descontaria, que é exatamente o defeito da #1305.
+  // O assistente interno só existe para a empresa que a plataforma ligou (falha fechada).
+  const assistenteLigado = Boolean(activeOrg?.capacidades_ligadas?.includes("assistente"));
   const shell = (
     <ProvedorDaOcupacaoDoRodape>
       <VoiceCallProvider>
         <AppShell
           sidebarCollapsed={collapsed}
           podeAtender={Boolean(activeOrg && roleAtLeast(activeOrg.role, "agent"))}
+          assistenteLigado={assistenteLigado}
         >
           {children}
         </AppShell>
