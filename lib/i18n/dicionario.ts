@@ -9848,7 +9848,7 @@ export const DICIONARIO: Traducoes = {
   "Solicitação de dados": { es: "Solicitud de datos" },
   "Recebido em": { es: "Recibido el" },
   "às": { es: "a las" },
-  "Vence em": { es: "Vence en" },
+  "Vence em": { es: "Vence el" },
   "Relatório de exportação disponível (expira em 72h).": {
     es: "Informe de exportación disponible (expira en 72h).",
   },

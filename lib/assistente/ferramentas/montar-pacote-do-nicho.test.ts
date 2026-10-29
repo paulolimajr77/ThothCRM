@@ -11,6 +11,7 @@ import { nichoPorId, preencherEsqueleto } from "@/lib/assistente/nichos";
 import type { NichoDoAssistente } from "@/lib/assistente/nichos";
 import { catalogoComHandler } from "@/lib/ai/agents/capacidades-padrao";
 import { ligarPacote } from "@/lib/mcp/tools/selecao-por-pacote";
+import { modeloPorId } from "@/lib/followup/modelos";
 
 import { chamar, montarParaTeste } from "./auxiliar-de-teste";
 import { sobreporHandlersDeCriacao } from "./criar-rascunho-de-agente";
@@ -271,8 +272,10 @@ describe("montar_pacote_do_nicho", () => {
 
     expect(saida.ok).toBe(false);
     expect(falhou(saida).motivo).toBe("indisponivel");
-    // Nenhuma proposta foi criada (nem agente, nem follow-up)
-    expect(capturaProposta.corpos).toHaveLength(0);
+    // Só a do agente foi tentada (e falhou); nenhuma de follow-up.
+    expect(
+      capturaProposta.corpos.map((c) => (c.payload as { porta?: string }).porta),
+    ).toEqual(["ai/agents"]);
   });
 
   // --- Casos antigos adaptados ---
@@ -473,7 +476,7 @@ describe("montar_pacote_do_nicho", () => {
     ligar({
       agentes: [],
       followups: [
-        { id: "fu-existente", name: "clinica-consulta-retomada" },
+        { id: "fu-existente", name: modeloPorId("clinica-consulta-retomada")!.nome },
       ],
       capturaProposta,
     });
@@ -481,7 +484,7 @@ describe("montar_pacote_do_nicho", () => {
 
     const saida = await montarPacoteDoNicho(entrada, {
       ...PEDIDO_CLINICA,
-      followups: ["clinica-consulta-retomada", "clinica-exame-marcar"],
+      followups: ["clinica-consulta-retomada", "clinica-falta-remarcar"],
     });
 
     expect(saida.ok).toBe(true);
@@ -489,11 +492,13 @@ describe("montar_pacote_do_nicho", () => {
     // O já instalado não foi proposto
     expect(ok.reaproveitado.followups).toContain("clinica-consulta-retomada");
     // O outro foi proposto
-    expect(ok.proposto.followups.map((f) => f.modelo)).toEqual(["clinica-exame-marcar"]);
-    expect(capturaProposta.corpos).toHaveLength(1);
-    expect((capturaProposta.corpos[0]!.payload as { porta?: string }).porta).toBe(
-      "ai/followup-flows/from-model",
+    expect(ok.proposto.followups.map((f) => f.modelo)).toEqual(["clinica-falta-remarcar"]);
+    const corposFu = capturaProposta.corpos.filter(
+      (c) => (c.payload as { porta?: string }).porta === "ai/followup-flows/from-model",
     );
+    expect(corposFu.map((c) => (c.payload as { corpo?: { model_id?: string } }).corpo?.model_id)).toEqual([
+      "clinica-falta-remarcar",
+    ]);
   });
 
   it("lista de follow-ups falhando (500): indisponivel, nenhuma proposta", async () => {
@@ -521,10 +526,10 @@ describe("montar_pacote_do_nicho", () => {
     const entrada = entradaDeTeste();
 
     const saida = await montarPacoteDoNicho(entrada, {
-      nicho: "advocacia",
-      negocio: "Escritório Prado",
-      descricao: "direito trabalhista",
-      nome_do_agente: "Triagem Prado",
+      nicho: nichoPorId("imobiliaria")!,
+      negocio: "Imob Sul",
+      descricao: "venda e locação",
+      nomeDoAgente: "Vendas Sul",
       followups: ["clinica-consulta-retomada"],
     });
 
