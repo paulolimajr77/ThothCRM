@@ -66940,7 +66940,7 @@ Pense como o negócio funciona de ponta a ponta e responda estas perguntas por c
 - Funil que já existe: `pipelines/:id/config` PATCH (mesmo formato do `config`; a lista de `fields` enviada substitui a anterior), `pipelines/:id/stages` e `pipelines/:id/stages/:stageId`.
 - Cada campo: key (minúscula, sem espaço), label e type; para escolha fechada, type select com options [{value, label}].
 - Quem atende cada etapa: `pipelines/:id/agent-mapping`.
-- Agente: `ai/agents` POST; texto: `ai/agents/:id/versions` POST (rascunho) e PATCH.
+- Agente: o corpo de `ai/agents` POST é grande (provedor, modelo, credencial, ferramentas): NÃO o monte à mão. Chame `montar_pacote_do_nicho` (nicho mais próximo; "generico" serve) com negocio, descricao e nome_do_agente: ele propõe o rascunho do agente com o formato certo. Depois ajuste o texto pelo que o dono aprovou na parte do agente, em `ai/agents/:id/versions` (rascunho). Falha de indexação da fonte de conhecimento NÃO impede propor o agente: avise e siga.
 - Follow-ups: `ai/followup-flows/from-model`, `ai/followup-flows/:id/duplicate`.
 - Memória: `ai/memory` e `ai/memory/entries`. Conhecimento: `ai/knowledge/sources` POST com `{"source_type":"documento","name":"…","markdown_blob":"texto colado pelo dono"}` (ou `source_type:"faq"` com `items:[{question,answer}]`). Os nomes `type` e `content` dão 422.
 - Catálogo: `products`. Mensagens: `message-templates`.
