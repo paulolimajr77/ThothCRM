@@ -127,6 +127,10 @@ export async function GET(req: NextRequest): Promise<Response> {
     source: url.searchParams.get("source") ?? undefined,
     pessoais: url.searchParams.get("pessoais") ?? undefined,
     blocked: url.searchParams.get("blocked") ?? undefined,
+    // Sem esta linha o filtro existia no esquema e no handler, mas a URL nunca o
+    // entregava: `?aniversario=semana` devolvia a lista inteira (medido no espelho,
+    // 29/10/2026, pelo assistente interno).
+    aniversario: url.searchParams.get("aniversario") ?? undefined,
     cursor: url.searchParams.get("cursor") ?? undefined,
     limit: url.searchParams.get("limit") ?? undefined,
     order_by: url.searchParams.get("order_by") ?? undefined,

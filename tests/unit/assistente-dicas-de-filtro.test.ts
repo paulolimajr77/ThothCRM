@@ -13,7 +13,9 @@ import { DICAS_DE_FILTRO } from "@/lib/assistente/portas/dicas";
 
 /** Onde cada porta lê os filtros: a rota e, quando houver, o esquema que ela usa. */
 const FONTES: Record<string, readonly string[]> = {
-  contacts: ["lib/schemas/contacts.ts"],
+  // A ROTA, não o esquema: é ela que lê a URL. Com o esquema, o `aniversario` passava
+  // aqui e a rota o ignorava (29/10/2026).
+  contacts: ["app/api/v1/contacts/route.ts"],
   conversations: ["app/api/v1/conversations/route.ts"],
   "agenda/agendamentos": ["app/api/v1/agenda/agendamentos/route.ts"],
   "external-db/connections/:id/tables/:schema/:tabela": [
