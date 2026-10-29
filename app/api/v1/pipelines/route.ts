@@ -21,6 +21,7 @@ import {
   type FunilEditavel,
 } from "@/lib/pipelines/pipeline-editing";
 import { chaveDeNome, slugDeNome } from "@/lib/leads/stage-editing";
+import { pipelineConfigPatchSchema } from "@/lib/schemas/settings";
 import { createClient } from "@/lib/supabase/server";
 import { conflitoDoBanco, corpo, lerFunis } from "./_funis";
 import { listPipelinesHandler } from "./_handler";
@@ -68,6 +69,10 @@ const bodySchema = z
   .object({
     name: z.string().min(1).max(80),
     description: z.string().max(280).nullable().optional(),
+    // `config` (opcional): a configuração do funil (campos personalizados, motivos
+    // de ganho e perda, vocabulário...) gravada na mesma escrita, com a MESMA régua
+    // de `PATCH /pipelines/[id]/config`. Funil e configuração num cartão só.
+    config: pipelineConfigPatchSchema.optional(),
     stages: z
       .array(etapaDoCorpoSchema)
       .min(2)
@@ -129,7 +134,10 @@ export async function POST(req: NextRequest): Promise<Response> {
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
     const daEtapa = parsed.error.issues.find((i) => i.path[0] === "stages");
-    const mensagem = daEtapa
+    const daConfig = parsed.error.issues.some((i) => i.path[0] === "config");
+    const mensagem = daConfig
+      ? "Confira a configuração do funil (campos, motivos, vocabulário)."
+      : daEtapa
       ? daEtapa.code === "custom"
         ? daEtapa.message
         : "Confira as etapas: de 2 a 30, cada uma com nome de até 60 letras."
@@ -210,6 +218,52 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
+  // A configuração viaja junto: mesma gravação de `PATCH /pipelines/[id]/config`.
+  // Falhou → desfaz o funil inteiro (nasce completo ou não nasce).
+  const config = parsed.data.config;
+  if (config) {
+    const { data: atual } = await supabase
+      .from("crm_pipelines")
+      .select("vocabulary, settings")
+      .eq("id", pipelineId)
+      .eq("organization_id", orgId)
+      .maybeSingle();
+    const settings: Record<string, unknown> = { ...((atual?.settings as Record<string, unknown> | null) ?? {}) };
+    for (const chave of [
+      "fields",
+      "lost_reasons",
+      "won_reasons",
+      "won_reason_required",
+      "comanda_no_ganho",
+      "reabertura",
+      "reabertura_campos",
+      "entrada_do_inbox",
+      "ocultar_encerrados_dias",
+      "atalhos",
+    ] as const) {
+      if (config[chave] !== undefined) settings[chave] = config[chave];
+    }
+    const vocabulary = {
+      ...((atual?.vocabulary as Record<string, unknown> | null) ?? {}),
+      ...(config.vocabulary ?? {}),
+    };
+    const { error: configErr } = await supabase
+      .from("crm_pipelines")
+      .update({ settings, vocabulary })
+      .eq("id", pipelineId)
+      .eq("organization_id", orgId);
+    if (configErr) {
+      await supabase.from("crm_stages").delete().eq("pipeline_id", pipelineId).eq("organization_id", orgId);
+      await supabase.from("crm_pipelines").delete().eq("id", pipelineId).eq("organization_id", orgId);
+      return fail(
+        "internal_error",
+        `Não consegui gravar a configuração de «${name}». Nada foi salvo — tente de novo.`,
+        500,
+        { requestId, details: { erro: configErr.message } },
+      );
+    }
+  }
+
   void audit({
     action: "pipeline.created",
     actorUserId: authz.user.id,
@@ -222,6 +276,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       slug: row.slug,
       is_default: row.is_default,
       etapas: parsed.data.stages ? parsed.data.stages.length : "iniciais",
+      com_configuracao: !!config,
     },
   });
 

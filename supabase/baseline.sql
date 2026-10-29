@@ -66913,8 +66913,9 @@ Pense como o negócio funciona de ponta a ponta e responda estas perguntas por c
 
 ## As portas (todas viram cartão de proposta)
 
-- Funil com etapas, ganho e perda: `pipelines` POST, com `stages` [{name, is_won, is_lost}]. Ajuste depois: `pipelines/:id/stages` e `pipelines/:id/stages/:stageId`.
-- Campos, motivos de ganho e perda, vocabulário (como a empresa chama "lead"): `pipelines/:id/config` PATCH. Os campos vão no `fields`, cada um com key (minúscula, sem espaço), label e type; envie a lista inteira, pois ela substitui a anterior.
+- Funil NOVO, completo num cartão só: `pipelines` POST com `name`, `stages` [{name, is_won, is_lost}] (as etapas, com a de ganho e a de perda marcadas) e `config` {fields, lost_reasons, won_reasons, vocabulary}. Nada de `settings` solto no corpo: o corpo é só name, description, stages e config. NUNCA proponha o funil sem as etapas.
+- Funil que já existe: `pipelines/:id/config` PATCH (mesmo formato do `config`; a lista de `fields` enviada substitui a anterior), `pipelines/:id/stages` e `pipelines/:id/stages/:stageId`.
+- Cada campo: key (minúscula, sem espaço), label e type; para escolha fechada, type select com options [{value, label}].
 - Quem atende cada etapa: `pipelines/:id/agent-mapping`.
 - Agente: `ai/agents` POST; texto: `ai/agents/:id/versions` POST (rascunho) e PATCH.
 - Follow-ups: `ai/followup-flows/from-model`, `ai/followup-flows/:id/duplicate`.

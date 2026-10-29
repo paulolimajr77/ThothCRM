@@ -165,6 +165,26 @@ describe("POST /api/v1/pipelines", () => {
     expect(db.escritas).toEqual([]);
   });
 
+  it("`settings` solto no corpo (o formato certo é `config`) → 422, nenhuma escrita", async () => {
+    authOk();
+    const db = makeDb({ pipelines: umFunil() });
+    const { POST } = await import("./route");
+    const res = await POST(reqPost({ name: "Oficina", settings: { fields: [] } }));
+    expect(res.status).toBe(422);
+    expect(db.escritas).toEqual([]);
+  });
+
+  it("`config` inválida (campo sem rótulo) → 422 dizendo que é a configuração, nenhuma escrita", async () => {
+    authOk();
+    const db = makeDb({ pipelines: umFunil() });
+    const { POST } = await import("./route");
+    const res = await POST(reqPost({ name: "Oficina", config: { fields: [{ key: "placa", type: "text" }] } }));
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error: { message: string } };
+    expect(body.error.message).toContain("configuração do funil");
+    expect(db.escritas).toEqual([]);
+  });
+
   it("com `stages`, o funil nasce com ESSAS etapas, na ordem, com ganho e perda marcados", async () => {
     authOk();
     const db = makeDb({ pipelines: umFunil() });
