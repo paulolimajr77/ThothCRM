@@ -6,6 +6,7 @@ import {
   type DiffLegivel,
 } from "@/lib/assistente/propostas/diff-legivel";
 import type { Tradutor } from "@/lib/assistente/propostas/tradutor";
+import { ESCRITA_PERMITIDA } from "@/lib/assistente/portas/listas";
 import { formatadorDeData } from "@/lib/cobranca/fuso";
 import { useIdioma } from "@/lib/i18n/IdiomaProvider";
 
@@ -80,6 +81,21 @@ function rotuloDaOperacao(t: Tradutor, operacao: string | null): string {
   }
 }
 
+/**
+ * Verdadeiro quando a proposta (kind `acao`, porta+método no payload) casa
+ * uma entrada de ESCRITA_PERMITIDA marcada `externo: true` — efeito fora do
+ * sistema (mensagem a cliente, campanha, equipe ou automação).
+ */
+function ehExterno(payload: unknown): boolean {
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload))
+    return false;
+  const p = payload as { porta?: unknown; metodo?: unknown };
+  if (typeof p.porta !== "string" || typeof p.metodo !== "string") return false;
+  return ESCRITA_PERMITIDA.some(
+    (e) => e.porta === p.porta && e.metodo === p.metodo && e.externo === true,
+  );
+}
+
 /** O prazo em frase: "vence em N dias" / "venceu" / o estado já decidido. */
 function fraseDoPrazo(t: Tradutor, p: PropostaNaTela): string {
   if (p.status === "aplicada") return t("Aplicada");
@@ -149,6 +165,7 @@ export function CartaoDeProposta({
   }
 
   const p = proposta;
+  const externo = p.kind === "acao" && ehExterno(p.payload);
   const diff: DiffLegivel = diffLegivel(t as Tradutor, {
     kind: p.kind,
     operacao: p.operacao,
@@ -207,6 +224,17 @@ export function CartaoDeProposta({
           {aviso}
         </p>
       ))}
+      {externo ? (
+        <p
+          role="alert"
+          data-testid={`proposta-externo-${p.id}`}
+          className="rounded-md border border-amber-600/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400"
+        >
+          {t(
+            "Atenção: esta mudança age fora do sistema (mensagem a cliente, campanha, equipe ou automação). Confira antes de aplicar.",
+          )}
+        </p>
+      ) : null}
 
       <p data-testid={`proposta-quem-${p.id}`} className="text-xs text-text-muted">
         {t("Pedido por")} {nomeDe(p.requested_by)} ·{" "}
