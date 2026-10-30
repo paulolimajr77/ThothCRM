@@ -349,3 +349,12 @@ describe("team/:user_id", () => {
     expect(escritaPermitida("team/:user_id/role", "PATCH")).toBe(false);
   });
 });
+
+describe("portas fechadas por segurança e por falta de prova", () => {
+  it("chave do mapa e honorários ficam fechados para o assistente", () => {
+    expect(escritaPermitida("ai/mapas", "PUT")).toBe(false);
+    expect(escritaPermitida("honorarios/contratos", "POST")).toBe(false);
+    expect(escritaPermitida("honorarios/contratos/:id/parcelas", "POST")).toBe(false);
+    expect(escritaPermitida("honorarios/parcelas/:id/pagar", "POST")).toBe(false);
+  });
+});

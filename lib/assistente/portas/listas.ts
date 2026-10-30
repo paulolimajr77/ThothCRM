@@ -186,7 +186,6 @@ export const ESCRITA_PERMITIDA: readonly {
   { porta: "ai/followup-flows/:id/rollback", metodo: "POST", descricao: "voltar o follow-up à versão anterior" },
   { porta: "ai/memory/entries", metodo: "POST", descricao: "criar anotação da memória da empresa" },
   { porta: "ai/memory/entries/:id", metodo: "PATCH", descricao: "alterar anotação da memória" },
-  { porta: "ai/mapas", metodo: "PUT", descricao: "ajustar o mapa de campos da IA" },
   { porta: "ai/pacing", metodo: "PUT", descricao: "ajustar o ritmo de resposta da IA" },
   { porta: "ai/routers/:id/members", metodo: "PUT", descricao: "definir quais agentes fazem parte do roteador" },
   { porta: "ai/style-adjustments", metodo: "PUT", descricao: "ajustar o estilo de resposta da IA" },
@@ -265,9 +264,6 @@ export const ESCRITA_PERMITIDA: readonly {
   { porta: "financeiro/fidelidade", metodo: "POST", descricao: "lançar fidelidade do cliente" },
   { porta: "financeiro/lancamentos", metodo: "POST", descricao: "criar lançamento financeiro" },
   { porta: "financeiro/lancamentos/:id", metodo: "PATCH", descricao: "alterar lançamento financeiro" },
-  { porta: "honorarios/contratos", metodo: "POST", descricao: "criar contrato de honorários" },
-  { porta: "honorarios/contratos/:id/parcelas", metodo: "POST", descricao: "criar parcela de honorários" },
-  { porta: "honorarios/parcelas/:id/pagar", metodo: "POST", descricao: "marcar parcela de honorários como paga" },
   { porta: "agenda/google/calendarios", metodo: "PATCH", descricao: "alterar calendário Google" },
   { porta: "agenda/google/calendarios/atualizar", metodo: "POST", descricao: "atualizar calendário Google" },
   // ---- Grupo 3: efeito fora do sistema (cartão de ALERTA, aprovação individual, nunca em lote) ----

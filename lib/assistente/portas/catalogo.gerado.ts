@@ -4121,12 +4121,6 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
       PATCH: mod.PATCH,
     };
   },
-  "ai/mapas": async () => {
-    const mod = await import("@/app/api/v1/ai/mapas/route");
-    return {
-      PUT: mod.PUT,
-    };
-  },
   "ai/pacing": async () => {
     const mod = await import("@/app/api/v1/ai/pacing/route");
     return {
@@ -4582,24 +4576,6 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
     const mod = await import("@/app/api/v1/financeiro/lancamentos/[id]/route");
     return {
       PATCH: mod.PATCH,
-    };
-  },
-  "honorarios/contratos": async () => {
-    const mod = await import("@/app/api/v1/honorarios/contratos/route");
-    return {
-      POST: mod.POST,
-    };
-  },
-  "honorarios/contratos/:id/parcelas": async () => {
-    const mod = await import("@/app/api/v1/honorarios/contratos/[id]/parcelas/route");
-    return {
-      POST: mod.POST,
-    };
-  },
-  "honorarios/parcelas/:id/pagar": async () => {
-    const mod = await import("@/app/api/v1/honorarios/parcelas/[id]/pagar/route");
-    return {
-      POST: mod.POST,
     };
   },
   "agenda/google/calendarios": async () => {
