@@ -751,15 +751,18 @@ export function AgentForm(props: Props) {
         texto da tela, e o `aria-describedby` do botão o anuncia junto do rótulo.
       */}
       {isEdit && publishBlockReason ? (
-        <p
-          id={ID_DO_MOTIVO_DO_PUBLICAR}
-          data-testid={ID_DO_MOTIVO_DO_PUBLICAR}
-          role="status"
-          aria-live="polite"
-          className="rounded-md border border-warning-bg bg-warning-bg/30 px-3 py-2 text-sm font-medium text-warning-fg"
-        >
-          {t("Para publicar:")} {publishBlockReason}
-        </p>
+        <div className="rounded-md border border-warning-bg bg-warning-bg/30 px-3 py-2 text-sm font-medium text-warning-fg">
+          <span aria-hidden>{t("Para publicar:")} </span>
+          <p
+            id={ID_DO_MOTIVO_DO_PUBLICAR}
+            data-testid={ID_DO_MOTIVO_DO_PUBLICAR}
+            role="status"
+            aria-live="polite"
+            className="inline"
+          >
+            {publishBlockReason}
+          </p>
+        </div>
       ) : null}
 
       {/*

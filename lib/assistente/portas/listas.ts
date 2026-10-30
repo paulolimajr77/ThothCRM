@@ -134,7 +134,7 @@ export const ESCRITA_PERMITIDA: readonly {
   { porta: "ai/memory", metodo: "POST", descricao: "salvar nova versão da memória da empresa", risco: "seguro" },
   { porta: "ai/knowledge/sources", metodo: "POST", descricao: "cadastrar material de conhecimento", risco: "seguro" },
   { porta: "ai/knowledge/sources/:id", metodo: "PATCH", descricao: "alterar material de conhecimento" },
-  { porta: "ai/knowledge/sources/:id/reindex", metodo: "POST", descricao: "ler de novo um material de conhecimento", risco: "seguro" },
+  { porta: "ai/knowledge/sources/:id/reindex", metodo: "POST", descricao: "ler de novo um material de conhecimento" },
   { porta: "pipelines", metodo: "POST", descricao: "criar funil" },
   { porta: "pipelines/:id", metodo: "PATCH", descricao: "alterar funil" },
   { porta: "pipelines/:id/stages", metodo: "POST", descricao: "criar etapa do funil" },
@@ -281,7 +281,6 @@ export const ESCRITA_PERMITIDA: readonly {
   { porta: "campaigns/:id/:acao", metodo: "POST", descricao: "iniciar, pausar ou outra ação de campanha", externo: true },
   { porta: "campaigns/preview", metodo: "POST", descricao: "pré-visualizar campanha", externo: true },
   { porta: "team/:user_id", metodo: "PATCH", descricao: "alterar dados do membro da equipe", externo: true },
-  { porta: "team/:user_id/role", metodo: "PATCH", descricao: "alterar papel do membro da equipe", externo: true },
   { porta: "automation-rules", metodo: "POST", descricao: "criar automação (pode enviar mensagem)", externo: true },
   { porta: "automation-rules/:id", metodo: "PATCH", descricao: "alterar automação (pode enviar mensagem)", externo: true },
 ] as const;
