@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { filtrarDicionario, sqlDasVisoes } from "./executar";
+import { filtrarDicionario, sqlDasVisoes, sqlDosMembros } from "./executar";
 import { validarConsulta } from "./validar";
 
 const ORG = "eeeeeeee-9000-4000-8000-000000000001";
@@ -108,5 +108,16 @@ describe("filtrarDicionario e sqlDasVisoes", () => {
 
   it("organização que não é uuid não vira SQL", () => {
     expect(() => sqlDasVisoes(filtrarDicionario(linhas), "x'; drop table a; --")).toThrow();
+  });
+});
+
+describe("sqlDosMembros", () => {
+  it("só a organização da sessão, sem e-mail na saída, e organização que não é uuid não vira SQL", () => {
+    const sql = sqlDosMembros(ORG);
+    expect(sql).toContain(`uo.organization_id = '${ORG}'::uuid`);
+    expect(sql).toContain("uo.revoked_at is null");
+    expect(sql.split(" as nome")[0]).toContain("u.id as user_id");
+    expect(sql).not.toMatch(/u\.email as/);
+    expect(() => sqlDosMembros("x'; drop table a; --")).toThrow();
   });
 });

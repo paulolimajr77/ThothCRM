@@ -58,7 +58,31 @@ export function sqlDasVisoes(tabelas: TabelaDoDicionario[], orgId: string): stri
     .join(";\n");
 }
 
-let dicionarioEmCache: { em: number; tabelas: TabelaDoDicionario[] } | null = null;
+/**
+ * `membros`: quem é cada usuário da organização (o nome do vendedor). O nome mora no esquema de login,
+ * fora do alcance do papel `authenticated`; esta visão é criada ANTES da troca de papel, só com as
+ * pessoas da organização da sessão e só três colunas (sem e-mail, sem telefone).
+ */
+export const TABELA_DOS_MEMBROS: TabelaDoDicionario = {
+  nome: "membros",
+  colunas: [
+    { nome: "user_id", tipo: "uuid" },
+    { nome: "nome", tipo: "text" },
+    { nome: "papel", tipo: "text" },
+  ],
+};
+
+export function sqlDosMembros(orgId: string): string {
+  if (!UUID.test(orgId)) throw new Error("organização inválida");
+  return (
+    "create temp view membros as select u.id as user_id, " +
+    "coalesce(nullif(u.raw_user_meta_data->>'full_name', ''), nullif(u.raw_user_meta_data->>'name', ''), split_part(u.email, '@', 1)) as nome, " +
+    "uo.role as papel from auth.users u join public.user_organizations uo on uo.user_id = u.id " +
+    `where uo.organization_id = '${orgId}'::uuid and uo.revoked_at is null`
+  );
+}
+
+let dicionarioEmCache:{ em: number; tabelas: TabelaDoDicionario[] } | null = null;
 
 async function lerDicionario(pool: pg.Pool): Promise<TabelaDoDicionario[]> {
   if (dicionarioEmCache && Date.now() - dicionarioEmCache.em < VALIDADE_DO_DICIONARIO_EM_MS) {
@@ -83,7 +107,7 @@ export function limparDicionarioEmCache(): void {
 }
 
 export async function dicionarioDeDados(pool: pg.Pool): Promise<TabelaDoDicionario[]> {
-  return lerDicionario(pool);
+  return [...(await lerDicionario(pool)), TABELA_DOS_MEMBROS];
 }
 
 export type ResultadoDaConsulta =
@@ -121,6 +145,8 @@ export async function executarConsultaLivre(
   const client = await pool.connect();
   try {
     await client.query("begin");
+    await client.query(sqlDosMembros(sessao.orgId));
+    await client.query("grant select on pg_temp.membros to authenticated");
     await client.query("set local role authenticated");
     await client.query("select set_config('request.jwt.claims', $1, true), set_config('request.jwt.claim.sub', $2, true)", [
       JSON.stringify({ sub: sessao.userId, role: "authenticated" }),
