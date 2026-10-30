@@ -599,4 +599,45 @@ describe("montar_pacote_do_nicho", () => {
     expect(falhou(saida).motivo).toBe("sem_credencial");
     expect(capturaProposta.corpos).toEqual([]);
   });
+
+  it("agente ARQUIVADO com o mesmo nome: não finge que existe, pede outro nome e não propõe nada", async () => {
+    // Medido no espelho (30/10): depois de "limpar" a Nina, o nome ficou preso pelo arquivado, o pacote
+    // "reaproveitou" o arquivado e o assistente disse que a Nina já estava proposta. Sabotagem: voltar a
+    // tratar arquivado como existente → este teste fica vermelho.
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({
+      agentes: [{ id: "ag-velho", name: "Recepção Aurora", archived_at: "2026-10-30T00:00:00Z" }],
+      capturaProposta,
+    });
+
+    const saida = falhou(await montarPacoteDoNicho(entradaDeTeste(), { ...PEDIDO_CLINICA, followups: [] }));
+
+    expect(saida.motivo).toBe("ja_existe");
+    expect(saida.detalhe).toContain("ARQUIVADO");
+    expect(capturaProposta.corpos).toHaveLength(0);
+  });
+
+  it("pedido expresso: o agente proposto é aplicado na hora, pelas rotas do cartão", async () => {
+    const chamadas: string[] = [];
+    const h: HandlerDeRota = async (req) => {
+      chamadas.push(new URL(req.url).pathname);
+      return respostaJson(200, { data: { id: "prop-novo", resumo: "proposta de teste", status: "aplicada" } });
+    };
+    ligar({ agentes: [] });
+    sobreporFontesDeProposta({ propostas: h, aprovar: h, aplicar: h });
+    const { ctx, coletor } = montarParaTeste("admin", {}, {
+      turno: { threadId: "t", turnId: "u", pergunta: "Monte a atendente da oficina e crie o agente" },
+    });
+
+    const saida = deuCerto(
+      await montarPacoteDoNicho(
+        { ctx, coletor, skills: [], turno: { threadId: "t", turnId: "u", pergunta: "Monte a atendente da oficina e crie o agente" } },
+        { ...PEDIDO_CLINICA, followups: [], pedidoExpresso: "Monte a atendente da oficina" },
+      ),
+    );
+
+    expect(saida.proposto.agente?.aplicado).toBe(true);
+    expect(chamadas.some((c) => c.endsWith("/aprovar"))).toBe(true);
+    expect(chamadas.some((c) => c.endsWith("/aplicar"))).toBe(true);
+  });
 });

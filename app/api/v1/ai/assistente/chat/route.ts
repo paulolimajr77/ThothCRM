@@ -392,10 +392,11 @@ export async function POST(req: NextRequest): Promise<Response> {
         },
         { registry: deps.registry, log: deps.log },
       );
-      if (saida.texto.trim() === "" && coletor.acoes.some((a) => a.tipo === "proposta")) {
-        // Acabou o limite de passos logo depois de propor o cartão: o cartão existe,
-        // então a pessoa recebe a frase de sempre em vez do aviso de falha da IA.
-        textoDoModelo = t("Preparei o que você pediu. Veja o cartão abaixo e aprove se estiver bom, ou me diga o que mudar.");
+      if (saida.texto.trim() === "" && coletor.acoes.some((a) => a.tipo === "proposta" || a.tipo === "teste")) {
+        // Acabou o limite de passos antes de o modelo escrever a resposta: o que já foi feito
+        // aparece nos cartões, e a pessoa é avisada de que FALTA o resto (nunca "preparei o que pediu",
+        // que escondia o que ficou por fazer).
+        textoDoModelo = t("Cheguei ao limite de passos desta resposta antes de terminar. O que já foi feito está nos cartões abaixo. Escreva \"continua\" e eu sigo de onde parei.");
         callId = saida.callId;
       } else if (saida.texto.trim() === "") {
         motivoDoPiso = "resposta_vazia";

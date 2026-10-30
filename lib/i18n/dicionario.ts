@@ -11036,6 +11036,7 @@ export const DICIONARIO: Traducoes = {
   "Cadastre e valide uma chave da OpenAI ou OpenRouter em IA › Credenciais antes de trocar.": { es: "Registra y valida una clave de OpenAI u OpenRouter en IA › Credenciales antes de cambiar." },
   "Não foi possível trocar o provedor.": { es: "No se pudo cambiar el proveedor." },
   "Não consegui confirmar agora com que provedor a base é preparada. Tente de novo em instantes.": { es: "No pude confirmar ahora con qué proveedor se prepara la base. Inténtalo de nuevo en unos instantes." },
+  "Cheguei ao limite de passos desta resposta antes de terminar. O que já foi feito está nos cartões abaixo. Escreva \"continua\" e eu sigo de onde parei.": { es: "Llegué al límite de pasos de esta respuesta antes de terminar. Lo que ya se hizo está en las tarjetas de abajo. Escribe \"continúa\" y sigo desde donde quedé." },
   "Preparei o que você pediu. Veja o cartão abaixo e aprove se estiver bom, ou me diga o que mudar.": { es: "Preparé lo que pediste. Mira la tarjeta de abajo y apruébala si está bien, o dime qué cambiar." },
   "Para publicar:": { es: "Para publicar:" },
   "A última leitura do material falhou: a chave foi recusada. Cadastre uma chave da OpenAI ou do Google em IA › Credenciais e clique em “Preparar tudo de novo”.": { es: "La última lectura del material falló: la clave fue rechazada. Registra una clave de OpenAI o de Google en IA › Credenciales y haz clic en “Preparar todo de nuevo”." },

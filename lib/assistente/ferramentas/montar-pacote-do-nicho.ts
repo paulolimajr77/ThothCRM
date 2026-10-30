@@ -37,7 +37,7 @@ import {
 
 import { modeloPorId } from "@/lib/followup/modelos";
 import { montarCorpoDoAgenteRascunho, type MotivoDeFalhaAoAlcancarAgente } from "./criar-rascunho-de-agente";
-import { proporAcao } from "./proposta-comum";
+import { aplicarPorPedidoExpresso, proporAcao } from "./proposta-comum";
 import { protegida } from "./protegida";
 import type { EntradaDasFerramentas } from "./tipos";
 
@@ -55,6 +55,7 @@ const esquemaDeEntrada = z.strictObject({
   descricao: z.string().trim().min(1).max(300),
   nome_do_agente: z.string().trim().min(1).max(60),
   followups: z.array(z.enum(TODOS_OS_MODELOS_DOS_NICHOS)).optional(),
+  pedido_expresso: z.string().trim().min(6).max(200).optional(),
 });
 
 let listaAgentesSobreposta: HandlerDeRota | null = null;
@@ -93,6 +94,8 @@ export interface PedidoDePacoteDoNicho {
   descricao: string;
   nomeDoAgente: string;
   followups: string[];
+  /** Trecho EXATO da mensagem da pessoa que manda montar: com ele válido, o pacote é aplicado na hora. */
+  pedidoExpresso?: string;
 }
 
 export type MotivoDeFalhaAoMontarPacote =
@@ -105,11 +108,15 @@ export type MotivoDeFalhaAoMontarPacote =
 export interface AgentePropostoDoPacote {
   proposta_id: string;
   nome: string;
+  /** Aplicado na hora, a pedido expresso da pessoa (sem cartão). */
+  aplicado?: boolean;
 }
 
 export interface FollowupPropostoDoPacote {
   proposta_id: string;
   modelo: string;
+  /** Aplicado na hora, a pedido expresso da pessoa (sem cartão). */
+  aplicado?: boolean;
 }
 
 export interface AgenteReaproveitado {
@@ -131,8 +138,8 @@ export type ResultadoDePacoteDoNicho =
     }
   | { ok: false; motivo: MotivoDeFalhaAoMontarPacote; faltam?: string[]; detalhe?: string };
 
-/** Os nomes de agentes da org (inclui arquivados), ou `null` se a rota falhou. */
-export async function nomesDeAgentesDaOrganizacao(): Promise<Set<string> | null> {
+/** Os agentes da org (inclui arquivados) com o nome e se estão arquivados, ou `null` se a rota falhou. */
+export async function agentesDaOrganizacao(): Promise<{ nome: string; arquivado: boolean }[] | null> {
   const resposta = await chamarRotaPorDentro(
     await handlerDeListaAgentes(),
     "/api/v1/ai/agents",
@@ -141,11 +148,19 @@ export async function nomesDeAgentesDaOrganizacao(): Promise<Set<string> | null>
   if (!("status" in resposta) || resposta.status !== 200) return null;
   const corpo = eObjeto(resposta.corpo) ? (resposta.corpo as { data?: unknown }).data : undefined;
   if (!Array.isArray(corpo)) return null;
-  const nomes = new Set<string>();
+  const agentes: { nome: string; arquivado: boolean }[] = [];
   for (const linha of corpo as Record<string, unknown>[]) {
-    if (typeof linha.name === "string") nomes.add(linha.name);
+    if (typeof linha.name === "string") {
+      agentes.push({ nome: linha.name, arquivado: typeof linha.archived_at === "string" });
+    }
   }
-  return nomes;
+  return agentes;
+}
+
+/** Os nomes de agentes da org (inclui arquivados), ou `null` se a rota falhou. */
+export async function nomesDeAgentesDaOrganizacao(): Promise<Set<string> | null> {
+  const agentes = await agentesDaOrganizacao();
+  return agentes === null ? null : new Set(agentes.map((a) => a.nome));
 }
 
 /** Os ponteiros de follow-up da org: `{ id, name }`, ou `null` se a rota falhou. */
@@ -262,9 +277,20 @@ export async function montarPacoteDoNicho(
   }
 
   // 3. Nome duplicado: reaproveita o agente existente em vez de falhar.
-  const nomesAgentes = await nomesDeAgentesDaOrganizacao();
-  if (nomesAgentes === null) return { ok: false, motivo: "indisponivel" };
-  const agenteJaExiste = nomesAgentes.has(nomeDoAgente);
+  const agentesDaOrg = await agentesDaOrganizacao();
+  if (agentesDaOrg === null) return { ok: false, motivo: "indisponivel" };
+  // O nome é único na organização MESMO com o agente arquivado: reaproveitar um arquivado seria mentira
+  // (ele não atende ninguém) e criar outro com o mesmo nome o banco recusa. Diz isso, não finge que existe.
+  if (agentesDaOrg.some((a) => a.nome === nomeDoAgente && a.arquivado)) {
+    return {
+      ok: false,
+      motivo: "ja_existe",
+      detalhe:
+        `PRECISO CONFIRMAR: existe um agente ARQUIVADO chamado "${nomeDoAgente}" e o nome não pode ser reaproveitado. ` +
+        "Proponha outro nome ou peça à pessoa para renomear o arquivado. NÃO diga que o agente existe ou foi proposto.",
+    };
+  }
+  const agenteJaExiste = agentesDaOrg.some((a) => a.nome === nomeDoAgente);
 
   // 4. Follow-up pedido fora do nicho — nada proposto.
   const doNicho = new Set(nicho.followups.modelos);
@@ -281,7 +307,7 @@ export async function montarPacoteDoNicho(
   );
 
   // 6. Montar o corpo do agente (só se não existir); falha devolve o MESMO motivo.
-  let propostaAgente: { propostaId: string } | null = null;
+  let propostaAgente: { propostaId: string; aplicado: boolean } | null = null;
   if (!agenteJaExiste) {
     const montagem = await montarCorpoDoAgenteRascunho({
       nome: nomeDoAgente,
@@ -311,7 +337,8 @@ export async function montarPacoteDoNicho(
     if (!proposta.ok) {
       return { ok: false, motivo: "indisponivel" };
     }
-    propostaAgente = { propostaId: proposta.propostaId };
+    const aplicacao = await aplicarPorPedidoExpresso(entrada, proposta.propostaId, pedido.pedidoExpresso);
+    propostaAgente = { propostaId: proposta.propostaId, aplicado: aplicacao.aplicada };
   }
 
   // 7. Para cada follow-up pedido: já instalado → reaproveitar (não propor);
@@ -345,7 +372,8 @@ export async function montarPacoteDoNicho(
       motivo: "Pedido no chat do assistente; nada é publicado até o administrador aprovar o cartão.",
     });
     if (proposta.ok) {
-      propostos.push({ proposta_id: proposta.propostaId, modelo: id });
+      const aplicacao = await aplicarPorPedidoExpresso(entrada, proposta.propostaId, pedido.pedidoExpresso);
+      propostos.push({ proposta_id: proposta.propostaId, modelo: id, aplicado: aplicacao.aplicada });
       propostosIds.add(id);
     } else {
       falhasDeFollowup.push({ id, motivo: "indisponivel" });
@@ -357,7 +385,7 @@ export async function montarPacoteDoNicho(
     ok: true,
     proposto: {
       agente: propostaAgente
-        ? { proposta_id: propostaAgente.propostaId, nome: nomeDoAgente }
+        ? { proposta_id: propostaAgente.propostaId, nome: nomeDoAgente, aplicado: propostaAgente.aplicado }
         : null,
       followups: propostos,
     },
@@ -381,9 +409,11 @@ export function criarMontarPacoteDoNicho(entrada: EntradaDasFerramentas): Tool {
     description:
       "ISTO NÃO MONTA O NEGÓCIO INTEIRO: cobre só o agente e os follow-ups de catálogo. Funil, campos, motivos, memória, texto do agente e o resto você propõe, por partes e com o dono de acordo a cada parte, com propor_mudanca, seguindo o guia assistente-montar-negocio (que exige antes a fonte de conhecimento da empresa); 'sem modelo pronto' nunca é motivo para pular um item. PROPÕE o agente do nicho como rascunho e os follow-ups escolhidos; nada é criado até o administrador aprovar o cartão no chat. Nada publica, nada liga follow-up a agente, nada cria funil, nada apaga. Se o agente de mesmo nome já existe, não propõe o agente de novo e segue com os follow-ups. Se um follow-up do mesmo modelo já está instalado, não propõe de novo. `nicho` (os 7 têm prompt: clínica, imobiliária, serviços, infoproduto, loja, advocacia e genérico), `negocio` (nome do " +
       "negócio), `descricao` (o que faz, em uma frase), `nome_do_agente` e `followups` (ids de " +
-      "modelo DESTE nicho, opcionais).",
+      "modelo DESTE nicho, opcionais). `pedido_expresso`: quando a mensagem da pessoa JÁ manda montar " +
+      "('monte', 'crie a Nina'), copie o trecho EXATO dela (6 a 200 letras); o servidor confere e APLICA " +
+      "na hora, sem cartão (veja `aplicado` no resultado); sem ele, vale o cartão.",
     inputSchema: esquemaDeEntrada,
-    execute: protegida("montar_pacote_do_nicho", esquemaDeEntrada, async ({ nicho, negocio, descricao, nome_do_agente, followups }) => {
+    execute: protegida("montar_pacote_do_nicho", esquemaDeEntrada, async ({ nicho, negocio, descricao, nome_do_agente, followups, pedido_expresso }) => {
       const dados = nichoPorId(nicho);
       if (!dados) return { ok: false as const, motivo: "pedido_invalido" as const };
       return montarPacoteDoNicho(entrada, {
@@ -392,6 +422,7 @@ export function criarMontarPacoteDoNicho(entrada: EntradaDasFerramentas): Tool {
         descricao,
         nomeDoAgente: nome_do_agente,
         followups: followups ?? [],
+        ...(pedido_expresso === undefined ? {} : { pedidoExpresso: pedido_expresso }),
       });
     }),
   });

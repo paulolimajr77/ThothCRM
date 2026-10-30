@@ -42,7 +42,7 @@ const PROPRIEDADES_ESPERADAS: Record<string, string[]> = {
     "porta", "metodo", "valores", "corpo", "resumo", "motivo", "pedido_expresso",
   ],
   montar_pacote_do_nicho: [
-    "nicho", "negocio", "descricao", "nome_do_agente", "followups",
+    "nicho", "negocio", "descricao", "nome_do_agente", "followups", "pedido_expresso",
   ],
   testar_agente: ["agente_id", "mensagens"],
   conferir_agente: ["agente_id"],
@@ -144,7 +144,7 @@ describe("montarFerramentasDoAssistente", () => {
   });
 
   it("o teto de passos do turno é 15", () => {
-    expect(MAXIMO_DE_PASSOS_DO_ASSISTENTE).toBe(15);
+    expect(MAXIMO_DE_PASSOS_DO_ASSISTENTE).toBe(20);
   });
 
   it("cada esquema de entrada tem exatamente as propriedades esperadas", async () => {

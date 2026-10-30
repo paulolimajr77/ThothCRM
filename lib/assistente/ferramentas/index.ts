@@ -48,10 +48,10 @@ export {
 
 /**
  * O teto do laço de chamadas de ferramenta num turno (o knob do turno, nunca constante solta).
- * 15: um turno normal usa de 8 a 10 passos (medido no espelho em 30/10); 25 só deixava um
- * turno perdido se alongar, relendo todo o contexto a cada passo.
+ * 20: um turno normal usa de 8 a 10 passos; "monte a oficina inteira" gastou os 15 só lendo e propondo
+ * (medido no espelho em 30/10). Passou de 25 para 15 e voltou a subir porque o corte escondia o que faltava.
  */
-export const MAXIMO_DE_PASSOS_DO_ASSISTENTE = 15;
+export const MAXIMO_DE_PASSOS_DO_ASSISTENTE = 20;
 
 export function montarFerramentasDoAssistente(entrada: EntradaDasFerramentas): ToolSet {
   const leitura = {
