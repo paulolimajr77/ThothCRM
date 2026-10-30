@@ -995,7 +995,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["PUT"],
     parametros: ["user_id"],
     area: "attendants",
-    resumo: "PUT /api/v1/attendants/sector/[user_id] — põe o atendente num setor, troca de setor ou tira do setor (`sector_id: null`).",
+    resumo: "PUT põe o atendente (user_id) num setor, troca ou tira. Corpo: { sector_id } com o id do setor, ou null para tirar do setor. Muda para onde vão as conversas dele (cartão de alerta).",
   },
   {
     id: "attendants/sectors",
@@ -1003,7 +1003,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["GET", "POST"],
     parametros: [],
     area: "attendants",
-    resumo: "GET /api/v1/attendants/sectors — setores de atendimento da org (qualquer membro).",
+    resumo: "GET lista os setores de atendimento; POST cria um setor. Corpo do POST: { name (até o limite do nome), description (opcional) }. Gerente ou administrador.",
   },
   {
     id: "attendants/sectors/:id",
@@ -1011,7 +1011,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["PATCH", "DELETE"],
     parametros: ["id"],
     area: "attendants",
-    resumo: "PATCH /api/v1/attendants/sectors/[id] — renomeia / redescreve (manager+).",
+    resumo: "PATCH renomeia/redescreve o setor. Corpo: { name, description } (os dois campos; description pode ser null). Gerente ou administrador.",
   },
   {
     id: "audit",
@@ -1603,7 +1603,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["POST"],
     parametros: [],
     area: "contacts",
-    resumo: "POST /api/v1/contacts/duplicates/dismiss — \"Não são a mesma empresa\" (Spec 31, PR A).",
+    resumo: "POST marca duas fichas como NÃO duplicadas (o sistema para de sugerir juntar; não junta nem apaga nada). Corpo: { contact_ids: [id1, id2] } com dois ids diferentes.",
   },
   {
     id: "contacts/import",
@@ -2267,7 +2267,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["GET", "POST"],
     parametros: [],
     area: "message-template-groups",
-    resumo: "GET /api/v1/message-template-groups — os grupos de respostas rápidas da organização ativa, na ordem de exibição (#3245).",
+    resumo: "GET lista os grupos de respostas rápidas; POST cria um. Corpo do POST: { name } (até 60 letras).",
   },
   {
     id: "message-template-groups/:id",
@@ -2275,7 +2275,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["PATCH", "DELETE"],
     parametros: ["id"],
     area: "message-template-groups",
-    resumo: "PATCH /api/v1/message-template-groups/[id] — renomeia o grupo (#3245).",
+    resumo: "PATCH renomeia o grupo. Corpo: { name } (até 60 letras).",
   },
   {
     id: "message-template-groups/:id/ordem",
@@ -2283,7 +2283,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["PUT"],
     parametros: ["id"],
     area: "message-template-groups",
-    resumo: "PUT /api/v1/message-template-groups/[id]/ordem — a REORDENAÇÃO dos grupos (#3245): põe o grupo `id` logo DEPOIS do vizinho que a tela manda.",
+    resumo: "PUT reordena os grupos: põe este logo depois de outro. Corpo: { depois_de } com o id do grupo da esquerda, ou null para a primeira posição.",
   },
   {
     id: "message-templates",
@@ -4724,6 +4724,48 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
   },
   "agenda/google/calendarios/atualizar": async () => {
     const mod = await import("@/app/api/v1/agenda/google/calendarios/atualizar/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "attendants/sectors": async () => {
+    const mod = await import("@/app/api/v1/attendants/sectors/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "attendants/sectors/:id": async () => {
+    const mod = await import("@/app/api/v1/attendants/sectors/[id]/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "attendants/sector/:user_id": async () => {
+    const mod = await import("@/app/api/v1/attendants/sector/[user_id]/route");
+    return {
+      PUT: mod.PUT,
+    };
+  },
+  "message-template-groups": async () => {
+    const mod = await import("@/app/api/v1/message-template-groups/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "message-template-groups/:id": async () => {
+    const mod = await import("@/app/api/v1/message-template-groups/[id]/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "message-template-groups/:id/ordem": async () => {
+    const mod = await import("@/app/api/v1/message-template-groups/[id]/ordem/route");
+    return {
+      PUT: mod.PUT,
+    };
+  },
+  "contacts/duplicates/dismiss": async () => {
+    const mod = await import("@/app/api/v1/contacts/duplicates/dismiss/route");
     return {
       POST: mod.POST,
     };
