@@ -270,6 +270,15 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     expect(s).toContain("Nome e telefone de cliente só se a pessoa pediu a lista");
   });
 
+  it("não diz que criou enquanto o cartão está pendente e explica recurso desligado", () => {
+    // Pedido do dono (30/10): "o grupo foi criado" com o cartão ainda pendente e 0 grupos no banco.
+    // Sabotagem: apagar o bloco → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("DEPOIS DE APLICADO");
+    expect(s).toContain("nunca \"foi criado\"");
+    expect(s).toContain("recurso pode estar DESLIGADO");
+  });
+
   it("só diz que o agente está pronto depois das pendências do conferir_agente", () => {
     // Pedido do dono (30/10): a Nina foi publicada sem material, sem passar para humano e sem horário de follow-up.
     // Sabotagem: apagar a frase → este teste fica vermelho.
