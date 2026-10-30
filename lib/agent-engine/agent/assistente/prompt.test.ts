@@ -253,12 +253,20 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     expect(s).toContain("sem perguntar de novo");
   });
 
-  it("manda abrir a tela assim que for mexer e testar com no máximo duas mensagens", () => {
-    // Pedido do dono (30/10): ninguém via a tela nem o teste e achava que o sistema travou.
+  it("a tela abre sozinha com a ação (não no começo) e o teste usa no máximo duas mensagens", () => {
+    // Pedido do dono (30/10): ninguém via a tela nem o teste; depois, as 3 telas pulavam de uma vez e ficava a última.
     // Sabotagem: apagar o bloco TELAS AO VIVO ou voltar a "até 5" → este teste fica vermelho.
     const s = norm(montarSystemDoAssistente(BASE));
-    expect(s).toContain("ASSIM QUE for mexer em algo, chame abrir_tela");
+    expect(s).toContain("abre SOZINHA");
+    expect(s).toContain("nem no começo do pedido");
     expect(s).toContain("UMA ou DUAS mensagens, no máximo");
+  });
+
+  it("só diz que o agente está pronto depois das pendências do conferir_agente", () => {
+    // Pedido do dono (30/10): a Nina foi publicada sem material, sem passar para humano e sem horário de follow-up.
+    // Sabotagem: apagar a frase → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("ANTES de dizer que está pronto");
   });
 
   it("pedido expresso: quem mandou fazer não é obrigado a aprovar cartão", () => {

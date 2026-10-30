@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
 
 import { chamar, montarParaTeste, ORG } from "./auxiliar-de-teste";
-import { situacaoDoNumero, sobreporHandlerDeVersoesDaConferencia } from "./conferir-agente";
+import { pendenciasDoAgente, situacaoDoNumero, sobreporHandlerDeVersoesDaConferencia } from "./conferir-agente";
 
 const AGENTE = "11111111-1111-4111-8111-111111111111";
 const CANAL = "99999999-9999-4999-8999-999999999999";
@@ -75,6 +75,55 @@ describe("conferir_agente", () => {
 
     expect(saida.numero_do_whatsapp).toBe("desativado_na_mao");
     expect(saida.diferencas_do_rascunho).toBeNull();
+  });
+
+  it("pendencias: material pronto e não ligado, sem passar para humano e follow-up sem horário", async () => {
+    // Pedido do dono (30/10): a Nina foi publicada assim e o assistente disse "pronto".
+    // Sabotagem: tirar o cálculo de `pendenciasDoAgente` → este teste fica vermelho.
+    ligar([
+      versao(1, "draft", {
+        knowledge_source_ids: ["k1"],
+        followup: { enabled: true, send_window: null },
+        channel_session_id: CANAL,
+        pipeline_ids: ["p1"],
+      }),
+    ]);
+    const { ferramentas } = montarParaTeste("admin", {
+      channel_sessions: [{ id: CANAL, organization_id: ORG, status: "WORKING", metadata: {} }],
+      ai_knowledge_sources: [
+        { id: "k1", organization_id: ORG, name: "Ligado", chunks_count: 8, is_active: true },
+        { id: "k2", organization_id: ORG, name: "Solto", chunks_count: 31, is_active: true },
+      ],
+    });
+
+    const saida = await chamar<{ pendencias: string[] }>(ferramentas, "conferir_agente", { agente_id: AGENTE });
+
+    expect(saida.pendencias).toHaveLength(3);
+    expect(saida.pendencias[0]).toContain('"Solto" (31 trechos)');
+    expect(saida.pendencias.join(" ")).toContain("Passar para um humano");
+    expect(saida.pendencias.join(" ")).toContain("SEM janela de horário");
+  });
+
+  it("pendenciasDoAgente: agente completo não tem pendência", () => {
+    expect(
+      pendenciasDoAgente(
+        {
+          numero: 1,
+          estado: "draft",
+          modelo: "m",
+          tamanho_do_prompt: 1,
+          comeco_do_prompt: "",
+          materiais_ligados: 1,
+          capacidades_ligadas: 1,
+          funis_ligados: 1,
+          numero_escolhido: true,
+          passa_para_humano: true,
+          followup_sem_janela: false,
+          ids_dos_materiais: ["k1"],
+        },
+        [{ id: "k1", name: "A", chunks: 5 }],
+      ),
+    ).toEqual([]);
   });
 
   it("sem permissão ou sem agente: falha curta, sem lançar", async () => {

@@ -792,6 +792,17 @@ export function ChatDoAssistente({
     let desde = 0;
     let ativo = true;
     let telaAberta = "";
+    // Uma tela por vez, cada uma por pelo menos 4 s: sem isso três telas seguidas pulam em segundos
+    // e a pessoa só vê a última.
+    const filaDeTelas: string[] = [];
+    let trocouEm = 0;
+    const passarFila = () => {
+      if (filaDeTelas.length === 0 || Date.now() - trocouEm < 4000) return;
+      const proxima = filaDeTelas.shift()!;
+      trocouEm = Date.now();
+      telaAberta = proxima;
+      router.push(proxima);
+    };
     const ler = async () => {
       const turno = turnoAtual.current;
       if (turno === null) return;
@@ -811,10 +822,9 @@ export function ChatDoAssistente({
           const chave = `${turno}-${desde}-${novos.length}`;
           if (e.tipo === "tela" && typeof e.href === "string" && ehDestinoInterno(e.href)) {
             // Leva a pessoa à tela (o painel continua aberto no computador).
-            if (e.href !== telaAberta) {
-              telaAberta = e.href;
-              router.push(e.href);
-            }
+            const ultima = filaDeTelas.length > 0 ? filaDeTelas[filaDeTelas.length - 1] : telaAberta;
+            if (e.href !== ultima) filaDeTelas.push(e.href);
+            passarFila();
             const rotulo = typeof e.rotulo === "string" ? e.rotulo : "";
             novos.push({ chave, texto: `${t("Abrindo")} ${rotulo}`.trim() });
           } else if (e.tipo === "teste_comecou" && typeof e.mensagem === "string") {
@@ -837,9 +847,11 @@ export function ChatDoAssistente({
       }
     };
     const intervalo = window.setInterval(() => void ler(), 1500);
+    const intervaloDaFila = window.setInterval(passarFila, 1000);
     return () => {
       ativo = false;
       window.clearInterval(intervalo);
+      window.clearInterval(intervaloDaFila);
     };
   }, [enviando, router, t]);
 

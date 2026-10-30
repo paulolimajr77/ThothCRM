@@ -18,7 +18,7 @@ import { z } from "zod";
 import { chamarRotaPorDentro, type HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
 
 import { protegida } from "./protegida";
-import { avisarTurno, type EntradaDasFerramentas } from "./tipos";
+import { avisarTelaDaPorta, avisarTurno, type EntradaDasFerramentas } from "./tipos";
 
 /** Uma ou duas mensagens bastam para ver se o agente atende; mais que isso é gasto sem ganho. */
 export const MAXIMO_DE_MENSAGENS_NO_TESTE = 2;
@@ -187,6 +187,7 @@ export function criarTestarAgente(entrada: EntradaDasFerramentas): Tool {
 
       // 2. Uma mensagem por vez, em SEQUÊNCIA; a primeira falha para tudo.
       const resultados: ResultadoDeTesteDoAgente[] = [];
+      avisarTelaDaPorta(entrada.coletor, "ai/agents");
       for (const mensagem of mensagens) {
         avisarTurno(entrada.coletor, { tipo: "teste_comecou", mensagem });
         const resposta = await chamarRotaPorDentro(

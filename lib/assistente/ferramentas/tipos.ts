@@ -141,6 +141,24 @@ export function anotarCartaoDeArtefato(
   avisarTurno(coletor, { tipo: "tela", href: cartao.href, rotulo: cartao.nome.slice(0, 120) });
 }
 
+/**
+ * A tela em que o TRABALHO de uma porta acontece. O href vem desta tabela fixa (catálogo de navegação),
+ * nunca do texto do modelo; porta sem tela própria não move a pessoa.
+ */
+const TELAS_DAS_PORTAS: { prefixo: string; href: string; rotulo: string }[] = [
+  { prefixo: "ai/followup-flows", href: "/app/ai/followups", rotulo: "Follow-ups" },
+  { prefixo: "ai/routers", href: "/app/ai/routers", rotulo: "Roteadores" },
+  { prefixo: "ai/knowledge", href: "/app/ai/knowledge/sources", rotulo: "Material de conhecimento" },
+  { prefixo: "ai/agents", href: "/app/ai/agents", rotulo: "Agentes" },
+  { prefixo: "pipelines", href: "/app/kanban", rotulo: "Funis" },
+];
+
+/** Leva a pessoa à tela da porta no MOMENTO em que o trabalho nela acontece (não antes, não depois). */
+export function avisarTelaDaPorta(coletor: ColetorDoTurno, porta: string): void {
+  const tela = TELAS_DAS_PORTAS.find((t) => porta === t.prefixo || porta.startsWith(`${t.prefixo}/`));
+  if (tela) avisarTurno(coletor, { tipo: "tela", href: tela.href, rotulo: tela.rotulo });
+}
+
 /** O que `loadSkills` devolve, já filtrado por quem chama (`name` começa com "assistente-"). */
 export type SkillDoAssistente = Awaited<ReturnType<typeof loadSkills>>[number];
 

@@ -21,7 +21,7 @@ import { esquemaDoCorpoDaProposta } from "@/lib/assistente/propostas/payload";
 import type { TipoDeProposta } from "@/lib/assistente/propostas/tipos";
 
 import type { EntradaDasFerramentas } from "./tipos";
-import { anotarCartaoDeProposta } from "./tipos";
+import { anotarCartaoDeProposta, avisarTelaDaPorta } from "./tipos";
 
 /** O texto que toda proposta traz: o título para leigo e o porquê. */
 export const camposDeTexto = {
@@ -319,6 +319,7 @@ export async function proporAcao(
   }
 
   anotarCartaoDeProposta(entrada.coletor, propostaId);
+  avisarTelaDaPorta(entrada.coletor, pedido.porta);
 
   return { ok: true, propostaId };
 }
