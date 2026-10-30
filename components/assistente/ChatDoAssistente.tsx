@@ -1299,7 +1299,7 @@ export function ChatDoAssistente({
             data-testid="assistente-perguntar"
             className="rounded-md border px-4 py-2 text-sm hover:bg-muted disabled:opacity-50"
           >
-            {t("Perguntar")}
+            {t("Enviar")}
           </button>
         </div>
       </form>
