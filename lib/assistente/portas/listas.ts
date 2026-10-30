@@ -134,6 +134,7 @@ export const ESCRITA_PERMITIDA: readonly {
   { porta: "ai/memory", metodo: "POST", descricao: "salvar nova versão da memória da empresa", risco: "seguro" },
   { porta: "ai/knowledge/sources", metodo: "POST", descricao: "cadastrar material de conhecimento", risco: "seguro" },
   { porta: "ai/knowledge/sources/:id", metodo: "PATCH", descricao: "alterar material de conhecimento" },
+  { porta: "ai/knowledge/sources/:id/reindex", metodo: "POST", descricao: "ler de novo um material de conhecimento", risco: "seguro" },
   { porta: "pipelines", metodo: "POST", descricao: "criar funil" },
   { porta: "pipelines/:id", metodo: "PATCH", descricao: "alterar funil" },
   { porta: "pipelines/:id/stages", metodo: "POST", descricao: "criar etapa do funil" },

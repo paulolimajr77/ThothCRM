@@ -3879,6 +3879,12 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
       PATCH: mod.PATCH,
     };
   },
+  "ai/knowledge/sources/:id/reindex": async () => {
+    const mod = await import("@/app/api/v1/ai/knowledge/sources/[id]/reindex/route");
+    return {
+      POST: mod.POST,
+    };
+  },
   "pipelines": async () => {
     const mod = await import("@/app/api/v1/pipelines/route");
     return {
