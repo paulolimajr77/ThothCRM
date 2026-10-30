@@ -219,6 +219,26 @@ describe("propor_mudanca", () => {
       sobreporFontesDeProposta(null);
     });
 
+    it("porta que manda mensagem a gente de fora: o pedido expresso NÃO vale, fica o cartão de alerta", async () => {
+      // Pedido do dono (30/10): disparo errado não se desfaz. Sabotagem: tirar `escritaTemEfeitoFora` → fica vermelho.
+      sobreporFontesDeProposta({ propostas: handler, aprovar: handler, aplicar: handler });
+      const { ferramentas } = montarParaTeste("admin", {}, { turno: { ...TURNO, pergunta: "Dispare a campanha da oficina agora." } });
+
+      const saida = await chamar(ferramentas, "propor_mudanca", {
+        porta: "campaigns/:id/:acao",
+        metodo: "POST" as const,
+        valores: { id: "c1", acao: "start" },
+        corpo: {},
+        resumo: "Iniciar a campanha",
+        motivo: "A pessoa pediu",
+        pedido_expresso: "Dispare a campanha",
+      });
+
+      expect(saida).toMatchObject({ ok: true, propostaId: "proposta-123" });
+      expect(mockChamarRota).toHaveBeenCalledTimes(1);
+      sobreporFontesDeProposta(null);
+    });
+
     it("sem pedido expresso: igual a antes", async () => {
       const { ferramentas } = montarParaTeste("admin", {}, { turno: TURNO });
       const saida = await chamar(ferramentas, "propor_mudanca", base);

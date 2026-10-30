@@ -5,7 +5,7 @@ import { z } from "zod";
 import { chamarRotaPorDentro } from "@/lib/assistente/metricas/chamar-rota";
 import { abrirPorta } from "@/lib/assistente/portas/abrir";
 import { aplicarPorPedidoExpresso, proporAcao } from "./proposta-comum";
-import { portaDeLeituraPermitida } from "@/lib/assistente/portas/regras";
+import { escritaTemEfeitoFora, portaDeLeituraPermitida } from "@/lib/assistente/portas/regras";
 import { protegida } from "./protegida";
 import type { EntradaDasFerramentas } from "./tipos";
 
@@ -62,7 +62,10 @@ async function proporMudanca(
     antes,
   });
   if (!proposta.ok) return proposta;
-  const desfecho = await aplicarPorPedidoExpresso(entrada, proposta.propostaId, e.pedido_expresso);
+  // Efeito fora do sistema (mensagem, campanha, automação): nunca por pedido expresso, só pelo cartão de alerta.
+  const desfecho = escritaTemEfeitoFora(e.porta, e.metodo)
+    ? ({ aplicada: false, motivo: "sem_pedido_expresso" } as const)
+    : await aplicarPorPedidoExpresso(entrada, proposta.propostaId, e.pedido_expresso);
   if (desfecho.aplicada) {
     return {
       ok: true,

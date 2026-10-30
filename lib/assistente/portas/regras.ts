@@ -60,6 +60,15 @@ export function corpoVazioRecusado(porta: string, metodo: string, corpo: unknown
   return corpo === null || typeof corpo !== "object" || Array.isArray(corpo) || Object.keys(corpo).length === 0;
 }
 
+/**
+ * A escrita nesta porta manda mensagem a gente de fora ou age fora do sistema (`externo: true`)?
+ * Nesse caso o pedido expresso NÃO vale: a mudança passa sempre pelo cartão de alerta, porque
+ * mensagem enviada não se desfaz.
+ */
+export function escritaTemEfeitoFora(id: string, metodo: Metodo): boolean {
+  return ESCRITA_PERMITIDA.some((e) => e.porta === id && e.metodo === metodo && e.externo === true);
+}
+
 export function escritaPermitida(
   id: string,
   metodo: Metodo,
