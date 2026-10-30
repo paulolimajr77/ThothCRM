@@ -76,7 +76,8 @@ export function sqlDosMembros(orgId: string): string {
   if (!UUID.test(orgId)) throw new Error("organização inválida");
   return (
     "create temp view membros as select u.id as user_id, " +
-    "coalesce(nullif(u.raw_user_meta_data->>'full_name', ''), nullif(u.raw_user_meta_data->>'name', ''), split_part(u.email, '@', 1)) as nome, " +
+    // Nome é texto que a própria pessoa escreve: só letras, espaço, ponto, apóstrofo e hífen, até 60; sem nome = 'sem nome' (nunca o e-mail).
+    "coalesce(nullif(left(btrim(regexp_replace(coalesce(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name', ''), '[^[:alpha:] .''-]', '', 'g')), 60), ''), 'sem nome') as nome, " +
     "uo.role as papel from auth.users u join public.user_organizations uo on uo.user_id = u.id " +
     `where uo.organization_id = '${orgId}'::uuid and uo.revoked_at is null`
   );
