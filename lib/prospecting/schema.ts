@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { SiteEnrichment } from "@/lib/prospecting/site-classify";
 import type { PreviaSalva } from "@/lib/prospecting/previa";
+import { normalizarTags, TAMANHO_MAXIMO_DA_TAG } from "@/lib/contacts/tag-normalizada";
 
 /**
  * Os dois números do RITMO da campanha, com os mesmos limites no início e no
@@ -21,6 +22,18 @@ export const ofertasDaCampanhaSchema = z
   .max(3)
   .default(["site"]);
 export type OfertaDaCampanha = (typeof OFERTAS_DA_CAMPANHA)[number];
+
+/**
+ * Etiquetas que a campanha põe no CONTATO antes da primeira mensagem (spec 27). Até 5, na
+ * mesma forma que o CRM guarda (`normalizarTags`). Sem `.default()`: configuração gravada
+ * antes desta chave existir continua SEM a chave, e a comparação de `activateCampaign`
+ * segue igual para ela. Lista vazia (ou só de espaços) = nenhuma etiqueta.
+ */
+export const CONTACT_TAGS_MAXIMO = 5;
+const contactTagsSchema = z
+  .array(z.string().max(TAMANHO_MAXIMO_DA_TAG))
+  .max(CONTACT_TAGS_MAXIMO)
+  .transform((tags) => normalizarTags(tags));
 
 export const campaignConfigSchema = z
   .object({
@@ -48,6 +61,8 @@ export const campaignConfigSchema = z
     // O padrão é `first_message`: configuração gravada antes desta chave existir segue
     // igual, sem ninguém editar nada.
     exit_offer: z.enum(["first_message", "second_message"]).default("first_message"),
+    // Etiquetas do contato na abordagem (spec 27). Ausente = a campanha não etiqueta ninguém.
+    contact_tags: contactTagsSchema.optional(),
   })
   .strict();
 export const searchSchema = z
@@ -103,6 +118,16 @@ export const prospectingInputSchema = z.discriminatedUnion("action", [
       id: z.string().uuid(),
       candidate_ids: z.array(z.string().uuid()).min(1).max(5000),
       selected: z.boolean(),
+    })
+    .strict(),
+  // Trocar as etiquetas de contato DEPOIS de iniciada, com a campanha pausada (spec 27). Só vale
+  // para os contatos criados dali em diante; quem já foi abordado não é reescrito. Mesma régua
+  // de `adjust_pace`: lista vazia é um ajuste válido (tira as etiquetas), campo a mais é 422.
+  z
+    .object({
+      action: z.literal("adjust_tags"),
+      id: z.string().uuid(),
+      contact_tags: contactTagsSchema,
     })
     .strict(),
   z.object({ action: z.literal("discard_unselected"), id: z.string().uuid() }).strict(),
@@ -272,11 +297,13 @@ export function safePublicLink(value: string | null): string | undefined {
 /** Public business context shared by prospecting and the Inbox; no raw provider payload. */
 export const siteEnrichmentSchema = z.object({
   ver: z.literal(1),
-  classe: z.enum(["agregador", "sem-site", "site-ok", "site-ruim", "ssl-invalido", "fora-do-ar"]),
+  classe: z.enum(["agregador", "sem-site", "site-ok", "site-ruim", "ssl-invalido", "fora-do-ar", "nao-medido"]),
   problemas: z.array(z.string().max(60)).max(20),
   checklist: z.object({
     tem: z.array(z.string().max(30)).max(12),
     falta: z.array(z.string().max(30)).max(12),
+    // Página montada por JavaScript: o checklist não pôde ser medido (#3723).
+    inconclusivo: z.boolean().optional(),
   }),
   final_url: z.string().max(500).nullable(),
   http_status: z.number().int().min(100).max(599).nullable(),

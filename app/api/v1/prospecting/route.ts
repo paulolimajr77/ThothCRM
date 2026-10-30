@@ -26,6 +26,7 @@ import {
 import {
   activateCampaign,
   adjustPace,
+  adjustTags,
   configureCredential,
   createSearch,
   descartarDesmarcadas,
@@ -48,6 +49,7 @@ const ORDENACAO_POR_SCORE = `(least(greatest(coalesce((p.data->>'rating')::float
     * case when coalesce(c.config->'ofertas'->>0, 'site') like '%automacao%' then 0.4 else 0.3 end
   + case when coalesce((p.data->'site'->>'provisorio')::boolean, false) then 18
     else case coalesce(p.data->'site'->>'classe', '')
+      when 'nao-medido' then 18
       when 'sem-site' then case when coalesce(c.config->'ofertas'->>0, 'site') like '%automacao%' then 20 else 30 end
       when 'agregador' then case when coalesce(c.config->'ofertas'->>0, 'site') like '%automacao%' then 20 else 30 end
       when 'site-ruim' then case when coalesce(c.config->'ofertas'->>0, 'site') like '%automacao%' then 14 else 22 end
@@ -217,6 +219,11 @@ export async function POST(req: NextRequest) {
       });
       result = next;
       // O histórico precisa dizer DE QUANTO PARA QUANTO — só o nome da ação não diz.
+      auditMetadata = { operation: body.action, previous, next };
+    } else if (body.action === "adjust_tags") {
+      // Mesma régua do ritmo (spec 27): só campanha pausada, e a auditoria diz de quanto para quanto.
+      const { previous, next } = await adjustTags(pool, org, body.id, body.contact_tags);
+      result = next;
       auditMetadata = { operation: body.action, previous, next };
     } else if (body.action === "select") {
       result = await withProspectingLock(pool, org, async (db) => {
