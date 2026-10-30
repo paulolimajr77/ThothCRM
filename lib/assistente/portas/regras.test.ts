@@ -19,6 +19,7 @@ import {
   escritaPermitida,
   portaDeLeituraPermitida,
   acaoPermitida,
+  corpoVazioRecusado,
 } from "./regras";
 describe("casaComPrefixo", () => {
   it("id igual ao prefixo sem barra é verdadeiro", () => {
@@ -317,5 +318,34 @@ describe("acaoPermitida", () => {
 
   it("campaigns/:id PATCH é permitida só como ação externa (cartão de alerta, fora do lote)", () => {
     expect(escritaPermitida("campaigns/:id", "PATCH")).toBe(true);
+  });
+});
+
+describe("corpoVazioRecusado", () => {
+  it("as 6 portas que aplicavam com corpo vazio recusam vazio e aceitam corpo preenchido", () => {
+    const portas: Array<[string, "POST" | "PATCH"]> = [
+      ["contacts", "POST"],
+      ["companies", "POST"],
+      ["financeiro/comandas", "POST"],
+      ["settings/art15", "PATCH"],
+      ["settings/campanhas", "PATCH"],
+      ["settings/prospeccao", "PATCH"],
+    ];
+    for (const [porta, metodo] of portas) {
+      expect(corpoVazioRecusado(porta, metodo, {})).toBe(true);
+      expect(corpoVazioRecusado(porta, metodo, undefined)).toBe(true);
+      expect(corpoVazioRecusado(porta, metodo, { qualquer: 1 })).toBe(false);
+    }
+  });
+
+  it("porta fora da lista não é afetada por corpo vazio", () => {
+    expect(corpoVazioRecusado("ai/agents/:id/pause", "POST", {})).toBe(false);
+  });
+});
+
+describe("team/:user_id", () => {
+  it("troca de papel de membro continua fechada pelas duas portas", () => {
+    expect(escritaPermitida("team/:user_id", "PATCH")).toBe(false);
+    expect(escritaPermitida("team/:user_id/role", "PATCH")).toBe(false);
   });
 });

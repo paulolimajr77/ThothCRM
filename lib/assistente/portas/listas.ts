@@ -280,7 +280,6 @@ export const ESCRITA_PERMITIDA: readonly {
   { porta: "campaigns/:id", metodo: "PATCH", descricao: "alterar campanha", externo: true },
   { porta: "campaigns/:id/:acao", metodo: "POST", descricao: "iniciar, pausar ou outra ação de campanha", externo: true },
   { porta: "campaigns/preview", metodo: "POST", descricao: "pré-visualizar campanha", externo: true },
-  { porta: "team/:user_id", metodo: "PATCH", descricao: "alterar dados do membro da equipe", externo: true },
   { porta: "automation-rules", metodo: "POST", descricao: "criar automação (pode enviar mensagem)", externo: true },
   { porta: "automation-rules/:id", metodo: "PATCH", descricao: "alterar automação (pode enviar mensagem)", externo: true },
 ] as const;

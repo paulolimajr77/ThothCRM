@@ -4668,12 +4668,6 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
       POST: mod.POST,
     };
   },
-  "team/:user_id": async () => {
-    const mod = await import("@/app/api/v1/team/[user_id]/route");
-    return {
-      PATCH: mod.PATCH,
-    };
-  },
   "automation-rules": async () => {
     const mod = await import("@/app/api/v1/automation-rules/route");
     return {

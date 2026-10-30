@@ -40,6 +40,26 @@ export function portaDeLeituraPermitida(id: string): boolean {
  *   proibidos ou AREAS_SO_LEITURA;
  * - senão, só se o par (porta, metodo) está em ESCRITA_PERMITIDA.
  */
+/**
+ * Portas que a rota aceita com o corpo VAZIO e, mesmo assim, aplicam (criam
+ * registro em branco ou regravam ajustes). Medido na bateria de 30/10/2026:
+ * o assistente não pode propor essas escritas sem dizer o que escrever.
+ */
+const EXIGEM_CORPO_PREENCHIDO: ReadonlySet<string> = new Set([
+  "contacts POST",
+  "companies POST",
+  "financeiro/comandas POST",
+  "settings/art15 PATCH",
+  "settings/campanhas PATCH",
+  "settings/prospeccao PATCH",
+]);
+
+/** `true` quando a porta exige corpo com ao menos um campo e o corpo veio vazio. */
+export function corpoVazioRecusado(porta: string, metodo: string, corpo: unknown): boolean {
+  if (!EXIGEM_CORPO_PREENCHIDO.has(`${porta} ${metodo}`)) return false;
+  return corpo === null || typeof corpo !== "object" || Array.isArray(corpo) || Object.keys(corpo).length === 0;
+}
+
 export function escritaPermitida(
   id: string,
   metodo: Metodo,
