@@ -239,7 +239,8 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     // Medido no espelho: lendo só a ficha, o assistente disse "sem material" e "sem número"
     // sobre um agente que tinha os dois. Sabotagem: apagar a frase → este teste fica vermelho.
     const s = norm(montarSystemDoAssistente(BASE));
-    expect(s).toContain("leia SEMPRE as versões dele");
+    expect(s).toContain("use conferir_agente");
+    expect(s).toContain("leia as versões dele");
     expect(s).toContain("ai/agents/:id/versions");
     expect(s).toContain("a ficha do agente");
   });
@@ -250,5 +251,13 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     const s = norm(montarSystemDoAssistente(BASE));
     expect(s).toContain('esse pedido é o "pode"');
     expect(s).toContain("sem perguntar de novo");
+  });
+
+  it("manda abrir a tela assim que for mexer e testar com no máximo duas mensagens", () => {
+    // Pedido do dono (30/10): ninguém via a tela nem o teste e achava que o sistema travou.
+    // Sabotagem: apagar o bloco TELAS AO VIVO ou voltar a "até 5" → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("ASSIM QUE for mexer em algo, chame abrir_tela");
+    expect(s).toContain("UMA ou DUAS mensagens, no máximo");
   });
 });

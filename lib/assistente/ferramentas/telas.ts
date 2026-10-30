@@ -31,7 +31,7 @@ import { capacidadesLigadas } from "@/lib/organizacao/capacidades";
 import type { ContextoDeConsulta } from "@/lib/assistente/metricas";
 
 import { protegida } from "./protegida";
-import { acoesComLink, type EntradaDasFerramentas } from "./tipos";
+import { acoesComLink, avisarTurno, type EntradaDasFerramentas } from "./tipos";
 
 export const MAXIMO_DE_TELAS_LISTADAS = 40;
 export const MAXIMO_DE_ACOES_POR_TURNO = 3;
@@ -103,9 +103,10 @@ const esquemaDeAbrir = z.strictObject({ destino: z.string().max(200) });
 export function criarAbrirTela(entrada: EntradaDasFerramentas): Tool {
   return tool({
     description:
-      "Mostra à pessoa um botão para abrir uma tela do CRM. `destino` é o `destino` EXATO de um item " +
-      "de `listar_telas`. Você não navega: o botão só aparece no chat e a pessoa decide se clica. " +
-      "Use quando a resposta terminar em 'abra tal tela'. No máximo 3 botões por resposta.",
+      "Abre para a pessoa uma tela do CRM: ela é levada até lá sozinha e o botão também fica no chat. " +
+      "`destino` é o `destino` EXATO de um item de `listar_telas`. Chame ASSIM QUE for mexer em " +
+      "algo (agente, follow-up, funil…), para a pessoa ver a tela enquanto você trabalha, e não " +
+      "só no fim. No máximo 3 telas por resposta.",
     inputSchema: esquemaDeAbrir,
     execute: protegida("abrir_tela", esquemaDeAbrir, async ({ destino }) => {
       const visiveis = await telasVisiveis(entrada.ctx);
@@ -122,8 +123,16 @@ export function criarAbrirTela(entrada: EntradaDasFerramentas): Tool {
           rotulo: `${traduzir("Abrir", entrada.ctx.idioma)} ${tituloDe(tela, entrada.ctx.idioma)}`,
           href: tela.href,
         });
+        avisarTurno(entrada.coletor, {
+          tipo: "tela",
+          href: tela.href,
+          rotulo: tituloDe(tela, entrada.ctx.idioma),
+        });
       }
-      return { ok: true as const, mensagem: "O botão será mostrado; a pessoa decide se clica." };
+      return {
+        ok: true as const,
+        mensagem: "A tela abre sozinha para a pessoa acompanhar; o botão fica no chat.",
+      };
     }),
   });
 }

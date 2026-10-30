@@ -45,6 +45,7 @@ const PROPRIEDADES_ESPERADAS: Record<string, string[]> = {
     "nicho", "negocio", "descricao", "nome_do_agente", "followups",
   ],
   testar_agente: ["agente_id", "mensagens"],
+  conferir_agente: ["agente_id"],
   auditar_empresa: [],
 };
 
@@ -63,6 +64,7 @@ const FERRAMENTAS_SO_ADMIN = [
   "propor_mudanca",
   "montar_pacote_do_nicho",
   "testar_agente",
+  "conferir_agente",
 ];
 
 /** Todos os nomes de propriedade de um JSON Schema, em qualquer profundidade. */
@@ -142,7 +144,7 @@ describe("montarFerramentasDoAssistente", () => {
   });
 
   it("o teto de passos do turno é 15", () => {
-    expect(MAXIMO_DE_PASSOS_DO_ASSISTENTE).toBe(25);
+    expect(MAXIMO_DE_PASSOS_DO_ASSISTENTE).toBe(15);
   });
 
   it("cada esquema de entrada tem exatamente as propriedades esperadas", async () => {
@@ -220,6 +222,7 @@ describe("montarFerramentasDoAssistente", () => {
     "propor_mudanca",
     "montar_pacote_do_nicho",
     "testar_agente",
+    "conferir_agente",
     "auditar_empresa",
   ])(
     "%s com entrada nula não lança e devolve parametro_invalido",

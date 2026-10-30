@@ -44,6 +44,26 @@ interface CartaoNaTela {
   href: string;
 }
 
+/** O resultado de um teste interno de agente: o que foi perguntado, a resposta e se passou. */
+interface TesteNaTela {
+  versao: number;
+  resultados: {
+    mensagem: string;
+    resposta: string;
+    passou: boolean;
+    simulado: boolean;
+    ferramentas: string[];
+  }[];
+}
+
+/** Uma linha do que o assistente está fazendo AGORA (lida da rota de andamento). */
+interface AndamentoNaTela {
+  chave: string;
+  texto: string;
+  resposta?: string;
+  passou?: boolean;
+}
+
 /** O checkup de uma mensagem: o retrato de agora e o da rodada anterior. */
 interface CheckupNaTela {
   rodou: boolean;
@@ -65,6 +85,8 @@ interface MensagemNaTela {
   propostas?: string[];
   /** O retrato da configuração, quando a mensagem é um `/checkup`. */
   checkup?: CheckupNaTela;
+  /** Só na resposta recém-chegada: os testes de agente que rodaram neste turno. */
+  testes?: TesteNaTela[];
   /** A mensagem é o desfecho de uma decisão (Aplicar/Não), não conversa. */
   desfecho?: "ok" | "erro";
   /** Depois de aplicar com sucesso: os próximos passos que faltam fazer na tela. */
@@ -79,6 +101,8 @@ interface ItemDeAcao {
   href?: unknown;
   id?: unknown;
   rodou?: unknown;
+  versao?: unknown;
+  resultados?: unknown;
   snapshot?: unknown;
   anterior?: unknown;
 }
@@ -161,6 +185,28 @@ function cartaoValido(acao: ItemDeAcao): CartaoNaTela | null {
   return { artefato: acao.artefato, nome: acao.nome, rotulo: acao.rotulo, href: acao.href };
 }
 
+/** Um item `teste` só vira cartão com os campos de cada resultado no formato certo. */
+function testeValido(acao: ItemDeAcao): TesteNaTela | null {
+  if (acao.tipo !== "teste" || !Array.isArray(acao.resultados)) return null;
+  const resultados: TesteNaTela["resultados"] = [];
+  for (const bruto of acao.resultados) {
+    if (bruto === null || typeof bruto !== "object") continue;
+    const r = bruto as Record<string, unknown>;
+    if (typeof r.mensagem !== "string" || typeof r.resposta !== "string") continue;
+    resultados.push({
+      mensagem: r.mensagem,
+      resposta: r.resposta,
+      passou: r.passou === true,
+      simulado: r.simulado === true,
+      ferramentas: Array.isArray(r.ferramentas)
+        ? r.ferramentas.filter((f): f is string => typeof f === "string")
+        : [],
+    });
+  }
+  if (resultados.length === 0) return null;
+  return { versao: typeof acao.versao === "number" ? acao.versao : 0, resultados };
+}
+
 /** Um item `proposta` só vira cartão com o `id` — o resto do conteúdo vem da fila. */
 function propostaValida(acao: ItemDeAcao): string | null {
   if (acao.tipo !== "proposta") return null;
@@ -224,8 +270,10 @@ function acoesValidas(acoes: RespostaDoChat["acoes"]): {
   cartoes: CartaoNaTela[];
   propostas: string[];
   checkup: CheckupNaTela | null;
+  testes: TesteNaTela[];
 } {
-  if (!Array.isArray(acoes)) return { botoes: [], cartoes: [], propostas: [], checkup: null };
+  if (!Array.isArray(acoes)) return { botoes: [], cartoes: [], propostas: [], checkup: null, testes: [] };
+  const testes: TesteNaTela[] = [];
   const botoes: AcaoDaTela[] = [];
   const cartoes: CartaoNaTela[] = [];
   const propostas: string[] = [];
@@ -234,6 +282,11 @@ function acoesValidas(acoes: RespostaDoChat["acoes"]): {
     const cartao = cartaoValido(acao);
     if (cartao !== null) {
       cartoes.push(cartao);
+      continue;
+    }
+    const teste = testeValido(acao);
+    if (teste !== null) {
+      testes.push(teste);
       continue;
     }
     const id = propostaValida(acao);
@@ -250,7 +303,7 @@ function acoesValidas(acoes: RespostaDoChat["acoes"]): {
     if (!ehDestinoInterno(acao.href)) continue;
     botoes.push({ rotulo: acao.rotulo, href: acao.href });
   }
-  return { botoes, cartoes, propostas, checkup };
+  return { botoes, cartoes, propostas, checkup, testes };
 }
 
 /** A frase do envelope `{ error: { message } }`, quando a rota mandou uma. */
@@ -336,6 +389,9 @@ export function ChatDoAssistente({
   const [mensagens, setMensagens] = useState<MensagemNaTela[]>([]);
   const [pergunta, setPergunta] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [andamento, setAndamento] = useState<AndamentoNaTela[]>([]);
+  // O turno em andamento, para a leitura do que o assistente já fez (rota `progresso`).
+  const turnoAtual = useRef<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [menuDispensado, setMenuDispensado] = useState(false);
   const [indiceDoMenu, setIndiceDoMenu] = useState(0);
@@ -729,6 +785,64 @@ export function ChatDoAssistente({
     }
   }
 
+  // Enquanto o assistente trabalha, mostra o que ele já fez e leva a pessoa à tela em que ele mexe.
+  // Cortesia: se a rota falhar ou não houver nada, fica o "Pensando…" de sempre.
+  useEffect(() => {
+    if (!enviando) return;
+    let desde = 0;
+    let ativo = true;
+    let telaAberta = "";
+    const ler = async () => {
+      const turno = turnoAtual.current;
+      if (turno === null) return;
+      try {
+        const r = await fetch(
+          `/api/v1/ai/assistente/progresso?turn_id=${encodeURIComponent(turno)}&desde=${desde}`,
+        );
+        if (!r.ok || !ativo) return;
+        const { data } = (await r.json()) as {
+          data?: { eventos?: Record<string, unknown>[]; proximo?: number };
+        };
+        const eventos = Array.isArray(data?.eventos) ? data.eventos : [];
+        if (typeof data?.proximo === "number") desde = data.proximo;
+        if (eventos.length === 0) return;
+        const novos: AndamentoNaTela[] = [];
+        for (const e of eventos) {
+          const chave = `${turno}-${desde}-${novos.length}`;
+          if (e.tipo === "tela" && typeof e.href === "string" && ehDestinoInterno(e.href)) {
+            // Leva a pessoa à tela (o painel continua aberto no computador).
+            if (e.href !== telaAberta) {
+              telaAberta = e.href;
+              router.push(e.href);
+            }
+            const rotulo = typeof e.rotulo === "string" ? e.rotulo : "";
+            novos.push({ chave, texto: `${t("Abrindo")} ${rotulo}`.trim() });
+          } else if (e.tipo === "teste_comecou" && typeof e.mensagem === "string") {
+            novos.push({ chave, texto: `${t("Testando o agente com")}: "${e.mensagem}"` });
+          } else if (e.tipo === "teste_resultado" && typeof e.resposta === "string") {
+            novos.push({
+              chave,
+              texto:
+                e.passou === true
+                  ? t("O agente respondeu e passou no teste")
+                  : t("O agente respondeu, mas não passou no teste"),
+              resposta: e.resposta,
+              passou: e.passou === true,
+            });
+          }
+        }
+        if (ativo && novos.length > 0) setAndamento((atuais) => [...atuais, ...novos]);
+      } catch {
+        /* sem andamento ao vivo, a resposta final chega do mesmo jeito */
+      }
+    };
+    const intervalo = window.setInterval(() => void ler(), 1500);
+    return () => {
+      ativo = false;
+      window.clearInterval(intervalo);
+    };
+  }, [enviando, router, t]);
+
   async function perguntar(texto: string) {
     const p = texto.trim();
     if (p.length < 3 || enviando) return;
@@ -747,6 +861,8 @@ export function ChatDoAssistente({
     // Se a pessoa abrir outra conversa ou clicar em "Nova conversa" enquanto isto voa,
     // `versao` muda e a resposta de agora NÃO pode escrever na tela nova.
     const minha = versao.current;
+    turnoAtual.current = turnId;
+    setAndamento([]);
     setEnviando(true);
     setErro(null);
     setMensagens((atuais) => [...atuais, { id: idLocal, author_kind: "human", body: p }]);
@@ -783,7 +899,7 @@ export function ChatDoAssistente({
       guardarConversa(data.thread_id);
       if (typeof data.resposta === "string") {
         const resposta = data.resposta;
-        const { botoes, cartoes, propostas, checkup } = acoesValidas(data.acoes);
+        const { botoes, cartoes, propostas, checkup, testes } = acoesValidas(data.acoes);
         setMensagens((atuais) => [
           ...atuais,
           {
@@ -795,6 +911,7 @@ export function ChatDoAssistente({
             cartoes,
             propostas,
             ...(checkup === null ? {} : { checkup }),
+            ...(testes.length === 0 ? {} : { testes }),
           },
         ]);
         // Cartão novo pede fila nova: o conteúdo dele vem de lá.
@@ -809,7 +926,9 @@ export function ChatDoAssistente({
     } catch {
       await falhou(null);
     } finally {
+      turnoAtual.current = null;
       setEnviando(false);
+      setAndamento([]);
     }
   }
 
@@ -991,6 +1110,40 @@ export function ChatDoAssistente({
                 ))}
               </div>
             ) : null}
+            {m.testes !== undefined && m.testes.length > 0 ? (
+              <div className="flex w-full flex-col gap-2">
+                {m.testes.map((teste, i) => (
+                  <div
+                    key={`${m.id}-teste-${i}`}
+                    role="region"
+                    aria-label={t("Resultado do teste do agente")}
+                    data-testid="assistente-teste"
+                    className="max-w-full rounded-md border px-3 py-2"
+                  >
+                    <p className="text-xs font-medium">
+                      {t("Teste do agente")}
+                      {teste.versao > 0 ? ` · ${t("versão")} ${teste.versao}` : ""}
+                    </p>
+                    {teste.resultados.map((r, j) => (
+                      <div key={j} className="mt-1 text-sm">
+                        <p className="text-xs text-text-muted">
+                          {t("Perguntei")}: "{r.mensagem}"
+                        </p>
+                        <p className="whitespace-pre-wrap">{r.resposta}</p>
+                        <p className="text-xs font-medium">
+                          {r.simulado
+                            ? t("Teste simulado: não chamou o modelo de verdade.")
+                            : r.passou
+                              ? t("Passou no teste")
+                              : t("Não passou no teste")}
+                          {r.ferramentas.length > 0 ? ` · ${t("usou")}: ${r.ferramentas.join(", ")}` : ""}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {m.propostas !== undefined && m.propostas.length > 0 ? (
               <div className="flex w-full flex-col gap-2">
                 {m.propostas.map((id) => (
@@ -1037,6 +1190,16 @@ export function ChatDoAssistente({
           <p role="status" data-testid="assistente-pensando" className="self-start text-sm text-text-muted">
             {t("Pensando…")}
           </p>
+        ) : null}
+        {enviando && andamento.length > 0 ? (
+          <ul data-testid="assistente-andamento" className="flex flex-col gap-1 self-start text-sm">
+            {andamento.map((a) => (
+              <li key={a.chave} className="rounded-md border px-3 py-1.5">
+                <p className="text-xs font-medium">{a.texto}</p>
+                {a.resposta !== undefined ? <p className="whitespace-pre-wrap">{a.resposta}</p> : null}
+              </li>
+            ))}
+          </ul>
         ) : null}
         {mensagens.length === 0 && !enviando ? (
           <p className="text-sm text-text-muted">{t("Pergunte sobre a operação ou os guias.")}</p>

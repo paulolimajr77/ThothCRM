@@ -83,6 +83,7 @@ import { telaPorCaminho } from "@/lib/assistente/telas/tela-por-caminho";
 import { verificarLimiteDePerguntas } from "@/lib/assistente/limites";
 import type { ContextoDeConsulta, Papel } from "@/lib/assistente/metricas";
 import { respostaDoPiso } from "@/lib/assistente/piso";
+import { registrarEventoDoTurno } from "@/lib/assistente/progresso-do-turno";
 import { traduzir } from "@/lib/i18n/dicionario";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 import { logger } from "@/lib/logger";
@@ -299,6 +300,8 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   // ─── O turno com o modelo; qualquer falha cai no piso ────────────────────
   const coletor = criarColetorDoTurno();
+  // A tela pergunta o andamento enquanto o modelo trabalha (rota `progresso`).
+  coletor.aoOcorrer = (evento) => registrarEventoDoTurno(orgId, userId, turn_id, evento);
   let textoDoModelo = "";
   let callId: string | null = null;
   let motivoDoPiso: MotivoDoPiso | null = null;

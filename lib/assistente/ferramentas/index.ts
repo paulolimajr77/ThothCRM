@@ -34,6 +34,7 @@ import { criarMontarPacoteDoNicho } from "./montar-pacote-do-nicho";
 import { criarProcurarPorta } from "./procurar-porta";
 import { criarProporMudanca } from "./propor-mudanca";
 import { criarAbrirTela, criarListarTelas } from "./telas";
+import { criarConferirAgente } from "./conferir-agente";
 import { criarTestarAgente } from "./testar-agente";
 import type { EntradaDasFerramentas } from "./tipos";
 
@@ -45,8 +46,12 @@ export {
   type SkillDoAssistente,
 } from "./tipos";
 
-/** O teto do laço de chamadas de ferramenta num turno (o knob do turno, nunca constante solta). */
-export const MAXIMO_DE_PASSOS_DO_ASSISTENTE = 25;
+/**
+ * O teto do laço de chamadas de ferramenta num turno (o knob do turno, nunca constante solta).
+ * 15: um turno normal usa de 8 a 10 passos (medido no espelho em 30/10); 25 só deixava um
+ * turno perdido se alongar, relendo todo o contexto a cada passo.
+ */
+export const MAXIMO_DE_PASSOS_DO_ASSISTENTE = 15;
 
 export function montarFerramentasDoAssistente(entrada: EntradaDasFerramentas): ToolSet {
   const leitura = {
@@ -72,6 +77,7 @@ export function montarFerramentasDoAssistente(entrada: EntradaDasFerramentas): T
     propor_mudanca: criarProporMudanca(entrada),
     montar_pacote_do_nicho: criarMontarPacoteDoNicho(entrada),
     testar_agente: criarTestarAgente(entrada),
+    conferir_agente: criarConferirAgente(entrada),
   };
   // Modelo de cliente: a estrutura vem de OUTRA empresa (limpa e revisada), por
   // isso só para quem administra a instalação — a flag vem da sessão.

@@ -31,7 +31,39 @@ export interface CartaoDeArtefato {
 }
 
 /** O botão existente continua exatamente como é; o cartão é o segundo tipo. */
-export type AcaoDoChat = AcaoDeTela | CartaoDeArtefato | CartaoDeProposta | CartaoDeCheckup;
+export type AcaoDoChat =
+  | AcaoDeTela
+  | CartaoDeArtefato
+  | CartaoDeProposta
+  | CartaoDeCheckup
+  | CartaoDeTeste;
+
+/**
+ * O resultado de um teste interno de agente, para a pessoa VER o que aconteceu:
+ * o que foi perguntado, o que o agente respondeu e se passou. Só texto curto;
+ * nenhum id, trace ou prompt (a projeção vem de `testar-agente.ts`).
+ */
+export interface CartaoDeTeste {
+  tipo: "teste";
+  versao: number;
+  resultados: {
+    mensagem: string;
+    resposta: string;
+    passou: boolean;
+    simulado: boolean;
+    ferramentas: string[];
+  }[];
+}
+
+/**
+ * Algo que aconteceu DURANTE o turno e que a pessoa deve ver já, sem esperar a
+ * resposta final: abrir a tela em que o assistente está mexendo, o teste que
+ * começou e o resultado dele. Vive só na memória do servidor (`progresso-do-turno.ts`).
+ */
+export type EventoDoTurno =
+  | { tipo: "tela"; href: string; rotulo: string }
+  | { tipo: "teste_comecou"; mensagem: string }
+  | { tipo: "teste_resultado"; mensagem: string; resposta: string; passou: boolean; simulado: boolean };
 
 /** O botão de tela e o cartão de rascunho: as ações que a tela desenha COMO LINK. */
 export type AcaoComLink = AcaoDeTela | CartaoDeArtefato;
@@ -63,6 +95,17 @@ export interface CartaoDeCheckup {
 export interface ColetorDoTurno {
   metricas: string[];
   acoes: AcaoDoChat[];
+  /** Avisa a tela, em tempo real, do que acabou de acontecer (opcional: sem ele nada quebra). */
+  aoOcorrer?: (evento: EventoDoTurno) => void;
+}
+
+/** Nunca lança: aviso ao vivo é cortesia, não pode derrubar o turno. */
+export function avisarTurno(coletor: ColetorDoTurno, evento: EventoDoTurno): void {
+  try {
+    coletor.aoOcorrer?.(evento);
+  } catch {
+    /* sem aviso ao vivo, o resultado final continua chegando */
+  }
 }
 
 export function criarColetorDoTurno(): ColetorDoTurno {
@@ -95,6 +138,7 @@ export function anotarCartaoDeArtefato(
     rotulo: traduzir(ROTULO_DO_CARTAO[cartao.artefato], idioma),
     href: cartao.href,
   });
+  avisarTurno(coletor, { tipo: "tela", href: cartao.href, rotulo: cartao.nome.slice(0, 120) });
 }
 
 /** O que `loadSkills` devolve, já filtrado por quem chama (`name` começa com "assistente-"). */
