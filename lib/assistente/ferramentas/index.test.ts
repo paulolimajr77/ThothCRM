@@ -39,7 +39,7 @@ const PROPRIEDADES_ESPERADAS: Record<string, string[]> = {
   ler_porta: ["porta", "valores", "filtros", "campos"],
   procurar_porta: ["pergunta"],
   propor_mudanca: [
-    "porta", "metodo", "valores", "corpo", "resumo", "motivo",
+    "porta", "metodo", "valores", "corpo", "resumo", "motivo", "pedido_expresso",
   ],
   montar_pacote_do_nicho: [
     "nicho", "negocio", "descricao", "nome_do_agente", "followups",

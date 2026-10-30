@@ -339,7 +339,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         ctx,
         skills,
         coletor,
-        turno: { threadId, turnId: turn_id },
+        turno: { threadId, turnId: turn_id, pergunta: perguntaEfetiva },
         adminDaPlataforma: escreveComoPlatformAdmin(authz.user),
       });
       // Contexto da tela: o agente que a pessoa está vendo, só se for desta organização.

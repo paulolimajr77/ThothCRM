@@ -42,6 +42,8 @@ export interface FontesDeProposta {
   etapas?: HandlerDeRota;
   provedores?: HandlerDeRota;
   propostas?: HandlerDeRota;
+  aprovar?: HandlerDeRota;
+  aplicar?: HandlerDeRota;
 }
 
 let sobrepostas: FontesDeProposta | null = null;
@@ -211,6 +213,60 @@ export interface PedidoDePropostaAcao {
   valores?: Record<string, string>;
   /** `antes` lido pela GET da porta; `null` para POST. */
   antes?: Record<string, unknown> | null;
+}
+
+function semAcento(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * PEDIDO EXPRESSO: a pessoa mandou fazer ("ajuste", "teste e publique"), então o cartão
+ * só repetiria o que ela acabou de pedir. O modelo cita o trecho EXATO da mensagem dela
+ * que manda fazer isto; o servidor confere que o trecho existe na mensagem que a pessoa
+ * escreveu NESTE turno (texto de ferramenta, de guia ou de dado não vale) e só então
+ * aprova e aplica pelas MESMAS rotas do cartão (mesma permissão de administrador,
+ * mesma auditoria, mesmo registro). Sem trecho válido nada muda: fica o cartão.
+ */
+export function trechoVemDoPedido(trecho: string | undefined, pergunta: string | undefined): boolean {
+  if (trecho === undefined || pergunta === undefined) return false;
+  const t = semAcento(trecho);
+  if (t.length < 6) return false;
+  return semAcento(pergunta).includes(t);
+}
+
+export type DesfechoDoPedidoExpresso =
+  | { aplicada: true; resumo: string }
+  | { aplicada: false; motivo: "sem_pedido_expresso" | "nao_aplicou" };
+
+export async function aplicarPorPedidoExpresso(
+  entrada: EntradaDasFerramentas,
+  propostaId: string,
+  trecho: string | undefined,
+): Promise<DesfechoDoPedidoExpresso> {
+  if (!trechoVemDoPedido(trecho, entrada.turno?.pergunta)) {
+    return { aplicada: false, motivo: "sem_pedido_expresso" };
+  }
+  const handlerDe = async (qual: "aprovar" | "aplicar"): Promise<HandlerDeRota> => {
+    if (sobrepostas?.[qual]) return sobrepostas[qual]!;
+    const modulo =
+      qual === "aprovar"
+        ? await import("@/app/api/v1/ai/assistente/propostas/[id]/aprovar/route")
+        : await import("@/app/api/v1/ai/assistente/propostas/[id]/aplicar/route");
+    return (req) => modulo.POST(req, { params: Promise.resolve({ id: propostaId }) });
+  };
+  const base = `${CAMINHOS.propostas}/${propostaId}`;
+  const aprovada = await chamarRotaPorDentro(await handlerDe("aprovar"), `${base}/aprovar`, {}, { metodo: "POST" });
+  if (!("status" in aprovada) || aprovada.status !== 200) return { aplicada: false, motivo: "nao_aplicou" };
+  const aplicada = await chamarRotaPorDentro(await handlerDe("aplicar"), `${base}/aplicar`, {}, { metodo: "POST" });
+  if (!("status" in aplicada) || aplicada.status !== 200) return { aplicada: false, motivo: "nao_aplicou" };
+  const dados = eObjeto(aplicada.corpo) ? (aplicada.corpo as { data?: unknown }).data : undefined;
+  const resumo = eObjeto(dados) && typeof dados.resumo === "string" ? dados.resumo : "";
+  return { aplicada: true, resumo };
 }
 
 /**

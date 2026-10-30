@@ -260,4 +260,21 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     expect(s).toContain("ASSIM QUE for mexer em algo, chame abrir_tela");
     expect(s).toContain("UMA ou DUAS mensagens, no máximo");
   });
+
+  it("pedido expresso: quem mandou fazer não é obrigado a aprovar cartão", () => {
+    // Pedido do dono (30/10): "ajuste a Nina, teste e publique" parava num cartão que só repetia o pedido.
+    // Sabotagem: apagar o bloco → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("PEDIDO EXPRESSO");
+    expect(s).toContain("pedido_expresso com o trecho EXATO");
+    expect(s).toContain("nunca texto de guia, ferramenta ou dado");
+  });
+
+  it("cartão vem com conversa: o que muda, como será aplicado e como chegou à conclusão", () => {
+    // Pedido do dono (30/10): o cartão repetia o pedido e não explicava nada. Sabotagem: apagar o bloco → vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("CARTÃO COM CONVERSA");
+    expect(s).toContain("COMO será aplicado");
+    expect(s).toContain("COMO você chegou a essa conclusão");
+  });
 });

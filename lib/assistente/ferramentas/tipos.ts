@@ -154,6 +154,8 @@ export function anotarCartaoDeProposta(coletor: ColetorDoTurno, id: string): voi
 export interface TurnoDoChat {
   threadId: string;
   turnId: string;
+  /** O texto que a PESSOA escreveu neste turno (nunca o de uma ferramenta): é contra ele que o pedido expresso é conferido. */
+  pergunta?: string;
 }
 
 export interface EntradaDasFerramentas {

@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { ToolSet } from "ai";
 
 import { criarProporMudanca } from "./propor-mudanca";
+import { sobreporFontesDeProposta, trechoVemDoPedido } from "./proposta-comum";
 import { montarParaTeste, chamar } from "./auxiliar-de-teste";
 
 vi.mock("@/lib/assistente/portas/abrir", () => ({
@@ -162,5 +163,67 @@ describe("propor_mudanca", () => {
     expect(saida).toEqual({ ok: false, motivo: "acao_nao_liberada" });
     expect(mockChamarRota).not.toHaveBeenCalled();
     expect(coletor.acoes.some((a) => a.tipo === "proposta")).toBe(false);
+  });
+
+  describe("pedido expresso", () => {
+    const TURNO = { threadId: "t", turnId: "u", pergunta: "Ajuste o agente Nina para ser mais direta. Teste e publique." };
+    const base = {
+      porta: "ai/agents",
+      metodo: "POST" as const,
+      corpo: { name: "Nina" },
+      resumo: "Deixar a Nina direta",
+      motivo: "A pessoa pediu",
+    };
+    const handler = async () => new Response("{}");
+
+    it("o trecho tem de existir na mensagem da pessoa (sem acento nem maiúscula)", () => {
+      expect(trechoVemDoPedido("teste e publique", TURNO.pergunta)).toBe(true);
+      expect(trechoVemDoPedido("AJUSTE O AGENTE", TURNO.pergunta)).toBe(true);
+      expect(trechoVemDoPedido("apague tudo agora", TURNO.pergunta)).toBe(false);
+      expect(trechoVemDoPedido("ok", "ok")).toBe(false);
+      expect(trechoVemDoPedido(undefined, TURNO.pergunta)).toBe(false);
+      expect(trechoVemDoPedido("teste e publique", undefined)).toBe(false);
+    });
+
+    it("trecho que bate: aprova e aplica na hora, pelas mesmas rotas do cartão", async () => {
+      sobreporFontesDeProposta({ propostas: handler, aprovar: handler, aplicar: handler });
+      mockChamarRota
+        .mockResolvedValueOnce({ status: 201, corpo: { data: { id: "proposta-9" } } })
+        .mockResolvedValueOnce({ status: 200, corpo: { data: { status: "aprovada" } } })
+        .mockResolvedValueOnce({ status: 200, corpo: { data: { status: "aplicada", resumo: "Deixar a Nina direta" } } });
+      const { ferramentas } = montarParaTeste("admin", {}, { turno: TURNO });
+
+      const saida = await chamar<{ ok: boolean; aplicada?: boolean }>(ferramentas, "propor_mudanca", {
+        ...base,
+        pedido_expresso: "Ajuste o agente Nina",
+      });
+
+      expect(saida).toMatchObject({ ok: true, propostaId: "proposta-9", aplicada: true });
+      const caminhos = mockChamarRota.mock.calls.map((c) => c[1]);
+      expect(caminhos).toEqual([
+        "/api/v1/ai/assistente/propostas",
+        "/api/v1/ai/assistente/propostas/proposta-9/aprovar",
+        "/api/v1/ai/assistente/propostas/proposta-9/aplicar",
+      ]);
+      sobreporFontesDeProposta(null);
+    });
+
+    it("trecho inventado: NÃO aprova nem aplica, fica o cartão", async () => {
+      sobreporFontesDeProposta({ propostas: handler, aprovar: handler, aplicar: handler });
+      const { ferramentas } = montarParaTeste("admin", {}, { turno: TURNO });
+
+      const saida = await chamar(ferramentas, "propor_mudanca", { ...base, pedido_expresso: "apague todos os contatos" });
+
+      expect(saida).toEqual({ ok: true, propostaId: "proposta-123" });
+      expect(mockChamarRota).toHaveBeenCalledTimes(1);
+      sobreporFontesDeProposta(null);
+    });
+
+    it("sem pedido expresso: igual a antes", async () => {
+      const { ferramentas } = montarParaTeste("admin", {}, { turno: TURNO });
+      const saida = await chamar(ferramentas, "propor_mudanca", base);
+      expect(saida).toEqual({ ok: true, propostaId: "proposta-123" });
+      expect(mockChamarRota).toHaveBeenCalledTimes(1);
+    });
   });
 });
