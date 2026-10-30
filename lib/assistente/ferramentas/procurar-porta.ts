@@ -2,6 +2,7 @@
 import { tool, type Tool } from "ai";
 import { z } from "zod";
 
+import { observarEscolhaDePorta } from "@/lib/ai/decisao/porta-do-assistente";
 import { CATALOGO_DE_PORTAS } from "@/lib/assistente/portas/catalogo.gerado";
 import { DICAS_DE_FILTRO } from "@/lib/assistente/portas/dicas";
 import {
@@ -207,6 +208,20 @@ async function procurarPorta(
     primeira: portas[0]?.id ?? null,
     pontos_da_primeira: candidatas[0]?.pontos ?? 0,
   });
+  // Só observação: o Jev escolhe, em segredo, entre as candidatas, e a comparação com a
+  // 1ª da busca vai ao log. Sem await — não atrasa o assistente — e nada do que ele devolve muda.
+  if (portas.length >= 2) {
+    try {
+      void observarEscolhaDePorta({
+        organizationId: entrada.ctx.orgId,
+        pergunta: e.pergunta,
+        candidatas: portas.map((p) => ({ id: p.id, resumo: p.resumo })),
+        primeiraDaBusca: portas[0]?.id ?? null,
+      });
+    } catch {
+      // observarEscolhaDePorta não lança; o try cobre só uma falha síncrona inesperada.
+    }
+  }
   if (portas.length > 0) return { portas };
 
   // Nada casou: as áreas dão ao modelo o vocabulário para tentar de novo, em vez de

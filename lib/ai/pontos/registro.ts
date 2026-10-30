@@ -374,6 +374,26 @@ export const PONTOS_DE_IA: readonly PontoDeIa[] = [
     registraEm: "llm_calls",
   },
   {
+    // A escolha da consulta do assistente (observação): o Jev é quem responde
+    // aqui, e a credencial é a que resolve. Só observa — o que o assistente
+    // devolve não muda, e o ponto grava só a comparação com a busca por palavra.
+    id: "porta_do_assistente",
+    rotulo: "Escolher a consulta que o assistente usa",
+    oQueFaz:
+      "Lê a pergunta que a equipe fez ao assistente e escolhe, entre as consultas que a busca por palavra achou, a que serve para respondê-la. Nesta versão só observa: nada muda no que o assistente responde.",
+    papel: "entender",
+    exige: {},
+    emissor: "lib/ai/decisao/porta-do-assistente.ts",
+    sintomaDeFalha:
+      "Nada muda para quem pergunta ao assistente: a escolha da consulta continua pela busca por palavra, e só deixa de se medir se ela acerta.",
+    registraEm: "llm_calls",
+    decisaoRapida: {
+      primitiva: "choice",
+      oQueOJevFaz:
+        "Lê a pergunta que a equipe fez ao assistente e escolhe, entre as consultas que a busca por palavra achou, a que serve para respondê-la. Nesta versão só observa: nada muda no que o assistente responde.",
+    },
+  },
+  {
     id: "sentiment_classify",
     rotulo: "Medir o clima da conversa",
     oQueFaz:

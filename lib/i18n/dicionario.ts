@@ -220,6 +220,17 @@ export const DICIONARIO: Traducoes = {
   "Confere se o que o assistente afirma sobre o negócio (horário, preço, endereço) está no material que ele consultou para responder.":
     { es: "Verifica si lo que el asistente afirma sobre el negocio (horario, precio, dirección) está en el material que consultó para responder." },
   "Liga-se no cartão do Jev, em Provedores de IA.": { es: "Se activa en la tarjeta de Jev, en Proveedores de IA." },
+  // A consulta do assistente escolhida pelo Jev, só observação (`porta_do_assistente`).
+  "Escolher a consulta que o assistente usa": { es: "Elegir la consulta que usa el asistente" },
+  "Lê a pergunta que a equipe fez ao assistente e escolhe, entre as consultas que a busca por palavra achou, a que serve para respondê-la. Nesta versão só observa: nada muda no que o assistente responde.":
+    { es: "Lee la pregunta que el equipo le hizo al asistente y elige, entre las consultas que encontró la búsqueda por palabra, la que sirve para responderla. En esta versión solo observa: nada cambia en lo que responde el asistente." },
+  "Nada muda para quem pergunta ao assistente: a escolha da consulta continua pela busca por palavra, e só deixa de se medir se ela acerta.":
+    { es: "Nada cambia para quien le pregunta al asistente: la elección de la consulta sigue por la búsqueda por palabra, y solo se deja de medir si acierta." },
+  "Nesta versão o Jev só observa esta tarefa: ele escolhe a consulta em segredo e o assistente segue pela busca por palavra, sem mudar nada do que responde. A escolha dele só é comparada, nos registros, com a primeira sugestão da busca.":
+    { es: "En esta versión Jev solo observa esta tarea: elige la consulta en secreto y el asistente sigue por la búsqueda por palabra, sin cambiar nada de lo que responde. Su elección solo se compara, en los registros, con la primera sugerencia de la búsqueda." },
+  "dias, o Jev e a busca por palavra do assistente indicaram a mesma consulta em":
+    { es: "días, Jev y la búsqueda por palabra del asistente indicaron la misma consulta en" },
+  "perguntas.": { es: "preguntas." },
   "Vem desligada. Nesta versão ela só anota o que encontrou e não barra nenhuma mensagem; ligada, custa +1 consulta ao Jev por resposta.":
     { es: "Viene desactivada. En esta versión solo anota lo que encontró y no bloquea ningún mensaje; activada, cuesta +1 consulta a Jev por respuesta." },
   // Roteador do Jev sob demanda e resultados.

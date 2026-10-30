@@ -413,6 +413,42 @@ export const TAREFA_DA_AFIRMACAO_DE_FATO = {
     "Lê a resposta que o assistente vai enviar e confere, nas evidências consultadas neste turno, se o que ele afirma sobre o negócio está escrito ali — ou se o material diz o contrário.",
 } as const satisfies TarefaDoJev;
 
+/**
+ * A consulta que o assistente interno usa (`./porta-do-assistente.ts`): depois
+ * que `procurar_porta` acha as candidatas por palavra-chave, o Jev escolhe qual
+ * delas serve à pergunta. `soObserva` nesta versão, e SEM efeito nenhum no que o
+ * assistente devolve: o resultado só é medido (a 1ª sugestão da busca coincide
+ * com a escolha dele?) para decidir, com número, se vale ligá-lo de verdade.
+ *
+ * `alcance: "mensagem"`: o que sai é a pergunta isolada da equipe (até 200
+ * caracteres, passada pelo `scrubMessage`) e os ids e resumos das consultas —
+ * nenhuma conversa de cliente. É o alcance mais estreito que existe, e por isso
+ * vale para toda organização que já aceitou o Jev, sem novo aceite. `novo`: não
+ * há mecanismo de escolha com o que concordar além da busca por palavra, que o
+ * emissor compara por conta própria.
+ */
+export const PORTA_DO_ASSISTENTE = {
+  purpose: "porta_do_assistente",
+  rotulo: "Escolher a consulta que o assistente usa",
+} as const;
+
+export const TAREFA_DA_PORTA_DO_ASSISTENTE = {
+  id: "porta_do_assistente",
+  ponto: "porta_do_assistente",
+  primitiva: "choice",
+  alcance: "mensagem",
+  familia: "novo",
+  soObserva:
+    "Nesta versão o Jev só observa esta tarefa: ele escolhe a consulta em segredo e o assistente segue pela busca por palavra, sem mudar nada do que responde. A escolha dele só é comparada, nos registros, com a primeira sugestão da busca.",
+  concordancia: {
+    antes: "dias, o Jev e a busca por palavra do assistente indicaram a mesma consulta em",
+    depois: "perguntas.",
+  },
+  rotulo: "Escolher a consulta que o assistente usa",
+  oQueFaz:
+    "Lê a pergunta que a equipe fez ao assistente e escolhe, entre as consultas que a busca por palavra achou, a que serve para respondê-la. Nesta versão só observa: nada muda no que o assistente responde.",
+} as const satisfies TarefaDoJev;
+
 export const TAREFAS_DO_JEV: readonly TarefaDoJev[] = [
   TAREFA_DO_CLIMA,
   TAREFA_DA_MANIPULACAO,
@@ -423,6 +459,7 @@ export const TAREFAS_DO_JEV: readonly TarefaDoJev[] = [
   TAREFA_DA_CONFERENCIA_DE_CAMPO,
   TAREFA_DA_URGENCIA,
   TAREFA_DA_AFIRMACAO_DE_FATO,
+  TAREFA_DA_PORTA_DO_ASSISTENTE,
 ];
 
 /**

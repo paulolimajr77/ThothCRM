@@ -3,8 +3,12 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { ToolSet } from "ai";
 
 import { criarProcurarPorta } from "./procurar-porta";
-import { montarParaTeste, chamar } from "./auxiliar-de-teste";
+import { montarParaTeste, chamar, ORG } from "./auxiliar-de-teste";
 import { CATALOGO_DE_PORTAS } from "@/lib/assistente/portas/catalogo.gerado";
+import { observarEscolhaDePorta } from "@/lib/ai/decisao/porta-do-assistente";
+
+// O Jev só observa: o teste isola a chamada para provar que ela sai (sem await) e não muda a resposta.
+vi.mock("@/lib/ai/decisao/porta-do-assistente", () => ({ observarEscolhaDePorta: vi.fn(async () => undefined) }));
 
 vi.mock("@/lib/assistente/portas/regras", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/assistente/portas/regras")>();
@@ -207,6 +211,41 @@ describe("procurar_porta", () => {
     const descricao = String((ferramentas.procurar_porta as { description?: string }).description);
     expect(descricao).not.toMatch(/proibidas \([^)]*equipe/);
     expect(descricao).toMatch(/equipe/i);
+  });
+
+  describe("observação do Jev (só observa)", () => {
+    const mockObservar = observarEscolhaDePorta as ReturnType<typeof vi.fn>;
+
+    it("com 2 ou mais candidatas, entrega ao Jev a organização da sessão, as candidatas e a 1ª da busca — sem esperar", async () => {
+      const { ferramentas } = montarParaTeste("admin");
+      // Nunca resolve: a resposta do assistente não pode depender dele.
+      mockObservar.mockImplementation(() => new Promise<void>(() => undefined));
+      const saida = (await chamar(ferramentas, "procurar_porta", { pergunta: "agents" })) as { portas: PortaEncontrada[] };
+      expect(saida.portas.length).toBeGreaterThanOrEqual(2);
+      expect(mockObservar).toHaveBeenCalledTimes(1);
+      expect(mockObservar).toHaveBeenCalledWith({
+        organizationId: ORG,
+        pergunta: "agents",
+        candidatas: saida.portas.map((p) => ({ id: p.id, resumo: p.resumo })),
+        primeiraDaBusca: saida.portas[0]!.id,
+      });
+    });
+
+    it("com uma candidata só, ou nenhuma, o Jev não é chamado", async () => {
+      const { ferramentas } = montarParaTeste("admin");
+      await chamar(ferramentas, "procurar_porta", { pergunta: "zzzqqq" });
+      expect(mockObservar).not.toHaveBeenCalled();
+    });
+
+    it("uma falha do observador não muda o que a ferramenta devolve", async () => {
+      const { ferramentas } = montarParaTeste("admin");
+      const sem = (await chamar(ferramentas, "procurar_porta", { pergunta: "agents" })) as { portas: PortaEncontrada[] };
+      mockObservar.mockImplementation(() => {
+        throw new Error("falha síncrona inesperada");
+      });
+      const com = (await chamar(ferramentas, "procurar_porta", { pergunta: "agents" })) as { portas: PortaEncontrada[] };
+      expect(com).toEqual(sem);
+    });
   });
 });
 
