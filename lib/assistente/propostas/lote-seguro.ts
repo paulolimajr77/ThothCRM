@@ -46,13 +46,41 @@ export function propostaAgeFora(payload: unknown): boolean {
 }
 
 /**
- * "Aprovar tudo": toda proposta pendente, não vencida e SEM efeito fora do sistema (segura ou de atenção),
+ * Ações que mexem no que JÁ ESTÁ NO AR ou são difíceis de desfazer: nunca vão no "Aprovar tudo", cada uma é
+ * decisão separada da pessoa (revisão de segurança, 30/10/2026: o botão não pode publicar sem ela olhar).
+ */
+const FORA_DO_APROVAR_TUDO: readonly { porta: string; metodo: string }[] = [
+  { porta: "ai/agents/:id/publish", metodo: "POST" },
+  { porta: "ai/followup-flows/:id/publish", metodo: "POST" },
+  { porta: "ai/followup-flows/:id/rollback", metodo: "POST" },
+  { porta: "ai/followup-flows/:id/disable", metodo: "POST" },
+  { porta: "ai/agents/:id/pause", metodo: "POST" },
+  { porta: "contacts/merge", metodo: "POST" },
+  { porta: "contacts/bulk", metodo: "POST" },
+  { porta: "leads/bulk", metodo: "POST" },
+  { porta: "conversations/bulk", metodo: "POST" },
+  { porta: "leads/:id/win", metodo: "POST" },
+  { porta: "leads/:id/lose", metodo: "POST" },
+  { porta: "leads/:id/reactivation", metodo: "POST" },
+  { porta: "leads/:id/retomar", metodo: "POST" },
+  { porta: "proposals/:id/decide", metodo: "POST" },
+  { porta: "financeiro/comandas/:id/estornar", metodo: "POST" },
+];
+
+function ehAoVivoOuIrreversivel(payload: unknown): boolean {
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) return false;
+  const p = payload as { porta?: unknown; metodo?: unknown };
+  return FORA_DO_APROVAR_TUDO.some((e) => e.porta === p.porta && e.metodo === p.metodo);
+}
+
+/**
+ * "Aprovar tudo": toda proposta pendente, não vencida, SEM efeito fora do sistema e que não mexa no que já está no ar (segura ou de atenção),
  * na ordem em que foram criadas (criar o agente antes de configurá-lo). Cartão de alerta nunca entra:
  * ele fica sempre para a pessoa decidir um a um. A classificação vem do CÓDIGO (porta+método), não do modelo.
  */
 export function idsParaAprovarTudo(propostas: PropostaCandidataAoLote[]): string[] {
   return propostas
-    .filter((p) => p.status === "pendente" && p.vencida !== true && !propostaAgeFora(p.payload))
+    .filter((p) => p.status === "pendente" && p.vencida !== true && !propostaAgeFora(p.payload) && !ehAoVivoOuIrreversivel(p.payload))
     .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""))
     .map((p) => p.id);
 }

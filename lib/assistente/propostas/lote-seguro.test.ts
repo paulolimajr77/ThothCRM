@@ -71,7 +71,14 @@ describe("idsParaAprovarTudo", () => {
       }),
       proposta({ id: "d", risk: "atencao", status: "aprovada", created_at: "2026-10-30T10:04:00Z" }),
       proposta({ id: "v", risk: "atencao", vencida: true, created_at: "2026-10-30T10:05:00Z" }),
+      proposta({
+        id: "p",
+        risk: "atencao",
+        created_at: "2026-10-30T10:06:00Z",
+        payload: { porta: "ai/agents/:id/publish", metodo: "POST" },
+      }),
     ]);
+    // publicar o que está no ar nunca vai no botão. Sabotagem: esvaziar FORA_DO_APROVAR_TUDO → vermelho.
     expect(ids).toEqual(["a", "c"]);
   });
 });
