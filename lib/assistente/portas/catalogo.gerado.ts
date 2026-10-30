@@ -990,6 +990,30 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "POST /api/v1/attendants/presence — o EMISSOR do sinal de presença.",
   },
   {
+    id: "attendants/sector/:user_id",
+    caminho: "attendants/sector/[user_id]",
+    metodos: ["PUT"],
+    parametros: ["user_id"],
+    area: "attendants",
+    resumo: "PUT /api/v1/attendants/sector/[user_id] — põe o atendente num setor, troca de setor ou tira do setor (`sector_id: null`).",
+  },
+  {
+    id: "attendants/sectors",
+    caminho: "attendants/sectors",
+    metodos: ["GET", "POST"],
+    parametros: [],
+    area: "attendants",
+    resumo: "GET /api/v1/attendants/sectors — setores de atendimento da org (qualquer membro).",
+  },
+  {
+    id: "attendants/sectors/:id",
+    caminho: "attendants/sectors/[id]",
+    metodos: ["PATCH", "DELETE"],
+    parametros: ["id"],
+    area: "attendants",
+    resumo: "PATCH /api/v1/attendants/sectors/[id] — renomeia / redescreve (manager+).",
+  },
+  {
     id: "audit",
     caminho: "audit",
     metodos: ["GET"],
@@ -1307,7 +1331,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["POST"],
     parametros: [],
     area: "channels",
-    resumo: "A imagem do cabeçalho de uma definição — subir do computador, sem colar URL.",
+    resumo: "A imagem do cabeçalho de uma definição do canal INTERMEDIADO — subir do computador, sem colar URL.",
   },
   {
     id: "channels/social",
@@ -1324,6 +1348,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     parametros: [],
     area: "channels",
     resumo: "GET /api/v1/channels/templates — o espelho local + o CONTRATO derivado de cada um.",
+  },
+  {
+    id: "channels/templates/media",
+    caminho: "channels/templates/media",
+    metodos: ["POST"],
+    parametros: [],
+    area: "channels",
+    resumo: "A imagem do cabeçalho de uma definição do canal OFICIAL DIRETO (#3635).",
   },
   {
     id: "cobranca/assinatura/cancelar",
@@ -1550,12 +1582,28 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "POST edita contatos em lote: etiqueta, carteira de vendedor ou campo personalizado, numa só chamada.",
   },
   {
+    id: "contacts/compare",
+    caminho: "contacts/compare",
+    metodos: ["GET"],
+    parametros: [],
+    area: "contacts",
+    resumo: "GET /api/v1/contacts/compare?ids=<uuid>,<uuid> — duas fichas lado a lado (Spec 31, PR A).",
+  },
+  {
     id: "contacts/duplicates",
     caminho: "contacts/duplicates",
     metodos: ["GET"],
     parametros: [],
     area: "contacts",
     resumo: "GET /api/v1/contacts/duplicates — quem é a MESMA pessoa cadastrada duas vezes.",
+  },
+  {
+    id: "contacts/duplicates/dismiss",
+    caminho: "contacts/duplicates/dismiss",
+    metodos: ["POST"],
+    parametros: [],
+    area: "contacts",
+    resumo: "POST /api/v1/contacts/duplicates/dismiss — \"Não são a mesma empresa\" (Spec 31, PR A).",
   },
   {
     id: "contacts/import",
@@ -1768,7 +1816,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
   {
     id: "conversations/:id/transfer",
     caminho: "conversations/[id]/transfer",
-    metodos: ["POST"],
+    metodos: ["GET", "POST"],
     parametros: ["id"],
     area: "conversations",
     resumo: "POST transfere a conversa para outro atendente (reatribui na hora, sem aceite). Atendente ou acima.",
@@ -2086,6 +2134,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     resumo: "cria ou executa: negócios (cards do funil) › conversion › retry.",
   },
   {
+    id: "leads/:id/eventos",
+    caminho: "leads/[id]/eventos",
+    metodos: ["GET"],
+    parametros: ["id"],
+    area: "leads",
+    resumo: "GET /api/v1/leads/[id]/eventos — o que o BANCO registrou deste negócio: as últimas linhas de `event_log` dos três tipos que viram aviso dentro do app (`lead.assigned`, `lead.won`, `lead.lost`), reduzidas ao que a decisão usa (issue #3224).",
+  },
+  {
     id: "leads/:id/field-proposals",
     caminho: "leads/[id]/field-proposals",
     metodos: ["GET"],
@@ -2204,6 +2260,30 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     parametros: [],
     area: "marca",
     resumo: "O logo da marca — subir do computador, sem colar URL.",
+  },
+  {
+    id: "message-template-groups",
+    caminho: "message-template-groups",
+    metodos: ["GET", "POST"],
+    parametros: [],
+    area: "message-template-groups",
+    resumo: "GET /api/v1/message-template-groups — os grupos de respostas rápidas da organização ativa, na ordem de exibição (#3245).",
+  },
+  {
+    id: "message-template-groups/:id",
+    caminho: "message-template-groups/[id]",
+    metodos: ["PATCH", "DELETE"],
+    parametros: ["id"],
+    area: "message-template-groups",
+    resumo: "PATCH /api/v1/message-template-groups/[id] — renomeia o grupo (#3245).",
+  },
+  {
+    id: "message-template-groups/:id/ordem",
+    caminho: "message-template-groups/[id]/ordem",
+    metodos: ["PUT"],
+    parametros: ["id"],
+    area: "message-template-groups",
+    resumo: "PUT /api/v1/message-template-groups/[id]/ordem — a REORDENAÇÃO dos grupos (#3245): põe o grupo `id` logo DEPOIS do vizinho que a tela manda.",
   },
   {
     id: "message-templates",
@@ -2660,6 +2740,14 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     parametros: [],
     area: "prospecting",
     resumo: "consulta / altera: prospecting › agentes de IA › session.",
+  },
+  {
+    id: "prospecting/importar",
+    caminho: "prospecting/importar",
+    metodos: ["POST"],
+    parametros: [],
+    area: "prospecting",
+    resumo: "Quantas recusadas voltam na resposta; o total vai à parte.",
   },
   {
     id: "rastreio/:id",
@@ -3287,6 +3375,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
     const mod = await import("@/app/api/v1/attendants/availability/route");
     return { GET: mod.GET };
   },
+  "attendants/sectors": async () => {
+    const mod = await import("@/app/api/v1/attendants/sectors/route");
+    return { GET: mod.GET };
+  },
   "audit": async () => {
     const mod = await import("@/app/api/v1/audit/route");
     return { GET: mod.GET };
@@ -3459,6 +3551,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
     const mod = await import("@/app/api/v1/contacts/[id]/vinculos/route");
     return { GET: mod.GET };
   },
+  "contacts/compare": async () => {
+    const mod = await import("@/app/api/v1/contacts/compare/route");
+    return { GET: mod.GET };
+  },
   "contacts/duplicates": async () => {
     const mod = await import("@/app/api/v1/contacts/duplicates/route");
     return { GET: mod.GET };
@@ -3505,6 +3601,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
   },
   "conversations/:id/retention": async () => {
     const mod = await import("@/app/api/v1/conversations/[id]/retention/route");
+    return { GET: mod.GET };
+  },
+  "conversations/:id/transfer": async () => {
+    const mod = await import("@/app/api/v1/conversations/[id]/transfer/route");
     return { GET: mod.GET };
   },
   "conversations/counts": async () => {
@@ -3595,6 +3695,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
     const mod = await import("@/app/api/v1/leads/[id]/contatos-relacionados/route");
     return { GET: mod.GET };
   },
+  "leads/:id/eventos": async () => {
+    const mod = await import("@/app/api/v1/leads/[id]/eventos/route");
+    return { GET: mod.GET };
+  },
   "leads/:id/field-proposals": async () => {
     const mod = await import("@/app/api/v1/leads/[id]/field-proposals/route");
     return { GET: mod.GET };
@@ -3617,6 +3721,10 @@ export const CARREGADORES: Record<string, () => Promise<Record<string, unknown>>
   },
   "leads/reactivations": async () => {
     const mod = await import("@/app/api/v1/leads/reactivations/route");
+    return { GET: mod.GET };
+  },
+  "message-template-groups": async () => {
+    const mod = await import("@/app/api/v1/message-template-groups/route");
     return { GET: mod.GET };
   },
   "message-templates": async () => {
