@@ -16,7 +16,7 @@ export const RESUMOS_ESCRITOS: Readonly<Record<string, string>> = {
   "agenda/horarios-livres": "GET mostra os horários livres para oferecer (event_type_id, de, ate, dono opcional).",
   "agenda/servicos": "GET lista serviços e recursos da agenda e seus bloqueios; POST configura serviço, bloqueia/desbloqueia horário ou cadastra recurso.",
   "agenda/servicos/atualizar": "POST atualiza um serviço da agenda a partir da conexão do calendário (corpo: event_type_id). Ação explícita; quem só lê não dispara.",
-  "agenda/tipos": "GET lista os tipos de agendamento; POST cria um tipo (nome, categoria, duração); PATCH altera um tipo (duração, intervalos, antecedência).",
+  "agenda/tipos": "GET lista os tipos de agendamento; POST cria um tipo (OBRIGATÓRIOS: name, category, duration_minutes e location_kind; category: consulta|procedimento|retorno|visita|vistoria|reuniao|call|orcamento|demonstracao|outro; location_kind: in_person|phone|whatsapp|video_link|google_meet; consulta online = video_link, presencial = in_person); PATCH altera um tipo (duração, intervalos, antecedência).",
   "agenda/tipos/reativar": "POST reativa um tipo de agendamento que estava desativado (corpo: id). Gerente ou acima.",
   "ai/agents": "GET lista os agentes de IA da empresa (publicado, pausado, modelo); POST cria um agente novo (só administrador).",
   "ai/agents/:id": "GET mostra um agente de IA; PATCH altera os dados do agente (nome e configuração). Alterar é só para administrador.",

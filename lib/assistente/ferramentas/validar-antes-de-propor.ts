@@ -9,15 +9,24 @@
  * Só cobre as portas cujo esquema a rota exporta (a rota continua sendo a autoridade: se o esquema
  * daqui deixar passar algo, a rota recusa como antes).
  */
-import type { ZodType } from "zod";
+import { z, type ZodType } from "zod";
 
 import { versionPatchSchema } from "@/lib/ai/agents/validation";
 import { createFollowupFlowSchema, patchFollowupFlowSchema } from "@/lib/followup/api-schemas";
+
+// Espelho dos campos OBRIGATÓRIOS de `agenda/tipos` (a rota não exporta o esquema; ela continua sendo a autoridade).
+const tipoDeAgendamentoPost = z.object({
+  name: z.string().trim().min(2).max(80),
+  category: z.enum(["consulta", "procedimento", "retorno", "visita", "vistoria", "reuniao", "call", "orcamento", "demonstracao", "outro"]),
+  duration_minutes: z.number().int().min(5).max(1440),
+  location_kind: z.enum(["in_person", "phone", "whatsapp", "video_link", "google_meet"]),
+}).passthrough();
 
 const ESQUEMAS: Record<string, ZodType> = {
   "ai/followup-flows|POST": createFollowupFlowSchema,
   "ai/followup-flows/:id|PATCH": patchFollowupFlowSchema,
   "ai/agents/:id/versions/:vid|PATCH": versionPatchSchema,
+  "agenda/tipos|POST": tipoDeAgendamentoPost,
 };
 
 const MAXIMO_DE_PROBLEMAS = 5;

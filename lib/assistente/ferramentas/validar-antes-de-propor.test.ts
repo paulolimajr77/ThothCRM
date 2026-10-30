@@ -27,6 +27,13 @@ describe("problemasDoCorpo", () => {
     expect(p).toContain("pattern");
   });
 
+  it("recusa tipo de agendamento sem location_kind e diz o campo", () => {
+    // Caso real de 30/10: o assistente propôs sem o local e o cartão falhou. Sabotagem: tirar a entrada → vermelho.
+    const p = problemasDoCorpo("agenda/tipos", "POST", { name: "Primeira consulta", category: "consulta", duration_minutes: 60 });
+    expect(p).toContain("location_kind");
+    expect(problemasDoCorpo("agenda/tipos", "POST", { name: "Primeira consulta", category: "consulta", duration_minutes: 60, location_kind: "in_person" })).toBeNull();
+  });
+
   it("porta sem esquema conhecido não é barrada aqui (a rota continua sendo a autoridade)", () => {
     expect(problemasDoCorpo("tags/vocabulario", "POST", { qualquer: 1 })).toBeNull();
   });
