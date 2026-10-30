@@ -359,10 +359,21 @@ export function ChatDoAssistente({
     queryKey: FILA_DE_PROPOSTAS,
     enabled: aberto && ehAdmin,
     queryFn: async () => {
-      const r = await apiClient.get<{ data: PropostaNaTela[] }>(
-        "/api/v1/ai/assistente/propostas?limit=50",
+      // Duas leituras: as 50 mais recentes E as pendentes. Só as recentes deixavam de fora uma
+      // pendente antiga quando havia muitas já decididas depois dela, e o cartão ficava em
+      // "Carregando a mudança…" para sempre (medido no espelho: 8 pendentes, 0 nas 50 recentes).
+      const [recentes, pendentes] = await Promise.all([
+        apiClient.get<{ data: PropostaNaTela[] }>("/api/v1/ai/assistente/propostas?limit=50"),
+        apiClient.get<{ data: PropostaNaTela[] }>(
+          "/api/v1/ai/assistente/propostas?status=pendente&limit=50",
+        ),
+      ]);
+      const lista = Array.isArray(recentes.data) ? recentes.data : [];
+      const vistos = new Set(lista.map((p) => p.id));
+      const extras = (Array.isArray(pendentes.data) ? pendentes.data : []).filter(
+        (p) => !vistos.has(p.id),
       );
-      return Array.isArray(r.data) ? r.data : [];
+      return [...lista, ...extras];
     },
   });
 

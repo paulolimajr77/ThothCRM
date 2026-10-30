@@ -49,6 +49,8 @@ vi.mock("@/hooks/i18n/useT", () => ({
 const rede = vi.hoisted(() => ({
   /** A fila oficial (`GET /api/v1/ai/assistente/propostas`). */
   fila: [] as Array<Record<string, unknown>>,
+  /** A leitura filtrada (`?status=pendente`); `null` = a mesma lista da fila. */
+  pendentes: null as Array<Record<string, unknown>> | null,
   /** O `data` da resposta do chat. */
   resposta: null as unknown,
   chamadas: [] as string[],
@@ -67,7 +69,10 @@ globalThis.fetch = (async (url: string, init?: RequestInit) => {
   const metodo = init?.method ?? "GET";
   rede.chamadas.push(`${metodo} ${u}`);
   if (u.startsWith("/api/v1/ai/assistente/threads?")) return json({ data: { threads: [] } });
-  if (u.startsWith("/api/v1/ai/assistente/propostas?")) return json({ data: rede.fila });
+  if (u.startsWith("/api/v1/ai/assistente/propostas?")) {
+    if (u.includes("status=pendente") && rede.pendentes !== null) return json({ data: rede.pendentes });
+    return json({ data: rede.fila });
+  }
   const acao = ACAO_DE_PROPOSTA.exec(u);
   if (acao !== null) {
     if (acao[2] === "aplicar" && acao[1] === rede.falharEm) {
@@ -133,6 +138,7 @@ describe("o chat do assistente — comandos e decisões", () => {
     vi.clearAllMocks();
     idioma.atual = "pt-BR";
     rede.fila = [];
+    rede.pendentes = null;
     rede.resposta = null;
     rede.chamadas = [];
     rede.falharEm = null;
@@ -213,6 +219,21 @@ describe("o chat do assistente — comandos e decisões", () => {
     expect(await screen.findByText("Tem 2 mudanças esperando você.")).toBeTruthy();
     expect(await screen.findByTestId("proposta-11111111-2222-4333-8444-555555555501")).toBeTruthy();
     expect(screen.getByTestId("proposta-11111111-2222-4333-8444-555555555502")).toBeTruthy();
+  });
+
+  it("pendente antiga fora das 50 mais recentes também vira cartão, não 'Carregando…' para sempre", async () => {
+    // Medido no espelho: 8 pendentes e 0 delas nas 50 mais recentes (todas já decididas).
+    // Sabotagem: voltar o chat a ler só `?limit=50` → o cartão fica em "Carregando a mudança…".
+    rede.fila = [];
+    rede.pendentes = [
+      proposta("11111111-2222-4333-8444-555555555521", "Guardar o horário de atendimento"),
+      proposta("11111111-2222-4333-8444-555555555522", "Arquivar a memória antiga"),
+    ];
+    montar();
+
+    expect(await screen.findByText("Tem 2 mudanças esperando você.")).toBeTruthy();
+    expect(await screen.findByText("Guardar o horário de atendimento")).toBeTruthy();
+    expect(screen.queryByText("Carregando a mudança…")).toBeNull();
   });
 
   it("responder 'pode' aplica a ÚLTIMA pendente da conversa — e só ela", async () => {
