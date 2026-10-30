@@ -393,7 +393,10 @@ export async function POST(req: NextRequest): Promise<Response> {
       // O modelo às vezes termina o turno SEM texto depois de já ter feito parte do trabalho (medido em
       // 30/10: parava logo após criar o agente, com poucos passos usados). A pessoa não deve ter que
       // escrever "continua": o servidor continua sozinho, até 2 vezes, e o que já foi feito não se refaz.
-      for (let volta = 0; volta < MAXIMO_DE_CONTINUACOES && saida.texto.trim() === "" && coletor.acoes.length > 0; volta += 1) {
+      // Só continua quando já houve progresso de ESCRITA (proposta ou teste): ler guia não conta. Cada
+      // continuação é uma chamada a mais ao modelo, limitada a MAXIMO_DE_CONTINUACOES por pergunta.
+      const houveProgresso = () => coletor.acoes.some((a) => a.tipo === "proposta" || a.tipo === "teste");
+      for (let volta = 0; volta < MAXIMO_DE_CONTINUACOES && saida.texto.trim() === "" && houveProgresso(); volta += 1) {
         saida = await chamarModelo(
           `${perguntaEfetiva}\n\n(Nota do sistema: sua resposta anterior parou no meio, antes de terminar o pedido. ` +
             "O que você já fez continua feito. Veja o estado atual com as ferramentas de leitura e de conferência, " +
