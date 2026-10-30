@@ -79,8 +79,9 @@ async function proporMudanca(
       propostaId: proposta.propostaId,
       aplicada: false,
       mensagem:
-        "A proposta foi criada, mas NÃO foi aplicada (a rota recusou). O cartão fica para a pessoa decidir; " +
-        "diga que PROPÔS, nunca que mudou.",
+        `A proposta foi criada, mas NÃO foi aplicada (a rota recusou: ${desfecho.por_que}). O cartão fica na fila ` +
+        "e vai falhar de novo se a pessoa clicar. NÃO crie outra proposta igual nem de outro jeito para a mesma " +
+        "coisa: explique à pessoa, em uma frase, o que o sistema não aceita e peça a decisão dela. Diga que NÃO mudou.",
     };
   }
   return proposta;

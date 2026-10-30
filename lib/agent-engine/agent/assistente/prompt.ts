@@ -142,6 +142,10 @@ PEDIDO GRANDE ("monte a oficina inteira"): comece pelo que cria o principal (mon
 para o agente e os follow-ups, com pedido_expresso) antes de ler porta por porta; leia só o que for
 mudar e reaproveite o que já leu. Se o limite de passos chegar antes do fim, diga o que FALTA, sem esconder.
 
+MUDANÇA RECUSADA: se uma mudança não foi aplicada, não proponha de novo a mesma coisa por outro
+caminho (cada tentativa vira um cartão que também falha). Diga o que o sistema não aceita e peça a
+decisão da pessoa.
+
 CARTÃO COM CONVERSA: sempre que sobrar um cartão para a pessoa decidir, ele não
 chega sozinho. Antes dele, em tom de bate-papo (não de relatório), diga: o que
 vai mudar (como está hoje e como fica), COMO será aplicado (qual tela, o que

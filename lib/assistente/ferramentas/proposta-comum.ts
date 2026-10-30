@@ -241,7 +241,20 @@ export function trechoVemDoPedido(trecho: string | undefined, pergunta: string |
 
 export type DesfechoDoPedidoExpresso =
   | { aplicada: true; resumo: string }
-  | { aplicada: false; motivo: "sem_pedido_expresso" | "nao_aplicou" };
+  | { aplicada: false; motivo: "sem_pedido_expresso" }
+  /** `por_que`: o que a rota respondeu (código do destino e status), para o modelo explicar sem adivinhar. */
+  | { aplicada: false; motivo: "nao_aplicou"; por_que: string };
+
+function porQueFalhou(corpo: unknown, status: number | null): string {
+  const erro =
+    typeof corpo === "object" && corpo !== null ? (corpo as { error?: { details?: unknown } }).error : undefined;
+  const detalhes =
+    erro && typeof erro.details === "object" && erro.details !== null
+      ? (erro.details as { codigo_do_destino?: unknown })
+      : {};
+  const codigo = typeof detalhes.codigo_do_destino === "string" ? detalhes.codigo_do_destino : null;
+  return `status ${status ?? "sem resposta"}${codigo === null ? "" : `, código ${codigo}`}`;
+}
 
 export async function aplicarPorPedidoExpresso(
   entrada: EntradaDasFerramentas,
@@ -261,9 +274,17 @@ export async function aplicarPorPedidoExpresso(
   };
   const base = `${CAMINHOS.propostas}/${propostaId}`;
   const aprovada = await chamarRotaPorDentro(await handlerDe("aprovar"), `${base}/aprovar`, {}, { metodo: "POST" });
-  if (!("status" in aprovada) || aprovada.status !== 200) return { aplicada: false, motivo: "nao_aplicou" };
+  if (!("status" in aprovada) || aprovada.status !== 200) {
+    return { aplicada: false, motivo: "nao_aplicou", por_que: "a aprovação foi recusada" };
+  }
   const aplicada = await chamarRotaPorDentro(await handlerDe("aplicar"), `${base}/aplicar`, {}, { metodo: "POST" });
-  if (!("status" in aplicada) || aplicada.status !== 200) return { aplicada: false, motivo: "nao_aplicou" };
+  if (!("status" in aplicada) || aplicada.status !== 200) {
+    return {
+      aplicada: false,
+      motivo: "nao_aplicou",
+      por_que: porQueFalhou("status" in aplicada ? aplicada.corpo : undefined, "status" in aplicada ? aplicada.status : null),
+    };
+  }
   const dados = eObjeto(aplicada.corpo) ? (aplicada.corpo as { data?: unknown }).data : undefined;
   const resumo = eObjeto(dados) && typeof dados.resumo === "string" ? dados.resumo : "";
   return { aplicada: true, resumo };
