@@ -234,4 +234,13 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
       expect(como(papel), papel).toContain("assistente de LEITURA");
     }
   });
+
+  it("para conferir um agente manda ler as versões, nunca concluir pela ficha", () => {
+    // Medido no espelho: lendo só a ficha, o assistente disse "sem material" e "sem número"
+    // sobre um agente que tinha os dois. Sabotagem: apagar a frase → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("leia SEMPRE as versões dele");
+    expect(s).toContain("ai/agents/:id/versions");
+    expect(s).toContain("a ficha do agente");
+  });
 });
