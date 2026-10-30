@@ -4517,12 +4517,6 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
       POST: mod.POST,
     };
   },
-  "proposals/:id/send": async () => {
-    const mod = await import("@/app/api/v1/proposals/[id]/send/route");
-    return {
-      POST: mod.POST,
-    };
-  },
   "financeiro/catalogo/:tipo": async () => {
     const mod = await import("@/app/api/v1/financeiro/catalogo/[tipo]/route");
     return {

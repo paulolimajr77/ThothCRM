@@ -253,7 +253,6 @@ export const ESCRITA_PERMITIDA: readonly {
   { porta: "proposals/:id/modelo", metodo: "PATCH", descricao: "alterar modelo da proposta" },
   { porta: "proposals/:id/preencher-com-conversa", metodo: "POST", descricao: "preencher proposta com a conversa" },
   { porta: "proposals/:id/revise", metodo: "POST", descricao: "revisar proposta" },
-  { porta: "proposals/:id/send", metodo: "POST", descricao: "enviar proposta ao cliente", externo: true },
   { porta: "financeiro/catalogo/:tipo", metodo: "POST", descricao: "cadastrar item do catálogo financeiro" },
   { porta: "financeiro/catalogo/:tipo", metodo: "PATCH", descricao: "alterar item do catálogo financeiro" },
   { porta: "financeiro/comandas", metodo: "POST", descricao: "abrir comanda" },
