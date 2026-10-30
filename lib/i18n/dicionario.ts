@@ -11025,6 +11025,7 @@ export const DICIONARIO: Traducoes = {
   "Cadastre e valide uma chave da OpenAI ou OpenRouter em IA › Credenciais antes de trocar.": { es: "Registra y valida una clave de OpenAI u OpenRouter en IA › Credenciales antes de cambiar." },
   "Não foi possível trocar o provedor.": { es: "No se pudo cambiar el proveedor." },
   "Não consegui confirmar agora com que provedor a base é preparada. Tente de novo em instantes.": { es: "No pude confirmar ahora con qué proveedor se prepara la base. Inténtalo de nuevo en unos instantes." },
+  "A última leitura do material falhou: a chave foi recusada. Cadastre uma chave da OpenAI ou do Google em IA › Credenciais e clique em “Preparar tudo de novo”.": { es: "La última lectura del material falló: la clave fue rechazada. Registra una clave de OpenAI o de Google en IA › Credenciales y haz clic en “Preparar todo de nuevo”." },
   "Não consegui confirmar agora com que provedor a base é preparada. Recarregue em instantes.": { es: "No pude confirmar ahora con qué proveedor se prepara la base. Recarga en unos instantes." },
   "A base é preparada pelo Google, e a chave do Google não está mais utilizável": { es: "La base la prepara Google, y la clave de Google ya no se puede usar" },
   "A base é preparada pela OpenAI, e não há mais chave da OpenAI utilizável": { es: "La base la prepara OpenAI, y ya no hay una clave de OpenAI utilizable" },
