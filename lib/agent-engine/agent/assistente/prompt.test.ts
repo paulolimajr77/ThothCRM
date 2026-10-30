@@ -243,4 +243,12 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     expect(s).toContain("ai/agents/:id/versions");
     expect(s).toContain("a ficha do agente");
   });
+
+  it("quem já pediu para publicar não é perguntado de novo", () => {
+    // Medido: "pode publicar ela" foi respondido com "Posso propor a publicação?". Sabotagem: voltar a
+    // regra antiga ("só então pergunte") → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain('esse pedido é o "pode"');
+    expect(s).toContain("sem perguntar de novo");
+  });
 });
