@@ -291,7 +291,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["GET", "PATCH"],
     parametros: ["id", "vid"],
     area: "ai",
-    resumo: "GET mostra uma versão do agente; PATCH edita a versão em rascunho (texto/prompt, ferramentas, limites). Versão já publicada não muda.",
+    resumo: "GET mostra uma versão do agente; PATCH edita a versão em rascunho (texto/prompt, ferramentas, limites). Versão já publicada não muda. Horário do follow-up: followup.send_window = { start: \"HH:MM\", end: \"HH:MM\", weekdays: [0 a 6, onde 0 é domingo e 1 segunda] } (o campo é weekdays, não days; uma janela só por agente).",
   },
   {
     id: "ai/agents/:id/versions/:vid/test",

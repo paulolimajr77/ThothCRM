@@ -25,7 +25,7 @@ export const RESUMOS_ESCRITOS: Readonly<Record<string, string>> = {
   "ai/agents/:id/publish": "POST publica uma versão em rascunho do agente de IA (corpo: version_id), colocando-a no ar. Confere modelo, número do WhatsApp e ferramentas.",
   "ai/agents/:id/runs": "GET lista as execuções recentes de um agente de IA (o que respondeu, custo). Gerente ou acima.",
   "ai/agents/:id/versions": "GET lista as versões do agente de IA (gerente); POST cria uma nova versão em rascunho (é o salvar do texto do agente). Só administrador.",
-  "ai/agents/:id/versions/:vid": "GET mostra uma versão do agente; PATCH edita a versão em rascunho (texto/prompt, ferramentas, limites). Versão já publicada não muda.",
+  "ai/agents/:id/versions/:vid": "GET mostra uma versão do agente; PATCH edita a versão em rascunho (texto/prompt, ferramentas, limites). Versão já publicada não muda. Horário do follow-up: followup.send_window = { start: \"HH:MM\", end: \"HH:MM\", weekdays: [0 a 6, onde 0 é domingo e 1 segunda] } (o campo é weekdays, não days; uma janela só por agente).",
   "ai/agents/assignable": "GET lista os agentes de IA que podem receber uma conversa ou negócio (para atribuir). Atendente ou acima.",
   "ai/followup-flows": "GET lista os fluxos de follow-up da empresa; POST cria um follow-up novo em rascunho, ainda sem enviar nada (gerente ou acima).",
   "ai/followup-flows/:id": "GET mostra o follow-up (rascunho, gatilho, regra de passar ao humano); PATCH altera o rascunho do follow-up. Gerente ou acima.",
