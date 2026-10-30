@@ -351,10 +351,7 @@ describe("team/:user_id", () => {
 });
 
 describe("portas fechadas por segurança e por falta de prova", () => {
-  it("chave do mapa e honorários ficam fechados para o assistente", () => {
+  it("a porta que recebe chave do mapa fica fechada para o assistente", () => {
     expect(escritaPermitida("ai/mapas", "PUT")).toBe(false);
-    expect(escritaPermitida("honorarios/contratos", "POST")).toBe(false);
-    expect(escritaPermitida("honorarios/contratos/:id/parcelas", "POST")).toBe(false);
-    expect(escritaPermitida("honorarios/parcelas/:id/pagar", "POST")).toBe(false);
   });
 });

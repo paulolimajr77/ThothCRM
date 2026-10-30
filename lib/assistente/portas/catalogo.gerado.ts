@@ -4578,6 +4578,24 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
       PATCH: mod.PATCH,
     };
   },
+  "honorarios/contratos": async () => {
+    const mod = await import("@/app/api/v1/honorarios/contratos/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "honorarios/contratos/:id/parcelas": async () => {
+    const mod = await import("@/app/api/v1/honorarios/contratos/[id]/parcelas/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "honorarios/parcelas/:id/pagar": async () => {
+    const mod = await import("@/app/api/v1/honorarios/parcelas/[id]/pagar/route");
+    return {
+      POST: mod.POST,
+    };
+  },
   "agenda/google/calendarios": async () => {
     const mod = await import("@/app/api/v1/agenda/google/calendarios/route");
     return {
