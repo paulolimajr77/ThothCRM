@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const RAIZ = join(__dirname, "..", "..");
-const MIGRATION = "supabase/migrations/20261029120000_8008_modelos_de_cliente_do_assistente.sql";
+const MIGRATION = "supabase/migrations/20261029120001_8008_modelos_de_cliente_do_assistente.sql";
 const ROTULO = "-- ---- modelos de cliente do assistente (migration 8008) ----";
 
 const ler = (caminho: string) => readFileSync(join(RAIZ, caminho), "utf8");
