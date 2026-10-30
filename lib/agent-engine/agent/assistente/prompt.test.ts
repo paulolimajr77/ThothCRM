@@ -279,13 +279,13 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     expect(s).toContain("recurso pode estar DESLIGADO");
   });
 
-  it("conduz até o fim e fala como com dono de oficina", () => {
+  it("conduz até o fim e fala simples, para qualquer negócio", () => {
     // Pedido do dono (30/10): "não está um bate-papo com quem não sabe mexer no sistema".
     // Sabotagem: apagar os dois blocos → este teste fica vermelho.
     const s = norm(montarSystemDoAssistente(BASE));
     expect(s).toContain("CONDUZA ATÉ O FIM");
     expect(s).toContain("botão Aprovar tudo");
-    expect(s).toContain("LINGUAGEM DE DONO DE OFICINA");
+    expect(s).toContain("LINGUAGEM SIMPLES, PARA QUALQUER NEGÓCIO");
     expect(s).toContain("nunca cite código de erro");
   });
 
