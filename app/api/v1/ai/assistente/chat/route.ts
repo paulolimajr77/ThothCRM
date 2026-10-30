@@ -341,6 +341,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         coletor,
         turno: { threadId, turnId: turn_id, pergunta: perguntaEfetiva },
         adminDaPlataforma: escreveComoPlatformAdmin(authz.user),
+        usuarioId: userId,
       });
       // Contexto da tela: o agente que a pessoa está vendo, só se for desta organização.
       // Não vai para a auditoria, não entra no limite nem no replay.

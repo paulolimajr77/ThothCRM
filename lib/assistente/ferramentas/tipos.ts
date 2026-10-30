@@ -192,6 +192,8 @@ export interface EntradaDasFerramentas {
    * organização) entram as ferramentas de modelo de cliente. Ausente = não.
    */
   adminDaPlataforma?: boolean;
+  /** O usuário da SESSÃO (nunca do modelo): é com a identidade dele que `consultar_dados` roda a RLS. */
+  usuarioId?: string;
 }
 
 /** O que uma ferramenta devolve quando não pôde trabalhar — sem a mensagem do erro. */

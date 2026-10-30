@@ -262,6 +262,14 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     expect(s).toContain("UMA ou DUAS mensagens, no máximo");
   });
 
+  it("análise dos dados: conta no SQL, sem inventar e sem dado pessoal sem pedido", () => {
+    // Pedido do dono (30/10): o agente analisa os dados reais com liberdade. Sabotagem: apagar o bloco → vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("ANÁLISE DOS DADOS");
+    expect(s).toContain("conta feita NO SQL");
+    expect(s).toContain("Nome e telefone de cliente só se a pessoa pediu a lista");
+  });
+
   it("só diz que o agente está pronto depois das pendências do conferir_agente", () => {
     // Pedido do dono (30/10): a Nina foi publicada sem material, sem passar para humano e sem horário de follow-up.
     // Sabotagem: apagar a frase → este teste fica vermelho.
