@@ -100,6 +100,8 @@ const JANELA_SEGUNDOS = 60;
 
 /** Quantas mensagens anteriores o modelo enxerga, e o teto de caracteres da soma delas. */
 const MAXIMO_DE_MENSAGENS_NO_HISTORICO = 20;
+/** Quantas vezes o servidor continua sozinho um turno que o modelo largou sem texto no meio do trabalho. */
+const MAXIMO_DE_CONTINUACOES = 2;
 const MAXIMO_DE_CARACTERES_NO_HISTORICO = 8000;
 
 const corpoDoPost = z
@@ -380,24 +382,29 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
 
       const deps = requestTurnDeps();
-      const saida = await responderComoAssistente(
-        pool,
-        deps.llmCfg,
-        {
-          tenantId: orgId,
-          system,
-          historico,
-          pergunta: perguntaEfetiva,
-          tools,
-          maxSteps: MAXIMO_DE_PASSOS_DO_ASSISTENTE,
-        },
-        { registry: deps.registry, log: deps.log },
-      );
+      const chamarModelo = (texto: string) =>
+        responderComoAssistente(
+          pool,
+          deps.llmCfg,
+          { tenantId: orgId, system, historico, pergunta: texto, tools, maxSteps: MAXIMO_DE_PASSOS_DO_ASSISTENTE },
+          { registry: deps.registry, log: deps.log },
+        );
+      let saida = await chamarModelo(perguntaEfetiva);
+      // O modelo às vezes termina o turno SEM texto depois de já ter feito parte do trabalho (medido em
+      // 30/10: parava logo após criar o agente, com poucos passos usados). A pessoa não deve ter que
+      // escrever "continua": o servidor continua sozinho, até 2 vezes, e o que já foi feito não se refaz.
+      for (let volta = 0; volta < MAXIMO_DE_CONTINUACOES && saida.texto.trim() === "" && coletor.acoes.length > 0; volta += 1) {
+        saida = await chamarModelo(
+          `${perguntaEfetiva}\n\n(Nota do sistema: sua resposta anterior parou no meio, antes de terminar o pedido. ` +
+            "O que você já fez continua feito. Veja o estado atual com as ferramentas de leitura e de conferência, " +
+            "siga do PRÓXIMO passo sem refazer o que já existe e termine com a resposta à pessoa.)",
+        );
+      }
       if (saida.texto.trim() === "" && coletor.acoes.some((a) => a.tipo === "proposta" || a.tipo === "teste")) {
         // Acabou o limite de passos antes de o modelo escrever a resposta: o que já foi feito
         // aparece nos cartões, e a pessoa é avisada de que FALTA o resto (nunca "preparei o que pediu",
         // que escondia o que ficou por fazer).
-        textoDoModelo = t("Cheguei ao limite de passos desta resposta antes de terminar. O que já foi feito está nos cartões abaixo. Escreva \"continua\" e eu sigo de onde parei.");
+        textoDoModelo = t("Parei antes de terminar. O que já foi feito está nos cartões abaixo. Escreva \"continua\" e eu sigo de onde parei.");
         callId = saida.callId;
       } else if (saida.texto.trim() === "") {
         motivoDoPiso = "resposta_vazia";
