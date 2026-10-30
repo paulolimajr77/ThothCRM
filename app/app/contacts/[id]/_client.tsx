@@ -40,9 +40,10 @@ import { useAuth } from "@/hooks/auth/AuthProvider";
 import { useDefaultPipeline } from "@/hooks/pipelines/useDefaultPipeline";
 import { camposDoFunil, camposPorEscopo } from "@/lib/leads/campos-do-funil";
 import { canonicalTagsDoFunil } from "@/lib/contacts/etiquetas";
-import { ROLE_RANK } from "@/lib/auth/types";
+import { ROLE_RANK, roleAtLeast } from "@/lib/auth/types";
 import { TimelineView } from "@/components/contacts/TimelineView";
 import { EditContactDialog } from "@/components/contacts/EditContactDialog";
+import { JuntarComOutraFicha } from "@/components/contacts/JuntarComOutraFicha";
 import { CartaoDaCarteira } from "@/components/contacts/CartaoDaCarteira";
 import { AnonymizeDialog } from "@/components/contacts/AnonymizeDialog";
 import { PropostasDeDado } from "@/components/contacts/PropostasDeDado";
@@ -52,7 +53,10 @@ import { ConversaNoDossie } from "@/components/kanban/ConversaNoDossie";
 import { rotuloParaAEquipe } from "@/lib/contacts/rotulo-do-contato";
 import { ORIGEM_AGENDA_DO_CELULAR, origemDoContato } from "@/lib/leads/origem-do-contato";
 import { phoneForDisplay } from "@/lib/channels/phone-variants";
+import { TelefonesDaFicha } from "@/components/contacts/TelefonesDaFicha";
 import { DialButton } from "@/components/voice/DialButton";
+import { ListaDeLinks } from "@/components/contacts/ListaDeLinks";
+import { linksParaExibir } from "@/lib/leads/links-de-contato";
 
 interface Props {
   contactId: string;
@@ -94,6 +98,10 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) 
   const canonicalTags = canonicalTagsDoFunil(pipelineQuery.data?.pipeline.settings ?? null);
   const [editOpen, setEditOpen] = useState(false);
   const [anonOpen, setAnonOpen] = useState(false);
+  // Juntar com outra ficha (spec 31, PR A): gestor, mesmo gate da fusão. Fica
+  // antes dos early returns pelo mesmo motivo dos hooks acima.
+  const podeJuntar = roleAtLeast(activeOrg?.role, "manager");
+  const [juntarOpen, setJuntarOpen] = useState(false);
   // Desfazer o descadastro é o override da regra W-02 — só admin, e auditado.
   // O hook fica ANTES dos early returns: chamá-lo depois mudaria a ordem dos
   // hooks entre renderizações e o React reprova.
@@ -143,6 +151,7 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) 
   }
 
   const contact = q.data.data;
+  const linksDoContato = linksParaExibir(contact.custom_fields);
   const isAdmin =
     (user.is_platform_admin && !user.support) || (activeOrg && ROLE_RANK[activeOrg.role] >= ROLE_RANK.admin);
   // Gerente e dono marcam/desmarcam pessoal (spec 21, decisão 1, D3) — e este
@@ -358,6 +367,16 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) 
               </Button>
             )}
             <DialButton contactId={contactId} hasPhone={!!contact.phone_number} />
+            {podeJuntar && (
+              <Button
+                variant="outline"
+                onClick={() => setJuntarOpen(true)}
+                className="shrink-0"
+                data-testid="juntar-com-outra-ficha"
+              >
+                <span>{t("Juntar com outra ficha")}</span>
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setEditOpen(true)} className="shrink-0">
               <PencilSimple size={16} weight="bold" aria-hidden />
               <span>{t("Editar")}</span>
@@ -412,12 +431,23 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) 
                 <dt className="text-xs uppercase text-muted-foreground">Email</dt>
                 <dd className="mt-1">{contact.email ?? "—"}</dd>
               </div>
-              <div>
-                <dt className="text-xs uppercase text-muted-foreground">{t("Telefone")}</dt>
-                <dd className="mt-1">
-                  {contact.phone_number ? phoneForDisplay(contact.phone_number) : "—"}
-                </dd>
-              </div>
+              {/*
+                Os telefones da ficha (Spec 31). Sem extra, a linha segue como hoje
+                ("Telefone", com o tipo ao lado); com extra, "Telefones" lista o
+                principal e os extras. Quem tem papel `agent` ou acima edita aqui.
+              */}
+              <TelefonesDaFicha
+                contato={contact}
+                podeEditar={Boolean(activeOrg && ROLE_RANK[activeOrg.role] >= ROLE_RANK.agent)}
+              />
+              {linksDoContato.length > 0 && (
+                <div>
+                  <dt className="text-xs uppercase text-muted-foreground">{t("Links")}</dt>
+                  <dd className="mt-1">
+                    <ListaDeLinks links={linksDoContato} />
+                  </dd>
+                </div>
+              )}
               {/*
                 A data gravada pelo "Editar contato" (e pela proposta aprovada),
                 enxergada aqui — é ela que o cron `contact-birthdays` lê para
@@ -434,6 +464,16 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) 
                   {contact.birthdate ? contact.birthdate.split("-").reverse().join("/") : "—"}
                 </dd>
               </div>
+              {(contact.zip_code || contact.street || contact.city || contact.state) && (
+                <div className="sm:col-span-2">
+                  <dt className="text-xs uppercase text-muted-foreground">{t("Endereço")}</dt>
+                  <dd className="mt-1">
+                    {[contact.street, contact.number, contact.complement, contact.district, contact.city, contact.state, contact.zip_code]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </dd>
+                </div>
+              )}
               {/*
                 A origem sai do `source_metadata` quando ele tem algo melhor a
                 dizer, e cai na coluna `source` quando não tem. Antes esta linha
@@ -589,6 +629,13 @@ export function ContactDetailClient({ contactId, paineisDeModulo = [] }: Props) 
         canonicalTags={canonicalTags}
       />
       <AnonymizeDialog contactId={contactId} open={anonOpen} onOpenChange={setAnonOpen} />
+      {podeJuntar && (
+        <JuntarComOutraFicha
+          contatoAtual={contact}
+          open={juntarOpen}
+          onOpenChange={setJuntarOpen}
+        />
+      )}
     </div>
   );
 }
