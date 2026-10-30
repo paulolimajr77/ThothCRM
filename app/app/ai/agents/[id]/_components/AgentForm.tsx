@@ -756,9 +756,9 @@ export function AgentForm(props: Props) {
           data-testid={ID_DO_MOTIVO_DO_PUBLICAR}
           role="status"
           aria-live="polite"
-          className="-mt-2 text-xs text-muted-foreground"
+          className="rounded-md border border-warning-bg bg-warning-bg/30 px-3 py-2 text-sm font-medium text-warning-fg"
         >
-          {publishBlockReason}
+          {t("Para publicar:")} {publishBlockReason}
         </p>
       ) : null}
 
