@@ -284,6 +284,7 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     // Sabotagem: apagar os dois blocos → este teste fica vermelho.
     const s = norm(montarSystemDoAssistente(BASE));
     expect(s).toContain("CONDUZA ATÉ O FIM");
+    expect(s).toContain("MONTAR UM NEGÓCIO A PARTIR DA BASE DE CONHECIMENTO");
     expect(s).toContain("botão Aprovar tudo");
     expect(s).toContain("LINGUAGEM SIMPLES, PARA QUALQUER NEGÓCIO");
     expect(s).toContain("nunca cite código de erro");
