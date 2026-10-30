@@ -279,6 +279,16 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     expect(s).toContain("recurso pode estar DESLIGADO");
   });
 
+  it("conduz até o fim e fala como com dono de oficina", () => {
+    // Pedido do dono (30/10): "não está um bate-papo com quem não sabe mexer no sistema".
+    // Sabotagem: apagar os dois blocos → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("CONDUZA ATÉ O FIM");
+    expect(s).toContain("botão Aprovar tudo");
+    expect(s).toContain("LINGUAGEM DE DONO DE OFICINA");
+    expect(s).toContain("nunca cite código de erro");
+  });
+
   it("só diz que o agente está pronto depois das pendências do conferir_agente", () => {
     // Pedido do dono (30/10): a Nina foi publicada sem material, sem passar para humano e sem horário de follow-up.
     // Sabotagem: apagar a frase → este teste fica vermelho.

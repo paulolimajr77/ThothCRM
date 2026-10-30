@@ -7,6 +7,7 @@ import { abrirPorta } from "@/lib/assistente/portas/abrir";
 import { aplicarPorPedidoExpresso, proporAcao } from "./proposta-comum";
 import { escritaTemEfeitoFora, portaDeLeituraPermitida } from "@/lib/assistente/portas/regras";
 import { protegida } from "./protegida";
+import { problemasDoCorpo } from "./validar-antes-de-propor";
 import type { EntradaDasFerramentas } from "./tipos";
 
 const esquemaDeEntrada = z.strictObject({
@@ -27,6 +28,16 @@ async function proporMudanca(
   | { ok: true; propostaId: string; aplicada?: boolean; mensagem?: string }
   | { ok: false; motivo: string }
 > {
+  // Corpo que a rota vai recusar não vira cartão: volta ao assistente com o campo e o motivo.
+  const problemas = problemasDoCorpo(e.porta, e.metodo, e.corpo);
+  if (problemas !== null) {
+    return {
+      ok: false,
+      motivo:
+        `O conteúdo está inválido e NÃO virou cartão: ${problemas}. Corrija esses campos e proponha de novo, ` +
+        "sem contar nada disso à pessoa. Só se não conseguir corrigir, diga em UMA frase simples o que não deu.",
+    };
+  }
   // Para PATCH/PUT, lê o "antes" pela porta GET com o mesmo id.
   let antes: Record<string, unknown> | null = null;
   if (e.metodo !== "POST" && portaDeLeituraPermitida(e.porta)) {

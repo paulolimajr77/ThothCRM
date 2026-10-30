@@ -22,7 +22,7 @@ import { ApiError } from "@/lib/api/types";
 import { linhasDaAjuda } from "@/lib/assistente/comandos";
 import { randomId } from "@/lib/random-id";
 import { proximosPassosDaAcao, type ProximoPasso } from "@/lib/assistente/propostas/proximos-passos";
-import { idsSegurosParaLote } from "@/lib/assistente/propostas/lote-seguro";
+import { idsParaAprovarTudo } from "@/lib/assistente/propostas/lote-seguro";
 
 interface Thread {
   id: string;
@@ -545,7 +545,7 @@ export function ChatDoAssistente({
   // Mudanças seguras (risco baixo, pendentes, não vencidas) que podem ser
   // aplicadas em lote com um só clique.
   const idsSeguros = useMemo(
-    () => idsSegurosParaLote(fila.data ?? []),
+    () => idsParaAprovarTudo(fila.data ?? []),
     [fila.data],
   );
   const temLoteSeguro = idsSeguros.length >= 2;
@@ -712,13 +712,11 @@ export function ChatDoAssistente({
           details && typeof details === "object" && "codigo_do_destino" in details
             ? (details as { codigo_do_destino?: unknown }).codigo_do_destino
             : null;
-        const origem =
-          http === null && codigoDoDestino === null
-            ? t("sem resposta do destino")
-            : `${http ?? "?"}${codigoDoDestino === null ? "" : ` · ${codigoDoDestino}`}`;
-        frase = `${mensagem ?? t("A aplicação falhou no destino.")} ${t(
-          "O destino respondeu",
-        )} ${origem}. ${t("A proposta continua aprovada — você pode tentar de novo.")}`;
+        // Dono de negócio não lê "422": recusa de conteúdo (4xx) pede para refazer; o resto, tentar de novo.
+        const recusouOConteudo = http !== null && /^4\d\d$/.test(http);
+        frase = recusouOConteudo
+          ? t("O sistema recusou o conteúdo desta mudança. Peça ao assistente para refazer.")
+          : t("Não deu certo agora. Tente de novo em instantes.");
       } else if (codigo === "proposta_expirada") {
         frase = t("Expirou sem decisão.");
       } else {
@@ -772,7 +770,7 @@ export function ChatDoAssistente({
       }
     }
     setLoteOcupado(false);
-    const fraseAplicou = t("Apliquei {a} de {n} mudanças seguras.")
+    const fraseAplicou = t("Apliquei {a} de {n} mudanças.")
       .replace("{a}", String(aplicadas))
       .replace("{n}", String(ids.length));
     if (parouEm) {
@@ -1194,7 +1192,7 @@ export function ChatDoAssistente({
               data-testid="assistente-lote-seguro"
               className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
             >
-              {t("Aplicar as {n} mudanças seguras").replace("{n}", String(idsSeguros.length))}
+              {t("Aprovar tudo ({n})").replace("{n}", String(idsSeguros.length))}
             </button>
           </div>
         ) : null}

@@ -1,3 +1,5 @@
+import { ESCRITA_PERMITIDA } from "@/lib/assistente/portas/listas";
+
 /**
  * IDs das propostas SEGURAS que podem ser aplicadas em lote, na ordem recebida.
  *
@@ -14,6 +16,8 @@ export interface PropostaCandidataAoLote {
   risk: string;
   status: string;
   vencida?: boolean;
+  payload?: unknown;
+  created_at?: string;
 }
 
 /**
@@ -31,4 +35,24 @@ export function idsSegurosParaLote(
     ids.push(p.id);
   }
   return ids;
+}
+
+/** Efeito fora do sistema (mensagem, campanha, equipe, automação): a porta+método está marcada `externo`. */
+export function propostaAgeFora(payload: unknown): boolean {
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) return false;
+  const p = payload as { porta?: unknown; metodo?: unknown };
+  if (typeof p.porta !== "string" || typeof p.metodo !== "string") return false;
+  return ESCRITA_PERMITIDA.some((e) => e.porta === p.porta && e.metodo === p.metodo && e.externo === true);
+}
+
+/**
+ * "Aprovar tudo": toda proposta pendente, não vencida e SEM efeito fora do sistema (segura ou de atenção),
+ * na ordem em que foram criadas (criar o agente antes de configurá-lo). Cartão de alerta nunca entra:
+ * ele fica sempre para a pessoa decidir um a um. A classificação vem do CÓDIGO (porta+método), não do modelo.
+ */
+export function idsParaAprovarTudo(propostas: PropostaCandidataAoLote[]): string[] {
+  return propostas
+    .filter((p) => p.status === "pendente" && p.vencida !== true && !propostaAgeFora(p.payload))
+    .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""))
+    .map((p) => p.id);
 }

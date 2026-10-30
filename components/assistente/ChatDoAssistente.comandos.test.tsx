@@ -374,10 +374,10 @@ describe("o lote das mudanças seguras", () => {
     montar();
 
     const botao = await screen.findByTestId("assistente-lote-seguro");
-    expect(botao.textContent).toBe("Aplicar as 2 mudanças seguras");
+    expect(botao.textContent).toBe("Aprovar tudo (2)");
     await usuario.click(botao);
 
-    expect(await screen.findByText("Apliquei 2 de 2 mudanças seguras.")).toBeTruthy();
+    expect(await screen.findByText("Apliquei 2 de 2 mudanças.")).toBeTruthy();
     const decisoes = rede.chamadas.filter((c) => /\/(aprovar|aplicar)$/.test(c));
     expect(decisoes).toEqual([
       `POST /api/v1/ai/assistente/propostas/${SEGURA_1}/aprovar`,
@@ -408,7 +408,7 @@ describe("o lote das mudanças seguras", () => {
 
     await usuario.click(await screen.findByTestId("assistente-lote-seguro"));
 
-    expect(await screen.findByText(/^Apliquei 0 de 2 mudanças seguras\. Parei na mudança «Guardar o horário de atendimento»/)).toBeTruthy();
+    expect(await screen.findByText(/^Apliquei 0 de 2 mudanças. Parei na mudança «Guardar o horário de atendimento»/)).toBeTruthy();
     expect(rede.chamadas.some((c) => c.includes(SEGURA_2))).toBe(false);
   });
 });

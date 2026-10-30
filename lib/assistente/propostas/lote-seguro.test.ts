@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { ESCRITA_PERMITIDA } from "@/lib/assistente/portas/listas";
 import { riscoDaProposta } from "./operacoes";
-import { idsSegurosParaLote, type PropostaCandidataAoLote } from "./lote-seguro";
+import { idsParaAprovarTudo, idsSegurosParaLote, type PropostaCandidataAoLote } from "./lote-seguro";
 
 function proposta(over: Partial<PropostaCandidataAoLote> = {}): PropostaCandidataAoLote {
   return { id: "id-1", risk: "seguro", status: "pendente", ...over };
@@ -54,5 +54,24 @@ describe("o lote nunca recebe porta com efeito fora do sistema", () => {
       const risk = riscoDaProposta("acao", { porta: e.porta, metodo: e.metodo });
       expect(idsSegurosParaLote([proposta({ id: `${e.metodo} ${e.porta}`, risk })]), `${e.metodo} ${e.porta}`).toEqual([]);
     }
+  });
+});
+
+describe("idsParaAprovarTudo", () => {
+  it("entram seguras e de atenção, na ordem de criação; cartão de efeito fora e já decidida ficam de fora", () => {
+    // Pedido do dono (30/10): um só "Aprovar tudo". Sabotagem: tirar o filtro de propostaAgeFora → vermelho.
+    const ids = idsParaAprovarTudo([
+      proposta({ id: "c", risk: "atencao", created_at: "2026-10-30T10:03:00Z" }),
+      proposta({ id: "a", risk: "seguro", created_at: "2026-10-30T10:01:00Z" }),
+      proposta({
+        id: "x",
+        risk: "atencao",
+        created_at: "2026-10-30T10:02:00Z",
+        payload: { porta: "attendants/sector/:user_id", metodo: "PUT" },
+      }),
+      proposta({ id: "d", risk: "atencao", status: "aprovada", created_at: "2026-10-30T10:04:00Z" }),
+      proposta({ id: "v", risk: "atencao", vencida: true, created_at: "2026-10-30T10:05:00Z" }),
+    ]);
+    expect(ids).toEqual(["a", "c"]);
   });
 });

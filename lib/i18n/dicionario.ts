@@ -18847,9 +18847,13 @@ export const DICIONARIO: Traducoes = {
   "Revisar e publicar o follow-up": { es: "Revisar y publicar el seguimiento" },
   "Conferir as etapas do funil": { es: "Revisar las etapas del embudo" },
   // Ordem E — aplicar de uma vez as mudanças seguras pendentes.
-  "Aplicar as {n} mudanças seguras": { es: "Aplicar los {n} cambios seguros" },
-  "Apliquei {a} de {n} mudanças seguras.": {
-    es: "Apliqué {a} de {n} cambios seguros.",
+  "Aprovar tudo ({n})": { es: "Aprobar todo ({n})" },
+  "O sistema recusou o conteúdo desta mudança. Peça ao assistente para refazer.": {
+    es: "El sistema rechazó el contenido de este cambio. Pide al asistente que lo rehaga.",
+  },
+  "Não deu certo agora. Tente de novo em instantes.": { es: "No salió bien ahora. Inténtalo de nuevo en unos instantes." },
+  "Apliquei {a} de {n} mudanças.": {
+    es: "Apliqué {a} de {n} cambios.",
   },
   "Parei na mudança «{resumo}»: {erro}": {
     es: "Me detuve en el cambio «{resumo}»: {erro}",
