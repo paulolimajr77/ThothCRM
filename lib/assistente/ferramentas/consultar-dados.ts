@@ -56,7 +56,8 @@ export function criarConsultarDados(entrada: EntradaDasFerramentas): Tool {
       "Roda uma consulta SQL de LEITURA nos dados da organização e devolve o resultado da conta (até 200 " +
       "linhas; faça somas, contagens e médias NO SQL, não traga linhas para somar). Escreva só SELECT ou " +
       "WITH, uma consulta só, nomes simples de tabela e coluna (sem aspas, sem 'public.', sem comentários, " +
-      "sem ponto e vírgula). Os dados já vêm só da organização desta pessoa; não filtre organização. " +
+      "sem ponto e vírgula). Só funções comuns de agregação, janela, data, texto, número e JSON (count, sum, avg, " +
+      "round, date_trunc, coalesce, to_char, jsonb_…); outra função é recusada com o nome dela. Os dados já vêm só da organização desta pessoa; não filtre organização. " +
       "Valores em dinheiro ficam em CENTAVOS (`*_cents`); datas em UTC (converta para o fuso da empresa com " +
       "`at time zone`). Descubra tabelas e colunas com `dicionario_de_dados` antes. Dado pessoal de cliente " +
       "(nome, telefone, e-mail) só entra na resposta se a pessoa PEDIU a lista; no resto devolva totais.",

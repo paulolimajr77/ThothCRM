@@ -18,6 +18,8 @@ describe("validarConsulta", () => {
       "select date_trunc('day', closed_at at time zone 'America/Sao_Paulo') d, count(*) from crm_leads group by 1 order by 1 desc",
       "select l.id, c.display_name from crm_leads l join contacts c on c.id = l.contact_id limit 10;",
       "select role, count(*) from user_organizations group by role",
+      "select count(*) filter (where status = 'won'), round(avg(value_cents)::numeric(12,2) / 100, 2) from crm_leads",
+      "select owner_user_id, rank() over (order by sum(value_cents) desc) from crm_leads where id in (select id from crm_leads) group by 1",
     ]) {
       expect(validarConsulta(bom), bom).toMatchObject({ ok: true });
     }
@@ -41,6 +43,14 @@ describe("validarConsulta", () => {
       "select * from information_schema.tables",
       "select * from pg_roles",
       "select pg_sleep(100)",
+      // funções que executam TEXTO como SQL: o texto entre aspas passaria por um filtro de palavras
+      "select query_to_xml('select * from public.contacts', true, true, '')",
+      "select * from ts_stat('select to_tsvector(''x'')')",
+      "select table_to_xml('contacts', true, false, '')",
+      "select to_regclass('public.contacts')",
+      "select query_to_xml(chr(115) || 'elect 1', true, true, '')",
+      "select dblink('x','y')",
+      "select public.fn_user_org_ids()",
       "select 1; select 2",
       "select 1 -- comentário",
       "select /* x */ 1",
