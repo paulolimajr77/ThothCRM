@@ -8,6 +8,8 @@ import {
   portaDeLeituraPermitida,
   tipoDeMetodoPermitido,
 } from "@/lib/assistente/portas/regras";
+import { logger } from "@/lib/logger";
+
 import { protegida } from "./protegida";
 import type { EntradaDasFerramentas } from "./tipos";
 
@@ -196,6 +198,15 @@ async function procurarPorta(
   // portas) e deixava de fora justo a que a pergunta pedia.
   candidatas.sort((x, y) => y.pontos - x.pontos || x.porta.id.length - y.porta.id.length);
   const portas = candidatas.slice(0, 12).map((c) => c.porta);
+  // Medição da busca: SÓ números e ids de porta, nunca a pergunta (pode ter nome de cliente).
+  // Casado com `ler_porta` (que loga a porta lida), mostra se o modelo usa a 1ª sugestão ou procura de novo.
+  logger.info("assistente.busca_de_porta", {
+    palavras: termosDa(e.pergunta).length,
+    resultados: portas.length,
+    vazia: portas.length === 0,
+    primeira: portas[0]?.id ?? null,
+    pontos_da_primeira: candidatas[0]?.pontos ?? 0,
+  });
   if (portas.length > 0) return { portas };
 
   // Nada casou: as áreas dão ao modelo o vocabulário para tentar de novo, em vez de
