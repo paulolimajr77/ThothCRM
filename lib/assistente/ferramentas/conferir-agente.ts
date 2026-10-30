@@ -77,8 +77,10 @@ function fichaDe(linha: Linha): FichaDaVersao | null {
     capacidades_ligadas: contar(linha.tool_ids),
     funis_ligados: contar(linha.pipeline_ids),
     numero_escolhido: typeof linha.channel_session_id === "string",
+    // Dois caminhos reais: o interruptor `handoff_tool_enabled` (o agente chama uma pessoa) ou a capacidade na lista.
     passa_para_humano:
-      Array.isArray(linha.tool_ids) && linha.tool_ids.includes("crm_request_human_handoff"),
+      linha.handoff_tool_enabled === true ||
+      (Array.isArray(linha.tool_ids) && linha.tool_ids.includes("crm_request_human_handoff")),
     followup_sem_janela:
       eLinha(linha.followup) && linha.followup.enabled === true && !eLinha(linha.followup.send_window),
     ids_dos_materiais: Array.isArray(linha.knowledge_source_ids)

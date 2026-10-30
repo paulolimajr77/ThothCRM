@@ -104,6 +104,16 @@ describe("conferir_agente", () => {
     expect(saida.pendencias.join(" ")).toContain("SEM janela de horário");
   });
 
+  it("handoff_tool_enabled ligado conta como passar para humano (medido: a Nina chamou uma pessoa só com ele)", async () => {
+    // Sabotagem: voltar a olhar só tool_ids → este teste fica vermelho (falso "desligado").
+    ligar([versao(1, "draft", { handoff_tool_enabled: true, channel_session_id: CANAL, pipeline_ids: ["p1"] })]);
+    const { ferramentas } = montarParaTeste("admin", {
+      channel_sessions: [{ id: CANAL, organization_id: ORG, status: "WORKING", metadata: {} }],
+    });
+    const saida = await chamar<{ pendencias: string[] }>(ferramentas, "conferir_agente", { agente_id: AGENTE });
+    expect(saida.pendencias.join(" ")).not.toContain("Passar para um humano");
+  });
+
   it("pendenciasDoAgente: agente completo não tem pendência", () => {
     expect(
       pendenciasDoAgente(
