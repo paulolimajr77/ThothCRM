@@ -389,7 +389,12 @@ export async function POST(req: NextRequest): Promise<Response> {
         },
         { registry: deps.registry, log: deps.log },
       );
-      if (saida.texto.trim() === "") {
+      if (saida.texto.trim() === "" && coletor.acoes.length > 0) {
+        // Acabou o limite de passos logo depois de propor o cartão: o cartão existe,
+        // então a pessoa recebe a frase de sempre em vez do aviso de falha da IA.
+        textoDoModelo = t("Preparei o que você pediu. Veja o cartão abaixo e aprove se estiver bom, ou me diga o que mudar.");
+        callId = saida.callId;
+      } else if (saida.texto.trim() === "") {
         motivoDoPiso = "resposta_vazia";
         logger.warn("assistente.chat.modelo_nao_respondeu", {
           requestId,

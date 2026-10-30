@@ -46,7 +46,7 @@ export {
 } from "./tipos";
 
 /** O teto do laço de chamadas de ferramenta num turno (o knob do turno, nunca constante solta). */
-export const MAXIMO_DE_PASSOS_DO_ASSISTENTE = 15;
+export const MAXIMO_DE_PASSOS_DO_ASSISTENTE = 25;
 
 export function montarFerramentasDoAssistente(entrada: EntradaDasFerramentas): ToolSet {
   const leitura = {

@@ -142,7 +142,7 @@ describe("montarFerramentasDoAssistente", () => {
   });
 
   it("o teto de passos do turno é 15", () => {
-    expect(MAXIMO_DE_PASSOS_DO_ASSISTENTE).toBe(15);
+    expect(MAXIMO_DE_PASSOS_DO_ASSISTENTE).toBe(25);
   });
 
   it("cada esquema de entrada tem exatamente as propriedades esperadas", async () => {
