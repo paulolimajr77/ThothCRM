@@ -65,6 +65,17 @@ const FORA_DO_APROVAR_TUDO: readonly { porta: string; metodo: string }[] = [
   { porta: "leads/:id/retomar", metodo: "POST" },
   { porta: "proposals/:id/decide", metodo: "POST" },
   { porta: "financeiro/comandas/:id/estornar", metodo: "POST" },
+  { porta: "settings/routing", metodo: "PATCH" },
+  { porta: "settings/routing/channels", metodo: "PATCH" },
+  { porta: "ai/guardrail-layers", metodo: "PUT" },
+  { porta: "ai/knowledge/reindex-all", metodo: "POST" },
+  { porta: "ai/skills/:name", metodo: "PUT" },
+  { porta: "ai/skills/:name/install", metodo: "POST" },
+  { porta: "ai/skills/:name/restore", metodo: "POST" },
+  { porta: "ai/followups/enrollments/:id/cancel", metodo: "POST" },
+  { porta: "ai/followups/enrollments/:id/skip", metodo: "POST" },
+  { porta: "ai/followups/enrollments/:id/snooze", metodo: "POST" },
+  { porta: "ai/followups/promises/:id/cancel", metodo: "POST" },
 ];
 
 function ehAoVivoOuIrreversivel(payload: unknown): boolean {

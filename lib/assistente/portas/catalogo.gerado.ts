@@ -595,7 +595,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["POST"],
     parametros: ["id"],
     area: "ai",
-    resumo: "POST /api/v1/ai/followups/enrollments/:id/snooze (manager+) — remarca o próximo passo para o horário que a pessoa escolheu, sem tirar o follow-up do relógio nem mudar o passo em que ele está.",
+    resumo: "POST adia o próximo passo do follow-up (corpo: next_eval_at = data e hora ISO com fuso).",
   },
   {
     id: "ai/followups/promises/:id/cancel",
@@ -619,7 +619,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["GET", "PUT"],
     parametros: [],
     area: "ai",
-    resumo: "GET/PUT /api/v1/ai/guardrail-layers — as verificações que são escolha da organização.",
+    resumo: "GET lista as camadas de proteção da IA; PUT liga ou desliga uma (corpo: layer, enabled). Mexe na segurança do atendimento: explique antes.",
   },
   {
     id: "ai/inbox",
@@ -659,7 +659,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["POST"],
     parametros: [],
     area: "ai",
-    resumo: "\"Perguntar ao acervo\" — a superfície do OPERADOR sobre a MESMA busca que a IA faz.",
+    resumo: "POST pergunta à base de conhecimento (corpo: pergunta) e devolve os trechos achados. Só consulta, não muda nada.",
   },
   {
     id: "ai/knowledge/chave",
@@ -683,7 +683,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["POST"],
     parametros: [],
     area: "ai",
-    resumo: "POST /api/v1/ai/knowledge/reindex-all Reindexa TODOS os materiais ativos da organização de uma vez, emitindo `knowledge_source.updated` por fonte (o worker re-processa; nada é apagado).",
+    resumo: "POST prepara de novo todos os materiais da base. Gasta chave de IA: avise antes.",
   },
   {
     id: "ai/knowledge/sources",
@@ -851,7 +851,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["POST"],
     parametros: ["id"],
     area: "ai",
-    resumo: "POST /api/v1/ai/routers/:id/test — classifica uma mensagem de TESTE contra o router (manager+).",
+    resumo: "POST testa como o roteador classifica uma mensagem (corpo: message). Só teste, não muda nada.",
   },
   {
     id: "ai/routing-results",
@@ -907,7 +907,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["POST"],
     parametros: ["name"],
     area: "ai",
-    resumo: "POST /api/v1/ai/skills/[name]/restore Restaura uma versão ANTERIOR da skill: move o ponteiro da organização para uma `skill_versions` já existente (Fase 5 do PLANO-CONFIG-UI-AGENTE).",
+    resumo: "POST volta o guia a uma versão anterior (corpo: version_id).",
   },
   {
     id: "ai/skills/:name/versions",
@@ -4183,6 +4183,114 @@ export const CARREGADORES_DE_ESCRITA: Record<string, () => Promise<Record<string
   },
   "agenda/tipos/reativar": async () => {
     const mod = await import("@/app/api/v1/agenda/tipos/reativar/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "attendants/availability/:user_id": async () => {
+    const mod = await import("@/app/api/v1/attendants/availability/[user_id]/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "campaign-suppressions": async () => {
+    const mod = await import("@/app/api/v1/campaign-suppressions/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "settings/routing": async () => {
+    const mod = await import("@/app/api/v1/settings/routing/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "settings/routing/channels": async () => {
+    const mod = await import("@/app/api/v1/settings/routing/channels/route");
+    return {
+      PATCH: mod.PATCH,
+    };
+  },
+  "ai/knowledge/busca": async () => {
+    const mod = await import("@/app/api/v1/ai/knowledge/busca/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "ai/routers/:id/test": async () => {
+    const mod = await import("@/app/api/v1/ai/routers/[id]/test/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "ai/followups/enrollments": async () => {
+    const mod = await import("@/app/api/v1/ai/followups/enrollments/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "ai/followups/enrollments/:id/cancel": async () => {
+    const mod = await import("@/app/api/v1/ai/followups/enrollments/[id]/cancel/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "ai/followups/enrollments/:id/pause": async () => {
+    const mod = await import("@/app/api/v1/ai/followups/enrollments/[id]/pause/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "ai/followups/enrollments/:id/resume": async () => {
+    const mod = await import("@/app/api/v1/ai/followups/enrollments/[id]/resume/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "ai/followups/enrollments/:id/skip": async () => {
+    const mod = await import("@/app/api/v1/ai/followups/enrollments/[id]/skip/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "ai/followups/enrollments/:id/snooze": async () => {
+    const mod = await import("@/app/api/v1/ai/followups/enrollments/[id]/snooze/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "ai/followups/promises/:id/cancel": async () => {
+    const mod = await import("@/app/api/v1/ai/followups/promises/[id]/cancel/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "ai/skills/:name": async () => {
+    const mod = await import("@/app/api/v1/ai/skills/[name]/route");
+    return {
+      PUT: mod.PUT,
+    };
+  },
+  "ai/skills/:name/install": async () => {
+    const mod = await import("@/app/api/v1/ai/skills/[name]/install/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "ai/skills/:name/restore": async () => {
+    const mod = await import("@/app/api/v1/ai/skills/[name]/restore/route");
+    return {
+      POST: mod.POST,
+    };
+  },
+  "ai/guardrail-layers": async () => {
+    const mod = await import("@/app/api/v1/ai/guardrail-layers/route");
+    return {
+      PUT: mod.PUT,
+    };
+  },
+  "ai/knowledge/reindex-all": async () => {
+    const mod = await import("@/app/api/v1/ai/knowledge/reindex-all/route");
     return {
       POST: mod.POST,
     };
