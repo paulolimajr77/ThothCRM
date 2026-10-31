@@ -1521,3 +1521,25 @@
     animation-iteration-count: infinite !important;
   }
 }
+
+/* Robô digitando do assistente (components/assistente/RoboDigitando.tsx): mãos batem
+   nas teclas em vez de deslizar; passos secos para manter o jeito de pixel art. */
+@keyframes robo-digita {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(1px); }
+}
+@keyframes robo-pisca {
+  0%, 90%, 100% { opacity: 1; }
+  95% { opacity: 0; }
+}
+@keyframes robo-antena-pisca {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.25; }
+}
+.robo-mao { animation: robo-digita 0.36s steps(1, end) infinite; }
+.robo-mao-b { animation-delay: 0.18s; }
+.robo-olho { animation: robo-pisca 3s steps(1, end) infinite; }
+.robo-antena { animation: robo-antena-pisca 0.8s steps(1, end) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .robo-mao, .robo-olho, .robo-antena { animation: none; }
+}

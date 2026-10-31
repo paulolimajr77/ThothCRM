@@ -23,6 +23,7 @@ import { linhasDaAjuda } from "@/lib/assistente/comandos";
 import { randomId } from "@/lib/random-id";
 import { proximosPassosDaAcao, type ProximoPasso } from "@/lib/assistente/propostas/proximos-passos";
 import { idsParaAprovarTudo } from "@/lib/assistente/propostas/lote-seguro";
+import { RoboDigitando } from "./RoboDigitando";
 
 interface Thread {
   id: string;
@@ -1198,9 +1199,10 @@ export function ChatDoAssistente({
           </div>
         ) : null}
         {enviando || retomando ? (
-          <p role="status" data-testid="assistente-pensando" className="self-start text-sm text-text-muted">
-            {enviando ? t("Pensando…") : t("Seu pedido continua em andamento. Deixe esta janela aberta: a resposta aparece aqui.")}
-          </p>
+          <div role="status" data-testid="assistente-pensando" className="flex items-center gap-2 self-start text-sm text-text-muted">
+            <RoboDigitando />
+            <span>{enviando ? t("Pensando…") : t("Seu pedido continua em andamento. Deixe esta janela aberta: a resposta aparece aqui.")}</span>
+          </div>
         ) : null}
         {!enviando && !retomando && mensagens.length > 0 && mensagens[mensagens.length - 1]!.author_kind === "ai" && /(^|\n)\s*\**Falta:/.test(mensagens[mensagens.length - 1]!.body) ? (
           <div className="flex self-start">
