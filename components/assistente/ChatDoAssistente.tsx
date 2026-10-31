@@ -403,6 +403,10 @@ export function ChatDoAssistente({
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [loteOcupado, setLoteOcupado] = useState<boolean>(false);
   const [errosDeAcao, setErrosDeAcao] = useState<Record<string, string>>({});
+  // O resultado de cada cartão aplicado fica DENTRO do cartão (não vira mensagem solta no fim do chat).
+  const [desfechosDeCartao, setDesfechosDeCartao] = useState<
+    Record<string, { texto: string; proximosPassos: ProximoPasso[] }>
+  >({});
   const [nomes, setNomes] = useState<Map<string, string>>(new Map());
   const jaIniciou = useRef(false);
   const nomesCarregados = useRef(false);
@@ -690,7 +694,7 @@ ${texto}` }];
             {},
           ),
         );
-        registrarDesfecho(t("Não apliquei: nada mudou."), "ok");
+        setDesfechosDeCartao((a) => ({ ...a, [id]: { texto: t("Não apliquei: nada mudou."), proximosPassos: [] } }));
       } else {
         const aprovada = await apiClient.post<{ data?: PropostaNaTela }>(
           `/api/v1/ai/assistente/propostas/${id}/aprovar`,
@@ -713,11 +717,13 @@ ${texto}` }];
         const criado = typeof artefatoId === "string" ? { id: artefatoId } : null;
         const proximos =
           portaMetodo !== null ? proximosPassosDaAcao(portaMetodo, criado) : [];
-        registrarDesfecho(
-          mudou === "" ? t("Pronto: a mudança foi aplicada.") : `${t("Pronto:")} ${mudou}`,
-          "ok",
-          proximos.length > 0 ? proximos : undefined,
-        );
+        setDesfechosDeCartao((a) => ({
+          ...a,
+          [id]: {
+            texto: mudou === "" ? t("Pronto: a mudança foi aplicada.") : `${t("Pronto:")} ${mudou}`,
+            proximosPassos: proximos,
+          },
+        }));
       }
       void qc.invalidateQueries({ queryKey: FILA_DE_PROPOSTAS });
     } catch (erroDaAcao) {
@@ -1181,6 +1187,32 @@ ${texto}` }];
                     nomeDe={nomeDe}
                     ocupado={ocupado !== null}
                     erro={errosDeAcao[id] ?? null}
+                    desfecho={
+                      desfechosDeCartao[id] === undefined ? null : (
+                        <div
+                          data-testid="assistente-desfecho"
+                          className="space-y-2 rounded-md border border-emerald-600/40 bg-emerald-500/10 px-3 py-2 text-sm"
+                        >
+                          <p>{desfechosDeCartao[id].texto}</p>
+                          {desfechosDeCartao[id].proximosPassos.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              <p className="mr-1 text-xs font-medium text-text-muted">{t("Falta:")}</p>
+                              {desfechosDeCartao[id].proximosPassos.map((passo) => (
+                                <button
+                                  key={passo.href}
+                                  type="button"
+                                  onClick={() => abrirTela(passo.href)}
+                                  data-testid="assistente-proximo-passo"
+                                  className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                                >
+                                  {t(passo.texto)}
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      )
+                    }
                     aoAplicar={(alvo) => void agir(alvo, "aplicar")}
                     aoNao={(alvo) => void agir(alvo, "nao")}
                   />

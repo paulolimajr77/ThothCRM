@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useT } from "@/hooks/i18n/useT";
 import {
   diffLegivel,
@@ -134,6 +135,7 @@ export function CartaoDeProposta({
   nomeDe,
   ocupado,
   erro,
+  desfecho = null,
   aoAplicar,
   aoNao,
 }: {
@@ -146,6 +148,8 @@ export function CartaoDeProposta({
   ocupado: boolean;
   /** O erro da última ação neste cartão, já em português. */
   erro: string | null;
+  /** O resultado da ação (o "Pronto: …" e os próximos passos), mostrado dentro do cartão. */
+  desfecho?: ReactNode;
   aoAplicar: (id: string) => void;
   aoNao: (id: string) => void;
 }) {
@@ -262,6 +266,8 @@ export function CartaoDeProposta({
           {erro}
         </p>
       ) : null}
+
+      {desfecho}
 
       <div className="flex flex-wrap gap-2">
         {podeAplicar ? (
