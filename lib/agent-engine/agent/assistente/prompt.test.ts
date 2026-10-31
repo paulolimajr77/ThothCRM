@@ -285,6 +285,7 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     const s = norm(montarSystemDoAssistente(BASE));
     expect(s).toContain("CONDUZA ATÉ O FIM");
     expect(s).toContain("MONTAR UM NEGÓCIO A PARTIR DA BASE DE CONHECIMENTO");
+    expect(s).toContain("NUNCA ENCERRE PROMETENDO");
     expect(s).toContain("botão Aprovar tudo");
     expect(s).toContain("LINGUAGEM SIMPLES, PARA QUALQUER NEGÓCIO");
     expect(s).toContain("nunca cite código de erro");

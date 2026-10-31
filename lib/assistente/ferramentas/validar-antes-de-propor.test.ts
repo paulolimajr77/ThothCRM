@@ -34,6 +34,14 @@ describe("problemasDoCorpo", () => {
     expect(problemasDoCorpo("agenda/tipos", "POST", { name: "Primeira consulta", category: "consulta", duration_minutes: 60, location_kind: "in_person" })).toBeNull();
   });
 
+  it("recusa alteração de tipo sem o id no corpo e configuração de serviço incompleta", () => {
+    // Caso real de 30/10: o id foi em `valores` e o cartão falhou; o serviço nunca foi configurado. Sabotagem: tirar as entradas → vermelho.
+    expect(problemasDoCorpo("agenda/tipos", "PATCH", { location_details: "Rua X" })).toContain("id");
+    expect(problemasDoCorpo("agenda/tipos", "PATCH", { id: "594de9db-f066-4609-b180-821a0db8d3b3", location_details: "Rua X" })).toBeNull();
+    expect(problemasDoCorpo("agenda/servicos", "POST", { action: "configure", config: { service_enabled: true } })).not.toBeNull();
+    expect(problemasDoCorpo("agenda/servicos", "POST", { action: "block", input: {} })).toBeNull();
+  });
+
   it("porta sem esquema conhecido não é barrada aqui (a rota continua sendo a autoridade)", () => {
     expect(problemasDoCorpo("tags/vocabulario", "POST", { qualquer: 1 })).toBeNull();
   });

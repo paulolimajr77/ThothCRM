@@ -11,6 +11,7 @@
  */
 import { z, type ZodType } from "zod";
 
+import { configuracaoDoServicoSchema } from "@/lib/agenda/servicos/regras";
 import { versionPatchSchema } from "@/lib/ai/agents/validation";
 import { createFollowupFlowSchema, patchFollowupFlowSchema } from "@/lib/followup/api-schemas";
 
@@ -22,11 +23,22 @@ const tipoDeAgendamentoPost = z.object({
   location_kind: z.enum(["in_person", "phone", "whatsapp", "video_link", "google_meet"]),
 }).passthrough();
 
+// `agenda/tipos` PATCH: o id do tipo vai DENTRO do corpo (não em `valores`); sem ele a rota recusa com 422.
+const tipoDeAgendamentoPatch = z.object({ id: z.string().uuid() }).passthrough();
+
+// `agenda/servicos` POST: só a ação "configure" tem esquema próprio aqui; as outras seguem para a rota.
+const servicoDaAgendaPost = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("configure"), config: configuracaoDoServicoSchema }),
+  z.object({ action: z.enum(["block", "block_preview", "unblock", "resource", "refresh"]) }).passthrough(),
+]);
+
 const ESQUEMAS: Record<string, ZodType> = {
   "ai/followup-flows|POST": createFollowupFlowSchema,
   "ai/followup-flows/:id|PATCH": patchFollowupFlowSchema,
   "ai/agents/:id/versions/:vid|PATCH": versionPatchSchema,
   "agenda/tipos|POST": tipoDeAgendamentoPost,
+  "agenda/tipos|PATCH": tipoDeAgendamentoPatch,
+  "agenda/servicos|POST": servicoDaAgendaPost,
 };
 
 const MAXIMO_DE_PROBLEMAS = 5;
