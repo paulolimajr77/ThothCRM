@@ -315,4 +315,13 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
     expect(s).toContain("COMO será aplicado");
     expect(s).toContain("COMO você chegou a essa conclusão");
   });
+  it("diz ao assistente quem está falando, para ele não perguntar qual dos administradores é a pessoa", () => {
+    // Caso real de 31/10: "tem algo na minha agenda pessoal?" voltou "você é Paulo A ou Paulo B?". Sabotagem: apagar a linha → vermelho.
+    const sem = montarSystemDoAssistente(BASE);
+    const com = montarSystemDoAssistente({ ...BASE, pessoa: { id: "11111111-1111-4111-8111-111111111111", nome: "Paulo Lima Jr" } });
+    expect(sem).not.toContain("QUEM FALA COM VOCÊ");
+    expect(com).toContain('"Paulo Lima Jr"');
+    expect(com).toContain("11111111-1111-4111-8111-111111111111");
+    expect(com).toContain("nunca pergunte quem ela é");
+  });
 });

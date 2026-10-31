@@ -360,6 +360,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         papel,
         agenteEmTela,
         telaEmVista,
+        pessoa: { id: userId, nome: authz.user.full_name ?? authz.user.email },
       });
 
       // As mensagens ANTERIORES a este turno. Pegamos as mais recentes (desc) e
