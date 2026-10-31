@@ -800,24 +800,13 @@ export function ChatDoAssistente({
     }
   }
 
-  // Enquanto o assistente trabalha, mostra o que ele já fez e leva a pessoa à tela em que ele mexe.
+  // Enquanto o assistente trabalha, mostra o que ele já fez. A tela da pessoa NÃO muda sozinha: trocar de
+  // página no meio do pedido fechava o painel e a pessoa perdia o lugar (31/10). Ela abre a tela no clique.
   // Cortesia: se a rota falhar ou não houver nada, fica o "Pensando…" de sempre.
   useEffect(() => {
     if (!enviando) return;
     let desde = 0;
     let ativo = true;
-    let telaAberta = "";
-    // Uma tela por vez, cada uma por pelo menos 4 s: sem isso três telas seguidas pulam em segundos
-    // e a pessoa só vê a última.
-    const filaDeTelas: string[] = [];
-    let trocouEm = 0;
-    const passarFila = () => {
-      if (filaDeTelas.length === 0 || Date.now() - trocouEm < 4000) return;
-      const proxima = filaDeTelas.shift()!;
-      trocouEm = Date.now();
-      telaAberta = proxima;
-      router.push(proxima);
-    };
     const ler = async () => {
       const turno = turnoAtual.current;
       if (turno === null) return;
@@ -836,12 +825,9 @@ export function ChatDoAssistente({
         for (const e of eventos) {
           const chave = `${turno}-${desde}-${novos.length}`;
           if (e.tipo === "tela" && typeof e.href === "string" && ehDestinoInterno(e.href)) {
-            // Leva a pessoa à tela (o painel continua aberto no computador).
-            const ultima = filaDeTelas.length > 0 ? filaDeTelas[filaDeTelas.length - 1] : telaAberta;
-            if (e.href !== ultima) filaDeTelas.push(e.href);
-            passarFila();
+            // Só avisa em que tela o assistente está mexendo; quem navega é a pessoa, no clique.
             const rotulo = typeof e.rotulo === "string" ? e.rotulo : "";
-            novos.push({ chave, texto: `${t("Abrindo")} ${rotulo}`.trim() });
+            novos.push({ chave, texto: `${t("Mexendo em")} ${rotulo}`.trim() });
           } else if (e.tipo === "teste_comecou" && typeof e.mensagem === "string") {
             novos.push({ chave, texto: `${t("Testando o agente com")}: "${e.mensagem}"` });
           } else if (e.tipo === "teste_resultado" && typeof e.resposta === "string") {
@@ -862,13 +848,11 @@ export function ChatDoAssistente({
       }
     };
     const intervalo = window.setInterval(() => void ler(), 1500);
-    const intervaloDaFila = window.setInterval(passarFila, 1000);
     return () => {
       ativo = false;
       window.clearInterval(intervalo);
-      window.clearInterval(intervaloDaFila);
     };
-  }, [enviando, router, t]);
+  }, [enviando, t]);
 
   async function perguntar(texto: string) {
     const p = texto.trim();
