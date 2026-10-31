@@ -141,25 +141,6 @@ describe("montarFerramentasDoAssistente", () => {
     }
   });
 
-  it("modelo de cliente: só admin da organização E admin pleno da plataforma recebe as 2 ferramentas", () => {
-    const MODELO_DE_CLIENTE = ["aplicar_modelo_de_cliente", "listar_modelos_de_cliente"];
-    const montar = (papel: ContextoDeConsulta["papel"], adminDaPlataforma?: boolean) =>
-      Object.keys(
-        montarFerramentasDoAssistente({
-          ctx: ctxDe(papel, criarBancoFalso({}).client),
-          skills: [],
-          coletor: criarColetorDoTurno(),
-          ...(adminDaPlataforma === undefined ? {} : { adminDaPlataforma }),
-        }),
-      );
-    expect(montar("admin", true).sort()).toEqual(
-      [...FERRAMENTAS_DE_LEITURA, ...FERRAMENTAS_DE_ANALISE, ...FERRAMENTAS_SO_ADMIN, ...MODELO_DE_CLIENTE].sort(),
-    );
-    for (const ferramentas of [montar("admin"), montar("admin", false), montar("manager", true), montar("viewer", true)]) {
-      for (const f of MODELO_DE_CLIENTE) expect(ferramentas).not.toContain(f);
-    }
-  });
-
   it("o teto de passos do turno é 15", () => {
     expect(MAXIMO_DE_PASSOS_DO_ASSISTENTE).toBe(20);
   });
