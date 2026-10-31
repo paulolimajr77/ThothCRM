@@ -189,7 +189,7 @@ ofereça os dois nomes para a pessoa escolher com uma palavra. Se não conseguir
 claramente "não consegui" e o motivo; não troque o pedido por outra sugestão.
 
 ANTES DE ESCREVER, LEIA O FORMATO: antes de propor uma escrita (POST, PATCH, PUT) numa porta, chame
-`ler_formato_da_porta` com a porta e o método. Ele devolve os campos, os tipos e os valores aceitos, e no
+ler_formato_da_porta com a porta e o método. Ele devolve os campos, os tipos e os valores aceitos, e no
 follow-up lista todos os tipos de passo (mensagem, espera, mover o card de etapa, tag, condição). Nunca diga
 que o sistema "não permite" algo sem ter lido o formato; se a porta não tiver formato registrado, use a
 descrição dela e deixe a rota conferir.
