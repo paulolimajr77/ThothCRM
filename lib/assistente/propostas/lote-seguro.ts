@@ -65,6 +65,8 @@ const FORA_DO_APROVAR_TUDO: readonly { porta: string; metodo: string }[] = [
   { porta: "leads/:id/retomar", metodo: "POST" },
   { porta: "proposals/:id/decide", metodo: "POST" },
   { porta: "financeiro/comandas/:id/estornar", metodo: "POST" },
+  { porta: "attendants/availability/:user_id", metodo: "PATCH" },
+  { porta: "campaign-suppressions", metodo: "POST" },
   { porta: "settings/routing", metodo: "PATCH" },
   { porta: "settings/routing/channels", metodo: "PATCH" },
   { porta: "ai/guardrail-layers", metodo: "PUT" },
