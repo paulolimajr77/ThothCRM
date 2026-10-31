@@ -75,6 +75,8 @@ interface MensagemNaTela {
   id: string;
   author_kind: "human" | "ai";
   body: string;
+  /** Quando a mensagem foi gravada (só nas lidas do servidor): serve para saber se um pedido ainda está em andamento. */
+  criadoEm?: string;
   /** Só na resposta recém-chegada: por que a IA não respondeu (piso). */
   aviso?: string | null;
   /** Só na resposta recém-chegada. */
@@ -389,6 +391,8 @@ export function ChatDoAssistente({
   const [mensagens, setMensagens] = useState<MensagemNaTela[]>([]);
   const [pergunta, setPergunta] = useState("");
   const [enviando, setEnviando] = useState(false);
+  // Pedido já gravado no servidor, ainda sem resposta (a tela recarregou ou mudou no meio): a tela segue de olho.
+  const [retomando, setRetomando] = useState(false);
   const [andamento, setAndamento] = useState<AndamentoNaTela[]>([]);
   // O turno em andamento, para a leitura do que o assistente já fez (rota `progresso`).
   const turnoAtual = useRef<string | null>(null);
@@ -465,16 +469,21 @@ export function ChatDoAssistente({
       }
       if (!r.ok) return;
       const corpo = (await r.json()) as {
-        data: { mensagens: Array<{ id: string; author_kind: "human" | "ai"; body: string | null }> };
+        data: { mensagens: Array<{ id: string; author_kind: "human" | "ai"; body: string | null; created_at?: string }> };
       };
       if (minha !== versao.current) return;
       setThreadId(id);
       guardarConversa(id);
-      setMensagens(
-        corpo.data.mensagens.flatMap((m) =>
-          m.body === null ? [] : [{ id: m.id, author_kind: m.author_kind, body: m.body }],
-        ),
+      const lidas = corpo.data.mensagens.flatMap((m) =>
+        m.body === null
+          ? []
+          : [{ id: m.id, author_kind: m.author_kind, body: m.body, ...(m.created_at === undefined ? {} : { criadoEm: m.created_at }) }],
       );
+      setMensagens(lidas);
+      // A última mensagem é da pessoa e recente: o servidor ainda trabalha nela.
+      const ultima = lidas[lidas.length - 1];
+      const idade = ultima?.criadoEm === undefined ? Number.POSITIVE_INFINITY : Date.now() - new Date(ultima.criadoEm).getTime();
+      setRetomando(ultima?.author_kind === "human" && idade < 15 * 60 * 1000);
     } catch {
       // Sem rede: fica o que já estava na tela.
     }
@@ -488,6 +497,14 @@ export function ChatDoAssistente({
     const guardada = lerConversaGuardada();
     if (guardada !== null) void abrirThread(guardada);
   }, [aberto, carregarThreads, abrirThread]);
+
+  // Pedido em andamento no servidor e sem resposta na tela: pergunta de novo a cada 4 s até a resposta chegar
+  // (ou passar 15 min). A pessoa nunca fica sem saber se o pedido continua.
+  useEffect(() => {
+    if (!retomando || enviando || threadId === null) return;
+    const id = window.setInterval(() => void abrirThread(threadId), 4000);
+    return () => window.clearInterval(id);
+  }, [retomando, enviando, threadId, abrirThread]);
 
   // Foco no campo de pergunta a cada abertura. Aberto pela paleta ⌘K, quem leva o foco
   // para cá no fim é o `onCloseAutoFocus` da paleta (evento do Radix, sem relógio).
@@ -1196,9 +1213,9 @@ export function ChatDoAssistente({
             </button>
           </div>
         ) : null}
-        {enviando ? (
+        {enviando || retomando ? (
           <p role="status" data-testid="assistente-pensando" className="self-start text-sm text-text-muted">
-            {t("Pensando…")}
+            {enviando ? t("Pensando…") : t("Seu pedido continua em andamento. Deixe esta janela aberta: a resposta aparece aqui.")}
           </p>
         ) : null}
         {enviando && andamento.length > 0 ? (

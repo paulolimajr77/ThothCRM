@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -38,6 +39,18 @@ export interface PainelDoAssistente {
 
 const PainelCtx = createContext<PainelDoAssistente | null>(null);
 
+/** Só conveniência: o painel aberto sobrevive a recarregar a página na mesma aba. */
+const CHAVE_DO_PAINEL_ABERTO = "assistente-painel-aberto";
+
+function guardarAberto(valor: boolean): void {
+  try {
+    if (valor) window.sessionStorage.setItem(CHAVE_DO_PAINEL_ABERTO, "1");
+    else window.sessionStorage.removeItem(CHAVE_DO_PAINEL_ABERTO);
+  } catch {
+    // Sem armazenamento: o painel funciona do mesmo jeito.
+  }
+}
+
 export function AssistentePainelProvider({ children }: { children: ReactNode }) {
   const [aberto, setAberto] = useState(false);
   // Quem tinha o foco quando o painel abriu: ao fechar, o foco volta para lá.
@@ -45,6 +58,16 @@ export function AssistentePainelProvider({ children }: { children: ReactNode }) 
   // Espelho de `aberto` para `abrir` ler sem depender dele: abrir de novo, com o painel
   // já aberto (⌘K), não pode trocar a origem do foco pelo campo da paleta que vai sumir.
   const abertoAgora = useRef(false);
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(CHAVE_DO_PAINEL_ABERTO) === "1") {
+        abertoAgora.current = true;
+        setAberto(true);
+      }
+    } catch {
+      // Sem armazenamento: começa fechado, como sempre.
+    }
+  }, []);
 
   const abrir = useCallback(() => {
     if (
@@ -56,11 +79,13 @@ export function AssistentePainelProvider({ children }: { children: ReactNode }) 
     }
     abertoAgora.current = true;
     setAberto(true);
+    guardarAberto(true);
   }, []);
 
   const fechar = useCallback(() => {
     abertoAgora.current = false;
     setAberto(false);
+    guardarAberto(false);
     if (typeof document === "undefined") return;
     // Depois deste ciclo: o painel ainda está visível nele, e foco em elemento
     // escondido não vale. Se quem abriu já saiu da tela (a paleta ⌘K se

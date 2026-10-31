@@ -83,6 +83,7 @@ function renderizar() {
 
 describe("o painel do assistente, chat único", () => {
   afterEach(() => {
+    window.sessionStorage.clear();
     cleanup();
     idioma.atual = "pt-BR";
     papel.atual = "admin";

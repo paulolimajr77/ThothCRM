@@ -905,6 +905,7 @@ export const DICIONARIO: Traducoes = {
   "Conte o que você quer que o agente faça…": { es: "Describe lo que quieres que haga el agente…" },
   "Voltar à campanha": { es: "Volver a la campaña" },
   "Pensando…": { es: "Pensando…" },
+  "Seu pedido continua em andamento. Deixe esta janela aberta: a resposta aparece aqui.": { es: "Su pedido sigue en curso. Deje esta ventana abierta: la respuesta aparecerá aquí." },
   "Prospecção": { es: "Prospección" },
   "Encontre empresas, aborde aos poucos e acompanhe quem avança na conversa.": { es: "Encuentra empresas, contáctalas poco a poco y da seguimiento a quienes avanzan en la conversación." },
   "Configurar busca": { es: "Configurar búsqueda" },

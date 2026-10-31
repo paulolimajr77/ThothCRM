@@ -161,6 +161,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  window.sessionStorage.clear();
   cleanup();
   vi.unstubAllGlobals();
   fetchMock.mockClear();
