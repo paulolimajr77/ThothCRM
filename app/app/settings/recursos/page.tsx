@@ -71,7 +71,14 @@ export default async function RecursosOpcionaisPage() {
         recurso={r}
         estado={estado}
         rotuloDoEstado={rotulo}
-        ajustar={!semModulo(r) && r.href && podeAbrir(r) ? r.href : null}
+        ajustar={
+          !semModulo(r) && r.href && podeAbrir(r)
+            ? // O assistente é ligado por empresa: o botão leva direto ao cartão DESTA empresa, não à lista.
+              r.id === "assistente_interno"
+              ? `/admin/tenants/${activeOrg.orgId}`
+              : r.href
+            : null
+        }
         idioma={idioma}
       />
     );

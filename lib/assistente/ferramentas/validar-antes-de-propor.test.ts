@@ -1,0 +1,48 @@
+// @vitest-environment node
+import { describe, expect, it } from "vitest";
+
+import { problemasDoCorpo } from "./validar-antes-de-propor";
+
+const GRAFO_COM_PASSO_VAZIO = {
+  draft_graph: {
+    nodes: [
+      { id: "inicio", type: "trigger", label: "Início", config: {}, position: { x: 0, y: 0 } },
+      {
+        id: "resposta-1",
+        type: "match_reply",
+        label: "Aguardar resposta",
+        config: { branches: [{ id: "topou", op: "contains", label: "Respondeu", pattern: "" }], grace_timeout_ms: 900000 },
+        position: { x: 160, y: 0 },
+      },
+    ],
+    edges: [{ id: "e1", source: "inicio", target: "resposta-1", priority: 0, condition: { type: "always" } }],
+  },
+};
+
+describe("problemasDoCorpo", () => {
+  it("recusa o follow-up com passo de comparação vazio e diz o campo", () => {
+    // Caso real de 30/10: o cartão nasceu quebrado e falhou com 422. Sabotagem: esvaziar ESQUEMAS → vermelho.
+    const p = problemasDoCorpo("ai/followup-flows/:id", "PATCH", GRAFO_COM_PASSO_VAZIO);
+    expect(p).not.toBeNull();
+    expect(p).toContain("pattern");
+  });
+
+  it("recusa tipo de agendamento sem location_kind e diz o campo", () => {
+    // Caso real de 30/10: o assistente propôs sem o local e o cartão falhou. Sabotagem: tirar a entrada → vermelho.
+    const p = problemasDoCorpo("agenda/tipos", "POST", { name: "Primeira consulta", category: "consulta", duration_minutes: 60 });
+    expect(p).toContain("location_kind");
+    expect(problemasDoCorpo("agenda/tipos", "POST", { name: "Primeira consulta", category: "consulta", duration_minutes: 60, location_kind: "in_person" })).toBeNull();
+  });
+
+  it("recusa alteração de tipo sem o id no corpo e configuração de serviço incompleta", () => {
+    // Caso real de 30/10: o id foi em `valores` e o cartão falhou; o serviço nunca foi configurado. Sabotagem: tirar as entradas → vermelho.
+    expect(problemasDoCorpo("agenda/tipos", "PATCH", { location_details: "Rua X" })).toContain("id");
+    expect(problemasDoCorpo("agenda/tipos", "PATCH", { id: "594de9db-f066-4609-b180-821a0db8d3b3", location_details: "Rua X" })).toBeNull();
+    expect(problemasDoCorpo("agenda/servicos", "POST", { action: "configure", config: { service_enabled: true } })).not.toBeNull();
+    expect(problemasDoCorpo("agenda/servicos", "POST", { action: "block", input: {} })).toBeNull();
+  });
+
+  it("porta sem esquema conhecido não é barrada aqui (a rota continua sendo a autoridade)", () => {
+    expect(problemasDoCorpo("tags/vocabulario", "POST", { qualquer: 1 })).toBeNull();
+  });
+});

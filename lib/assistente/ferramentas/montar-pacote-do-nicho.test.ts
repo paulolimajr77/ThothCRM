@@ -1,10 +1,7 @@
 /**
- * `montar_pacote_do_nicho`: numa pedida, cria o agente do nicho como RASCUNHO
- * (prompt do nicho preenchido) e instala os follow-ups de modelo escolhidos,
- * também como rascunho. Nada publica, nada liga, nada de funil novo.
- *
- * Checagens 1–4 antes de qualquer POST; falha de follow-up vai para `falta`
- * sem desfazer o agente.
+ * `montar_pacote_do_nicho` — PROPÕE (não grava) o agente do nicho como
+ * rascunho e os follow-ups escolhidos. Nada é criado antes do administrador
+ * aprovar o cartão.
  */
 // @vitest-environment node
 import { afterEach, describe, expect, it } from "vitest";
@@ -14,11 +11,16 @@ import { nichoPorId, preencherEsqueleto } from "@/lib/assistente/nichos";
 import type { NichoDoAssistente } from "@/lib/assistente/nichos";
 import { catalogoComHandler } from "@/lib/ai/agents/capacidades-padrao";
 import { ligarPacote } from "@/lib/mcp/tools/selecao-por-pacote";
+import { modeloPorId } from "@/lib/followup/modelos";
 
 import { chamar, montarParaTeste } from "./auxiliar-de-teste";
 import { sobreporHandlersDeCriacao } from "./criar-rascunho-de-agente";
-import { sobreporHandlerDeInstalacao } from "./instalar-modelo-de-followup";
-import { montarPacoteDoNicho, sobreporHandlerDeListaDeAgentes } from "./montar-pacote-do-nicho";
+import { sobreporFontesDeProposta } from "./proposta-comum";
+import {
+  montarPacoteDoNicho,
+  sobreporHandlerDeListaDeAgentes,
+  sobreporHandlerDeListaDeFollowups,
+} from "./montar-pacote-do-nicho";
 
 function respostaJson(status: number, corpo: unknown): Response {
   return new Response(JSON.stringify(corpo), {
@@ -40,6 +42,11 @@ const PROVEDORES_OK = {
   ],
 };
 
+interface PropostaCapturada {
+  metodo: string;
+  corpos: Record<string, unknown>[];
+}
+
 interface CorpoCapturado {
   metodo: string;
   corpos: Record<string, unknown>[];
@@ -48,64 +55,54 @@ interface CorpoCapturado {
 function ligar(opcoes: {
   agentes?: unknown;
   statusAgentes?: number;
+  followups?: unknown;
+  statusFollowups?: number;
   provedores?: unknown;
-  corpoPostAgente?: unknown;
-  statusPostAgente?: number;
   capturaAgente?: CorpoCapturado;
-  corpoPostFollowup?: (modelId: string) => unknown;
-  statusPostFollowup?: number;
-  capturaFollowup?: CorpoCapturado;
+  capturaProposta?: PropostaCapturada;
+  statusPostProposta?: number;
+  corpoPostProposta?: { id: string; resumo: string };
 }): void {
   const hLista: HandlerDeRota = async () =>
     respostaJson(opcoes.statusAgentes ?? 200, { data: opcoes.agentes ?? [] });
   sobreporHandlerDeListaDeAgentes(hLista);
 
+  const hListaFu: HandlerDeRota = async () =>
+    respostaJson(opcoes.statusFollowups ?? 200, { data: opcoes.followups ?? [] });
+  sobreporHandlerDeListaDeFollowups(hListaFu);
+
   const hProvedores: HandlerDeRota = async () =>
     respostaJson(200, { data: opcoes.provedores ?? PROVEDORES_OK });
   const hFunis: HandlerDeRota = async () => respostaJson(200, { data: [] });
   const hMateriais: HandlerDeRota = async () => respostaJson(200, { data: [] });
-  const hPostAgente: HandlerDeRota = async (req) => {
-    if (opcoes.capturaAgente) {
-      opcoes.capturaAgente.metodo = req.method;
-      try {
-        opcoes.capturaAgente.corpos.push((await req.json()) as Record<string, unknown>);
-      } catch {
-        opcoes.capturaAgente.corpos.push({});
-      }
-    }
-    return respostaJson(opcoes.statusPostAgente ?? 201, {
-      data:
-        opcoes.corpoPostAgente ?? {
-          agent: { id: "ag-novo", name: "Recepção Aurora" },
-          version: { id: "v1", status: "draft" },
-        },
-    });
-  };
   sobreporHandlersDeCriacao({
     provedores: hProvedores,
     funis: hFunis,
     materiais: hMateriais,
-    agentesPost: hPostAgente,
+    agentesPost: async () =>
+      respostaJson(201, { data: { agent: { id: "ag-novo", name: "X" }, version: { id: "v1", status: "draft" } } }),
   });
 
-  const hPostFollowup: HandlerDeRota = async (req) => {
+  const hPostProposta: HandlerDeRota = async (req) => {
     let corpo: Record<string, unknown> = {};
     try {
       corpo = (await req.json()) as Record<string, unknown>;
     } catch {
       corpo = {};
     }
-    if (opcoes.capturaFollowup) {
-      opcoes.capturaFollowup.metodo = req.method;
-      opcoes.capturaFollowup.corpos.push(corpo);
+    if (opcoes.capturaProposta) {
+      opcoes.capturaProposta.metodo = req.method;
+      opcoes.capturaProposta.corpos.push(corpo);
     }
-    return respostaJson(opcoes.statusPostFollowup ?? 201, {
-      data: opcoes.corpoPostFollowup
-        ? opcoes.corpoPostFollowup(typeof corpo.model_id === "string" ? corpo.model_id : "")
-        : { id: `ptr-${corpo.model_id}`, name: `Instalado ${corpo.model_id}`, status: "draft" },
+    return respostaJson(opcoes.statusPostProposta ?? 201, {
+      data: opcoes.corpoPostProposta
+        ? opcoes.corpoPostProposta
+        : { id: "prop-novo", resumo: "proposta de teste" },
     });
   };
-  sobreporHandlerDeInstalacao(hPostFollowup);
+  sobreporFontesDeProposta({
+    propostas: hPostProposta,
+  });
 }
 
 const ENTRADA_CLINICA = {
@@ -115,27 +112,191 @@ const ENTRADA_CLINICA = {
   nome_do_agente: "Recepção Aurora",
 } as const;
 
+/** A mesma entrada no formato de `montarPacoteDoNicho` (a ferramenta converte o da conversa). */
+const PEDIDO_CLINICA = {
+  nicho: nichoPorId("clinica")!,
+  negocio: ENTRADA_CLINICA.negocio,
+  descricao: ENTRADA_CLINICA.descricao,
+  nomeDoAgente: ENTRADA_CLINICA.nome_do_agente,
+};
+
+function entradaDeTeste(): Parameters<typeof montarPacoteDoNicho>[0] {
+  const { ctx, coletor } = montarParaTeste("admin");
+  return { ctx, coletor, skills: [] };
+}
+
+type Resultado = Awaited<ReturnType<typeof montarPacoteDoNicho>>;
+
+function deuCerto(saida: Resultado): Extract<Resultado, { ok: true }> {
+  if (!saida.ok) throw new Error(`esperava ok, veio ${saida.motivo}`);
+  return saida;
+}
+
+function falhou(saida: Resultado): Extract<Resultado, { ok: false }> {
+  if (saida.ok) throw new Error("esperava falha, veio ok");
+  return saida;
+}
+
 describe("montar_pacote_do_nicho", () => {
   afterEach(() => {
     sobreporHandlerDeListaDeAgentes(null);
+    sobreporHandlerDeListaDeFollowups(null);
     sobreporHandlersDeCriacao(null);
-    sobreporHandlerDeInstalacao(null);
+    sobreporFontesDeProposta(null);
   });
 
-  it("A. clínica feliz: system_prompt preenchido, tool_ids do pacote, sem organization_id", async () => {
-    const capturaAgente: CorpoCapturado = { metodo: "", corpos: [] };
-    const capturaFollowup: CorpoCapturado = { metodo: "", corpos: [] };
-    ligar({ capturaAgente, capturaFollowup });
-    const { ferramentas } = montarParaTeste("admin");
+  // --- Caso obrigatório 1: NÃO chama POST /api/v1/ai/agents nem POST /api/v1/ai/followup-flows/from-model ---
+  it("não chama POST de agente nem de follow-up: só propõe", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
+    const entrada = entradaDeTeste();
 
-    const saida = await chamar<{
-      ok: boolean;
-      criado: { agente: { id: string; nome: string; estado: string }; followups: unknown[] };
-      falta: string[];
-    }>(ferramentas, "montar_pacote_do_nicho", { ...ENTRADA_CLINICA });
+    const saida = await montarPacoteDoNicho(entrada, {
+      nicho: nichoPorId("clinica")!,
+      negocio: ENTRADA_CLINICA.negocio,
+      descricao: ENTRADA_CLINICA.descricao,
+      nomeDoAgente: ENTRADA_CLINICA.nome_do_agente,
+      followups: [],
+    });
 
-    expect(capturaAgente.metodo).toBe("POST");
-    const versao = capturaAgente.corpos[0]?.version as Record<string, unknown>;
+    expect(saida.ok).toBe(true);
+    // Só propostas, nenhum POST direto de agente/follow-up:
+    expect(capturaProposta.corpos.length).toBeGreaterThan(0);
+    // Cada proposta é kind "acao"
+    for (const c of capturaProposta.corpos) {
+      expect(c.kind).toBe("acao");
+    }
+  });
+
+  // --- Caso obrigatório 2: cria uma proposta `kind: "acao"` com payload.porta === "ai/agents", metodo === "POST", system_prompt do nicho preenchido ---
+  it("propoe o agente: proposta acao com porta ai/agents, metodo POST, system_prompt preenchido (sem chaves)", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      nicho: nichoPorId("clinica")!,
+      negocio: ENTRADA_CLINICA.negocio,
+      descricao: ENTRADA_CLINICA.descricao,
+      nomeDoAgente: ENTRADA_CLINICA.nome_do_agente,
+      followups: [],
+    });
+
+    expect(saida.ok).toBe(true);
+    expect(deuCerto(saida).proposto.agente!.proposta_id).toBeDefined();
+    expect(deuCerto(saida).proposto.agente!.nome).toBe(ENTRADA_CLINICA.nome_do_agente);
+
+    const propostaAgente = capturaProposta.corpos.find(
+      (c) => (c.payload as { porta?: string })?.porta === "ai/agents",
+    );
+    expect(propostaAgente).toBeDefined();
+    expect((propostaAgente!.payload as { metodo?: string }).metodo).toBe("POST");
+    const corpo = (propostaAgente!.payload as { corpo?: unknown }).corpo as {
+      version?: { system_prompt?: string };
+    };
+    expect(corpo.version?.system_prompt).toBeDefined();
+    expect(corpo.version?.system_prompt).not.toContain("{");
+    expect(corpo.version?.system_prompt).toContain("Clínica Aurora");
+    expect(corpo.version?.system_prompt).toContain("Recepção Aurora");
+    expect(JSON.stringify(propostaAgente)).not.toContain("organization_id");
+  });
+
+  // --- Caso obrigatório 3: follow-up pedido vira segunda proposta com porta ai/followup-flows/from-model e corpo.model_id ---
+  it("propoe follow-up: segunda proposta com porta ai/followup-flows/from-model e model_id certo", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      nicho: nichoPorId("clinica")!,
+      negocio: ENTRADA_CLINICA.negocio,
+      descricao: ENTRADA_CLINICA.descricao,
+      nomeDoAgente: ENTRADA_CLINICA.nome_do_agente,
+      followups: ["clinica-consulta-retomada"],
+    });
+
+    expect(saida.ok).toBe(true);
+    expect(deuCerto(saida).proposto.followups).toHaveLength(1);
+    expect(deuCerto(saida).proposto.followups[0]!.modelo).toBe("clinica-consulta-retomada");
+    expect(deuCerto(saida).proposto.followups[0]!.proposta_id).toBeDefined();
+
+    const propostaFu = capturaProposta.corpos.find(
+      (c) => (c.payload as { porta?: string })?.porta === "ai/followup-flows/from-model",
+    );
+    expect(propostaFu).toBeDefined();
+    expect((propostaFu!.payload as { metodo?: string }).metodo).toBe("POST");
+    expect((propostaFu!.payload as { corpo?: { model_id?: string } }).corpo?.model_id).toBe(
+      "clinica-consulta-retomada",
+    );
+  });
+
+  // --- Caso obrigatório 4: follow-up com pedeEtapa continua em falta e NÃO vira proposta ---
+  it("follow-up com pedeEtapa vai para falta e nao vira proposta", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
+    const entrada = entradaDeTeste();
+
+    // clinica-cirurgia-decisao e clinica-falta-remarcar pedem etapa (conforme modelos do nicho)
+    const saida = await montarPacoteDoNicho(entrada, {
+      nicho: nichoPorId("clinica")!,
+      negocio: ENTRADA_CLINICA.negocio,
+      descricao: ENTRADA_CLINICA.descricao,
+      nomeDoAgente: ENTRADA_CLINICA.nome_do_agente,
+      followups: ["clinica-cirurgia-decisao"],
+    });
+
+    expect(saida.ok).toBe(true);
+    expect(deuCerto(saida).proposto.followups).toHaveLength(0);
+    expect(deuCerto(saida).falta.some((f) => f.includes("clinica-cirurgia-decisao"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("etapa do funil"))).toBe(true);
+    // Nenhuma proposta para follow-up (só a do agente)
+    const propostasFu = capturaProposta.corpos.filter(
+      (c) => (c.payload as { porta?: string })?.porta === "ai/followup-flows/from-model",
+    );
+    expect(propostasFu).toHaveLength(0);
+  });
+
+  // --- Caso obrigatório 5: falha na proposta do agente → indisponivel e nenhuma proposta de follow-up ---
+  it("falha na proposta do agente: indisponivel e nenhuma proposta de follow-up", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta, statusPostProposta: 500 });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      nicho: nichoPorId("clinica")!,
+      negocio: ENTRADA_CLINICA.negocio,
+      descricao: ENTRADA_CLINICA.descricao,
+      nomeDoAgente: ENTRADA_CLINICA.nome_do_agente,
+      followups: ["clinica-consulta-retomada"],
+    });
+
+    expect(saida.ok).toBe(false);
+    expect(falhou(saida).motivo).toBe("indisponivel");
+    // Só a do agente foi tentada (e falhou); nenhuma de follow-up.
+    expect(
+      capturaProposta.corpos.map((c) => (c.payload as { porta?: string }).porta),
+    ).toEqual(["ai/agents"]);
+  });
+
+  // --- Casos antigos adaptados ---
+
+  it("clinica feliz: propõe agente com prompt preenchido, falta inclui publicar", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      nicho: nichoPorId("clinica")!,
+      negocio: ENTRADA_CLINICA.negocio,
+      descricao: ENTRADA_CLINICA.descricao,
+      nomeDoAgente: ENTRADA_CLINICA.nome_do_agente,
+      followups: [],
+    });
+
+    expect(saida.ok).toBe(true);
+    const propostaAgente = capturaProposta.corpos[0];
+    const versao = (propostaAgente!.payload as { corpo?: { version?: { system_prompt?: string } } }).corpo
+      ?.version as { system_prompt: string };
     const nicho = nichoPorId("clinica");
     const preenchido = preencherEsqueleto(nicho?.esqueleto ?? "", {
       "clínica": ENTRADA_CLINICA.negocio,
@@ -147,51 +308,54 @@ describe("montar_pacote_do_nicho", () => {
     expect(versao.system_prompt).not.toContain("{");
     expect(versao.system_prompt).toContain("Clínica Aurora");
     expect(versao.system_prompt).toContain("Recepção Aurora");
-    expect(versao.tool_ids).toEqual(ligarPacote([], catalogoComHandler(), "vender"));
-    expect(JSON.stringify(capturaAgente.corpos[0])).not.toContain("organization_id");
 
-    expect(saida.ok).toBe(true);
-    expect(saida.criado.agente).toEqual({ id: "ag-novo", nome: "Recepção Aurora", estado: "rascunho" });
-    expect(saida.falta.some((f) => f.includes("Agendamentos"))).toBe(true);
-    expect(saida.falta.some((f) => f.includes("convênios aceitos"))).toBe(true);
-    expect(saida.falta.some((f) => f.includes("tem horário essa semana?"))).toBe(true);
-    expect(saida.falta.some((f) => f.includes("publicar"))).toBe(true);
-    expect(saida.falta.some((f) => f.includes("PRECISO CONFIRMAR"))).toBe(true);
+    expect(deuCerto(saida).proposto.agente).toEqual({
+      proposta_id: expect.any(String),
+      nome: "Recepção Aurora",
+    });
+    expect(deuCerto(saida).falta.some((f) => f.includes("Agendamentos"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("convênios aceitos"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("tem horário essa semana?"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("publicar"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("PRECISO CONFIRMAR"))).toBe(true);
   });
 
   it.each(["imobiliaria", "servicos", "infoproduto", "loja", "generico", "advocacia"] as const)(
-    "D. %s: cria o agente em rascunho com o prompt do nicho preenchido e o pacote vender",
+    "%s: propõe o agente em rascunho com o prompt do nicho preenchido",
     async (nicho) => {
-      const capturaAgente: CorpoCapturado = { metodo: "", corpos: [] };
-      ligar({ capturaAgente });
-      const { ferramentas } = montarParaTeste("admin");
+      const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+      ligar({ capturaProposta });
+      const entrada = entradaDeTeste();
 
-      const saida = await chamar<{ ok: boolean; criado: { agente: { estado: string } }; falta: string[] }>(
-        ferramentas,
-        "montar_pacote_do_nicho",
-        { nicho, negocio: "Negócio Teste", descricao: "faz coisas boas", nome_do_agente: "Atendente Teste" },
-      );
+      const saida = await montarPacoteDoNicho(entrada, {
+        nicho: nichoPorId(nicho)!,
+        negocio: "Negócio Teste",
+        descricao: "faz coisas boas",
+        nomeDoAgente: "Atendente Teste",
+        followups: [],
+      });
 
       expect(saida.ok).toBe(true);
-      expect(saida.criado.agente.estado).toBe("rascunho");
-      expect(capturaAgente.corpos).toHaveLength(1);
-      const versao = capturaAgente.corpos[0]?.version as { system_prompt: string; tool_ids: string[] };
-      expect(versao.system_prompt).toContain("Negócio Teste");
-      expect(versao.system_prompt).toContain("faz coisas boas");
-      expect(versao.system_prompt).toContain("Atendente Teste");
-      // Nenhum marcador ficou sem preencher: o texto que vai ao banco não tem chave.
-      expect(versao.system_prompt).not.toMatch(/[{}]/);
-      expect(versao.tool_ids.length).toBeGreaterThan(0);
-      expect(saida.falta.some((f) => f.includes("publicar"))).toBe(true);
+      expect(deuCerto(saida).proposto.agente!.nome).toBe("Atendente Teste");
+      expect(capturaProposta.corpos).toHaveLength(1);
+      const corpo = (capturaProposta.corpos[0]!.payload as { corpo?: unknown }).corpo as {
+        version?: { system_prompt: string };
+      };
+      expect(corpo.version?.system_prompt).toContain("Negócio Teste");
+      expect(corpo.version?.system_prompt).toContain("faz coisas boas");
+      expect(corpo.version?.system_prompt).toContain("Atendente Teste");
+      expect(corpo.version?.system_prompt).not.toMatch(/[{}]/);
+      expect(deuCerto(saida).falta.some((f) => f.includes("publicar"))).toBe(true);
     },
   );
 
-  it("B. nicho sem prompt: nicho_sem_prompt e NENHUM POST", async () => {
-    const capturaAgente: CorpoCapturado = { metodo: "", corpos: [] };
-    const capturaFollowup: CorpoCapturado = { metodo: "", corpos: [] };
-    ligar({ capturaAgente, capturaFollowup });
+  it("nicho sem prompt: nicho_sem_prompt e NENHUMA proposta", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
     const sem = { ...nichoPorId("imobiliaria")!, esqueleto: null, campos: [] } as NichoDoAssistente;
-    const saida = await montarPacoteDoNicho({
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
       nicho: sem,
       negocio: "Imob Sul",
       descricao: "venda e locação",
@@ -200,22 +364,22 @@ describe("montar_pacote_do_nicho", () => {
     });
 
     if (saida.ok) throw new Error("devia recusar");
-    expect(saida.motivo).toBe("nicho_sem_prompt");
+    expect(falhou(saida).motivo).toBe("nicho_sem_prompt");
     expect(saida.detalhe).toContain("PRECISO CONFIRMAR");
-    expect(capturaAgente.corpos).toEqual([]);
-    expect(capturaFollowup.corpos).toEqual([]);
+    expect(capturaProposta.corpos).toEqual([]);
   });
 
-  it("C. marcador fora do mapeamento: falta_dado, sem POST", async () => {
-    const capturaAgente: CorpoCapturado = { metodo: "", corpos: [] };
-    ligar({ capturaAgente });
+  it("marcador fora do mapeamento: falta_dado, sem proposta", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
     const clinica = nichoPorId("clinica");
     const falso: NichoDoAssistente = {
       ...clinica!,
       esqueleto: `Olá {nome}, bem-vindo à {cidade}.`,
     };
+    const entrada = entradaDeTeste();
 
-    const saida = await montarPacoteDoNicho({
+    const saida = await montarPacoteDoNicho(entrada, {
       nicho: falso,
       negocio: "Clínica Aurora",
       descricao: "consultas",
@@ -229,128 +393,251 @@ describe("montar_pacote_do_nicho", () => {
       faltam: ["cidade"],
       detalhe: expect.stringContaining("PRECISO CONFIRMAR"),
     });
-    expect(capturaAgente.corpos).toEqual([]);
+    expect(capturaProposta.corpos).toEqual([]);
   });
 
-  it("D. nome duplicado: ja_existe, sem POST", async () => {
-    const capturaAgente: CorpoCapturado = { metodo: "", corpos: [] };
-    const capturaFollowup: CorpoCapturado = { metodo: "", corpos: [] };
+  it("nome duplicado: reaproveita o agente, não propõe o agente, segue com follow-ups", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
     ligar({
       agentes: [{ id: "ag-velho", name: "Recepção Aurora" }],
-      capturaAgente,
-      capturaFollowup,
+      capturaProposta,
     });
-    const { ferramentas } = montarParaTeste("admin");
+    const entrada = entradaDeTeste();
 
-    const saida = await chamar<{ ok: boolean; motivo: string }>(ferramentas, "montar_pacote_do_nicho", {
-      ...ENTRADA_CLINICA,
+    const saida = await montarPacoteDoNicho(entrada, {
+      ...PEDIDO_CLINICA,
+      followups: ["clinica-consulta-retomada"],
     });
 
-    expect(saida).toEqual({ ok: false, motivo: "ja_existe" });
-    expect(capturaAgente.corpos).toEqual([]);
-    expect(capturaFollowup.corpos).toEqual([]);
+    expect(saida.ok).toBe(true);
+    const ok = saida as { ok: true; reaproveitado: { agente: { nome: string } | null; followups: string[] }; proposto: { agente: { nome: string } | null; followups: { proposta_id: string; modelo: string }[] }; falta: string[] };
+    // Não propõe o agente de novo
+    expect(ok.proposto.agente).toBeNull();
+    // Reaproveitou o agente existente
+    expect(ok.reaproveitado.agente).toEqual({ nome: "Recepção Aurora" });
+    // O follow-up ainda é proposto (não existia ainda)
+    expect(ok.proposto.followups).toHaveLength(1);
+    expect(ok.proposto.followups[0]!.modelo).toBe("clinica-consulta-retomada");
+    // A frase de "falta" menciona o agente existente
+    expect(ok.falta.some((f) => f.includes("Recepção Aurora"))).toBe(true);
+    expect(ok.falta.some((f) => f.includes("já existe"))).toBe(true);
+    // Só uma proposta (do follow-up), nenhuma do agente
+    expect(capturaProposta.corpos).toHaveLength(1);
+    expect((capturaProposta.corpos[0]!.payload as { porta?: string }).porta).toBe(
+      "ai/followup-flows/from-model",
+    );
   });
 
-  it("E. follow-up de outro nicho: followup_de_outro_nicho, sem POST", async () => {
-    const capturaAgente: CorpoCapturado = { metodo: "", corpos: [] };
-    const capturaFollowup: CorpoCapturado = { metodo: "", corpos: [] };
-    ligar({ capturaAgente, capturaFollowup });
-    const { ferramentas } = montarParaTeste("admin");
+  it("clinica: proposta do agente leva proposal_ai_draft_enabled === false", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
+    const entrada = entradaDeTeste();
 
-    const saida = await chamar<{ ok: boolean; motivo: string }>(ferramentas, "montar_pacote_do_nicho", {
-      nicho: "advocacia",
-      negocio: "Escritório Prado",
-      descricao: "direito trabalhista",
-      nome_do_agente: "Triagem Prado",
+    const saida = await montarPacoteDoNicho(entrada, {
+      ...PEDIDO_CLINICA,
+      followups: [],
+    });
+
+    expect(saida.ok).toBe(true);
+    const propostaAgente = capturaProposta.corpos.find(
+      (c) => (c.payload as { porta?: string })?.porta === "ai/agents",
+    );
+    expect(propostaAgente).toBeDefined();
+    const corpo = (propostaAgente!.payload as { corpo?: { version?: unknown } }).corpo
+      ?.version as { proposal_ai_draft_enabled?: boolean };
+    expect(corpo.proposal_ai_draft_enabled).toBe(false);
+  });
+
+  it("imobiliaria: proposta do agente leva proposal_ai_draft_enabled === true", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      nicho: nichoPorId("imobiliaria")!,
+      negocio: "Imob Sul",
+      descricao: "venda e locação",
+      nomeDoAgente: "Vendas Sul",
+      followups: [],
+    });
+
+    expect(saida.ok).toBe(true);
+    const propostaAgente = capturaProposta.corpos.find(
+      (c) => (c.payload as { porta?: string })?.porta === "ai/agents",
+    );
+    expect(propostaAgente).toBeDefined();
+    const corpo = (propostaAgente!.payload as { corpo?: { version?: unknown } }).corpo
+      ?.version as { proposal_ai_draft_enabled?: boolean };
+    expect(corpo.proposal_ai_draft_enabled).toBe(true);
+  });
+
+  it("follow-up já instalado: reaproveita (não propõe), propõe os outros, reaproveitado.followups com o id", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({
+      agentes: [],
+      followups: [
+        { id: "fu-existente", name: modeloPorId("clinica-consulta-retomada")!.nome },
+      ],
+      capturaProposta,
+    });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      ...PEDIDO_CLINICA,
+      followups: ["clinica-consulta-retomada", "clinica-falta-remarcar"],
+    });
+
+    expect(saida.ok).toBe(true);
+    const ok = saida as { ok: true; reaproveitado: { followups: string[] }; proposto: { followups: { modelo: string }[] } };
+    // O já instalado não foi proposto
+    expect(ok.reaproveitado.followups).toContain("clinica-consulta-retomada");
+    // O outro foi proposto
+    expect(ok.proposto.followups.map((f) => f.modelo)).toEqual(["clinica-falta-remarcar"]);
+    const corposFu = capturaProposta.corpos.filter(
+      (c) => (c.payload as { porta?: string }).porta === "ai/followup-flows/from-model",
+    );
+    expect(corposFu.map((c) => (c.payload as { corpo?: { model_id?: string } }).corpo?.model_id)).toEqual([
+      "clinica-falta-remarcar",
+    ]);
+  });
+
+  it("lista de follow-ups falhando (500): indisponivel, nenhuma proposta", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({
+      agentes: [],
+      statusFollowups: 500,
+      capturaProposta,
+    });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      ...PEDIDO_CLINICA,
+      followups: ["clinica-consulta-retomada"],
+    });
+
+    expect(saida.ok).toBe(false);
+    expect(falhou(saida).motivo).toBe("indisponivel");
+    expect(capturaProposta.corpos).toEqual([]);
+  });
+
+  it("follow-up de outro nicho: followup_de_outro_nicho, sem proposta", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      nicho: nichoPorId("imobiliaria")!,
+      negocio: "Imob Sul",
+      descricao: "venda e locação",
+      nomeDoAgente: "Vendas Sul",
       followups: ["clinica-consulta-retomada"],
     });
 
     expect(saida).toEqual({ ok: false, motivo: "followup_de_outro_nicho" });
-    expect(capturaAgente.corpos).toEqual([]);
-    expect(capturaFollowup.corpos).toEqual([]);
+    expect(capturaProposta.corpos).toEqual([]);
   });
 
-  it("F. os 4 da clínica: 2 sem etapa instalam (2 POSTs), 2 com etapa vão para falta", async () => {
-    const capturaAgente: CorpoCapturado = { metodo: "", corpos: [] };
-    const capturaFollowup: CorpoCapturado = { metodo: "", corpos: [] };
-    ligar({ capturaAgente, capturaFollowup });
-    const { ferramentas } = montarParaTeste("admin");
+  it("4 follow-ups da clínica: 2 sem etapa propõem (2 propostas), 2 com etapa vão para falta", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({ capturaProposta });
+    const entrada = entradaDeTeste();
 
-    const saida = await chamar<{ ok: boolean; criado: { followups: { id: string }[] }; falta: string[] }>(
-      ferramentas,
-      "montar_pacote_do_nicho",
-      {
-        ...ENTRADA_CLINICA,
-        followups: [
-          "clinica-consulta-retomada",
-          "clinica-exame-marcar",
-          "clinica-cirurgia-decisao",
-          "clinica-falta-remarcar",
-        ],
-      },
-    );
+    const saida = await montarPacoteDoNicho(entrada, {
+      ...PEDIDO_CLINICA,
+      followups: [
+        "clinica-consulta-retomada",
+        "clinica-exame-marcar",
+        "clinica-cirurgia-decisao",
+        "clinica-falta-remarcar",
+      ],
+    });
 
     expect(saida.ok).toBe(true);
-    expect(capturaFollowup.metodo).toBe("POST");
-    expect(capturaFollowup.corpos).toHaveLength(2);
-    expect(capturaFollowup.corpos.map((c) => c.model_id).sort()).toEqual([
+    // clinica-consulta-retomada e clinica-falta-remarcar NÃO pedem etapa → propõem
+    expect(deuCerto(saida).proposto.followups).toHaveLength(2);
+    expect(deuCerto(saida).proposto.followups.map((f) => f.modelo).sort()).toEqual([
       "clinica-consulta-retomada",
       "clinica-falta-remarcar",
     ]);
-    expect(saida.criado.followups).toHaveLength(2);
-    expect(saida.falta.some((f) => f.includes("clinica-exame-marcar"))).toBe(true);
-    expect(saida.falta.some((f) => f.includes("clinica-cirurgia-decisao"))).toBe(true);
+    // clinica-exame-marcar e clinica-cirurgia-decisao pedem etapa → falta
+    expect(deuCerto(saida).falta.some((f) => f.includes("clinica-exame-marcar"))).toBe(true);
+    expect(deuCerto(saida).falta.some((f) => f.includes("clinica-cirurgia-decisao"))).toBe(true);
   });
 
-  it("F2. follow-up que dá 500 não desfaz o agente: ok:true e falta cita a falha", async () => {
-    const capturaAgente: CorpoCapturado = { metodo: "", corpos: [] };
-    ligar({
-      capturaAgente,
-      statusPostFollowup: 500,
-      corpoPostFollowup: () => ({ error: { code: "x" } }),
-    });
-    const { ferramentas } = montarParaTeste("admin");
-
-    const saida = await chamar<{ ok: boolean; criado: { agente: unknown; followups: unknown[] }; falta: string[] }>(
-      ferramentas,
-      "montar_pacote_do_nicho",
-      { ...ENTRADA_CLINICA, followups: ["clinica-consulta-retomada"] },
-    );
-
-    expect(saida.ok).toBe(true);
-    expect(saida.criado.agente).toBeDefined();
-    expect(saida.criado.followups).toEqual([]);
-    expect(saida.falta.some((f) => f.includes("clinica-consulta-retomada"))).toBe(true);
-  });
-
-  it("G. agente falha (POST 500): o motivo da função, sem POST de follow-up", async () => {
-    const capturaFollowup: CorpoCapturado = { metodo: "", corpos: [] };
-    ligar({ statusPostAgente: 500, capturaFollowup });
-    const { ferramentas } = montarParaTeste("admin");
-
-    const saida = await chamar<{ ok: boolean; motivo: string }>(ferramentas, "montar_pacote_do_nicho", {
-      ...ENTRADA_CLINICA,
-      followups: ["clinica-consulta-retomada"],
-    });
-
-    expect(saida).toEqual({ ok: false, motivo: "indisponivel" });
-    expect(capturaFollowup.corpos).toEqual([]);
-  });
-
-  it("G2. sem credencial: sem_credencial, sem POST de follow-up", async () => {
-    const capturaFollowup: CorpoCapturado = { metodo: "", corpos: [] };
+  it("agente falha (montagem indisponivel): indisponivel, sem proposta de follow-up", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    // provedores sem credencial → montagem falha com sem_credencial
     ligar({
       provedores: { padrao: { provider: "anthropic", defaultModel: "x" }, credenciais: [] },
-      capturaFollowup,
+      capturaProposta,
     });
-    const { ferramentas } = montarParaTeste("admin");
+    const entrada = entradaDeTeste();
 
-    const saida = await chamar<{ ok: boolean; motivo: string }>(ferramentas, "montar_pacote_do_nicho", {
-      ...ENTRADA_CLINICA,
+    const saida = await montarPacoteDoNicho(entrada, {
+      ...PEDIDO_CLINICA,
       followups: ["clinica-consulta-retomada"],
     });
 
-    expect(saida.motivo).toBe("sem_credencial");
-    expect(capturaFollowup.corpos).toEqual([]);
+    expect(saida.ok).toBe(false);
+    expect(falhou(saida).motivo).toBe("sem_credencial");
+    expect(capturaProposta.corpos).toEqual([]);
+  });
+
+  it("sem credencial: sem_credencial, sem proposta", async () => {
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({
+      provedores: { padrao: { provider: "anthropic", defaultModel: "x" }, credenciais: [] },
+      capturaProposta,
+    });
+    const entrada = entradaDeTeste();
+
+    const saida = await montarPacoteDoNicho(entrada, {
+      ...PEDIDO_CLINICA,
+      followups: ["clinica-consulta-retomada"],
+    });
+
+    expect(falhou(saida).motivo).toBe("sem_credencial");
+    expect(capturaProposta.corpos).toEqual([]);
+  });
+
+  it("agente ARQUIVADO com o mesmo nome: não finge que existe, pede outro nome e não propõe nada", async () => {
+    // Medido no espelho (30/10): depois de "limpar" a Nina, o nome ficou preso pelo arquivado, o pacote
+    // "reaproveitou" o arquivado e o assistente disse que a Nina já estava proposta. Sabotagem: voltar a
+    // tratar arquivado como existente → este teste fica vermelho.
+    const capturaProposta: PropostaCapturada = { metodo: "", corpos: [] };
+    ligar({
+      agentes: [{ id: "ag-velho", name: "Recepção Aurora", archived_at: "2026-10-30T00:00:00Z" }],
+      capturaProposta,
+    });
+
+    const saida = falhou(await montarPacoteDoNicho(entradaDeTeste(), { ...PEDIDO_CLINICA, followups: [] }));
+
+    expect(saida.motivo).toBe("ja_existe");
+    expect(saida.detalhe).toContain("ARQUIVADO");
+    expect(capturaProposta.corpos).toHaveLength(0);
+  });
+
+  it("pedido expresso: o agente proposto é aplicado na hora, pelas rotas do cartão", async () => {
+    const chamadas: string[] = [];
+    const h: HandlerDeRota = async (req) => {
+      chamadas.push(new URL(req.url).pathname);
+      return respostaJson(200, { data: { id: "prop-novo", resumo: "proposta de teste", status: "aplicada" } });
+    };
+    ligar({ agentes: [] });
+    sobreporFontesDeProposta({ propostas: h, aprovar: h, aplicar: h });
+    const { ctx, coletor } = montarParaTeste("admin", {}, {
+      turno: { threadId: "t", turnId: "u", pergunta: "Monte a atendente da oficina e crie o agente" },
+    });
+
+    const saida = deuCerto(
+      await montarPacoteDoNicho(
+        { ctx, coletor, skills: [], turno: { threadId: "t", turnId: "u", pergunta: "Monte a atendente da oficina e crie o agente" } },
+        { ...PEDIDO_CLINICA, followups: [], pedidoExpresso: "Monte a atendente da oficina" },
+      ),
+    );
+
+    expect(saida.proposto.agente?.aplicado).toBe(true);
+    expect(chamadas.some((c) => c.endsWith("/aprovar"))).toBe(true);
+    expect(chamadas.some((c) => c.endsWith("/aplicar"))).toBe(true);
   });
 });

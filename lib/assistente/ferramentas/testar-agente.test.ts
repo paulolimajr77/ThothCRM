@@ -219,14 +219,14 @@ describe("testar_agente", () => {
     expect(saida.custo).toContain("1 vez(es)");
   });
 
-  it("D. esquema: lista vazia, 6 mensagens, vazia, 501 chars, uuid ruim e extras — sem chamar rota", async () => {
+  it("D. esquema: lista vazia, 3 mensagens (o teto é 2), vazia, 501 chars, uuid ruim e extras — sem chamar rota", async () => {
     const captura: Captura = { metodo: "", caminhos: [], corpos: [] };
     ligar({ versoes: [versao(V2, 2, "draft")], captura });
     const { ferramentas } = montarParaTeste("admin");
 
     const casos: unknown[] = [
       { agente_id: AGENTE, mensagens: [] },
-      { agente_id: AGENTE, mensagens: ["a", "b", "c", "d", "e", "f"] },
+      { agente_id: AGENTE, mensagens: ["a", "b", "c"] },
       { agente_id: AGENTE, mensagens: [""] },
       { agente_id: AGENTE, mensagens: ["   "] },
       { agente_id: AGENTE, mensagens: ["x".repeat(501)] },
@@ -244,7 +244,7 @@ describe("testar_agente", () => {
     expect(captura.corpos).toEqual([]);
   });
 
-  it("E. sequência: 3 POSTs em ordem; 2ª falha (500) → 1ª devolvida + indisponivel, 3ª NÃO roda", async () => {
+  it("E. sequência: POSTs em ordem; 2ª falha (500) → 1ª devolvida + indisponivel", async () => {
     const vistas: string[] = [];
     const hVersoes: HandlerDeRota = async () => respostaJson(200, { data: [versao(V2, 2, "draft")] });
     sobreporHandlerDeVersoes(hVersoes);
@@ -263,7 +263,7 @@ describe("testar_agente", () => {
       versao: number;
       resultados: { mensagem: string; resposta: string }[];
       resumo: { passaram: number; total: number };
-    }>(ferramentas, "testar_agente", { agente_id: AGENTE, mensagens: ["um", "dois", "três"] });
+    }>(ferramentas, "testar_agente", { agente_id: AGENTE, mensagens: ["um", "dois"] });
 
     expect(saida.ok).toBe(false);
     expect(saida.motivo).toBe("indisponivel");
@@ -335,5 +335,41 @@ describe("testar_agente", () => {
     });
     expect(saida500).toEqual({ ok: false, motivo: "indisponivel" });
     expect(JSON.stringify(saida500)).not.toContain("SEGREDO-CORPO");
+  });
+
+  it("G. a pessoa VÊ o teste: avisa quando começa, quando acaba e deixa o cartão na conversa", async () => {
+    ligar({
+      versoes: [versao(V2, 2, "draft")],
+      posts: [{ status: 200, corpo: { data: respostaDeTeste({ texto: "Olá!" }) } }],
+    });
+    const { ferramentas, coletor } = montarParaTeste("admin");
+    const eventos: { tipo: string }[] = [];
+    coletor.aoOcorrer = (e) => eventos.push(e);
+
+    await chamar(ferramentas, "testar_agente", { agente_id: AGENTE, mensagens: ["oi"] });
+
+    expect(eventos.map((e) => e.tipo)).toEqual(["teste_comecou", "teste_resultado"]);
+    expect(coletor.acoes).toEqual([
+      {
+        tipo: "teste",
+        versao: 2,
+        resultados: [{ mensagem: "oi", resposta: "Olá!", passou: true, simulado: false, ferramentas: [] }],
+      },
+    ]);
+  });
+
+  it("H. aviso ao vivo que lança não derruba o teste", async () => {
+    ligar({ versoes: [versao(V2, 2, "draft")] });
+    const { ferramentas, coletor } = montarParaTeste("admin");
+    coletor.aoOcorrer = () => {
+      throw new Error("falha do aviso");
+    };
+
+    const saida = await chamar<{ ok: boolean }>(ferramentas, "testar_agente", {
+      agente_id: AGENTE,
+      mensagens: ["oi"],
+    });
+
+    expect(saida.ok).toBe(true);
   });
 });

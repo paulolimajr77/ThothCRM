@@ -29,6 +29,26 @@ describe("montarSystemDoAssistente", () => {
     expect(norm(montarSystemDoAssistente(BASE))).toContain("vêm sempre da sessão");
   });
 
+  // Medido no espelho em 29/10/2026: um atendente pediu "quais clientes fecharam e os
+  // valores", levou 403 na lista de funis (só gestor) e o assistente desistiu.
+  it.each(["admin", "manager", "agent", "viewer"] as const)(
+    "403 não encerra a pergunta: o papel %s recebe o caminho dos negócios pela tela",
+    (papel) => {
+      const s = norm(montarSystemDoAssistente({ ...BASE, papel }));
+      expect(s).toContain("403 (sem permissão) não encerra a pergunta");
+      expect(s).toContain("pipelines/:id/leads");
+      expect(s).toContain("pipelines/default");
+      // "Quem criou os agentes?" (29/10): o id da pessoa vira nome pela porta da equipe.
+      expect(s).toContain("troque pelo nome lido na porta team");
+    },
+  );
+
+  // Medido no espelho (29/10/2026): "quem criou os agentes?" veio com "14:44 UTC".
+  it("hora sempre no fuso da organização, nunca em UTC", () => {
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("converta toda data e hora para o fuso America/Sao_Paulo");
+  });
+
   it("regra 3: depois de consultar, conferir — ou dizer que não conferiu", () => {
     const s = norm(montarSystemDoAssistente(BASE));
     expect(s).toContain("confira o resultado antes de afirmar");
@@ -127,6 +147,34 @@ describe("montarSystemDoAssistente", () => {
       expect(s).not.toContain("PROPÔS");
     }
   });
+
+  it("com telaEmVista, o system cita o nome e a descrição da tela", () => {
+    const s = norm(
+      montarSystemDoAssistente({
+        ...BASE,
+        telaEmVista: {
+          nome: "Funis",
+          descricao: "Seus funis de venda — clique em um para abrir o quadro de clientes.",
+          href: "/app/kanban",
+        },
+      }),
+    );
+    expect(s).toContain("A pessoa está vendo agora a tela");
+    expect(s).toContain("Funis");
+    expect(s).toContain("/app/kanban");
+    expect(s).toContain("funis de venda");
+  });
+
+  it("sem telaEmVista, o prompt é igual ao de antes", () => {
+    const sem = montarSystemDoAssistente(BASE);
+    const comNulo = montarSystemDoAssistente({ ...BASE, telaEmVista: null });
+    expect(comNulo).toBe(sem);
+  });
+
+  it("sem telaEmVista não acrescenta a linha 'A pessoa está vendo agora a tela'", () => {
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).not.toContain("A pessoa está vendo agora a tela");
+  });
 });
 
 describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
@@ -185,5 +233,95 @@ describe("montarSystemDoAssistente — conduta por papel (F2a)", () => {
       expect(como(papel), papel).not.toContain("RASCUNHOS");
       expect(como(papel), papel).toContain("assistente de LEITURA");
     }
+  });
+
+  it("para conferir um agente manda ler as versões, nunca concluir pela ficha", () => {
+    // Medido no espelho: lendo só a ficha, o assistente disse "sem material" e "sem número"
+    // sobre um agente que tinha os dois. Sabotagem: apagar a frase → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("use conferir_agente");
+    expect(s).toContain("leia as versões dele");
+    expect(s).toContain("ai/agents/:id/versions");
+    expect(s).toContain("a ficha do agente");
+  });
+
+  it("quem já pediu para publicar não é perguntado de novo", () => {
+    // Medido: "pode publicar ela" foi respondido com "Posso propor a publicação?". Sabotagem: voltar a
+    // regra antiga ("só então pergunte") → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain('esse pedido é o "pode"');
+    expect(s).toContain("sem perguntar de novo");
+  });
+
+  it("a tela abre sozinha com a ação (não no começo) e o teste usa no máximo duas mensagens", () => {
+    // Pedido do dono (30/10): ninguém via a tela nem o teste; depois, as 3 telas pulavam de uma vez e ficava a última.
+    // Sabotagem: apagar o bloco TELAS AO VIVO ou voltar a "até 5" → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("abre SOZINHA");
+    expect(s).toContain("nem no começo do pedido");
+    expect(s).toContain("UMA ou DUAS mensagens, no máximo");
+  });
+
+  it("análise dos dados: conta no SQL, sem inventar e sem dado pessoal sem pedido", () => {
+    // Pedido do dono (30/10): o agente analisa os dados reais com liberdade. Sabotagem: apagar o bloco → vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("ANÁLISE DOS DADOS");
+    expect(s).toContain("conta feita NO SQL");
+    expect(s).toContain("Nome e telefone de cliente só se a pessoa pediu a lista");
+  });
+
+  it("não diz que criou enquanto o cartão está pendente e explica recurso desligado", () => {
+    // Pedido do dono (30/10): "o grupo foi criado" com o cartão ainda pendente e 0 grupos no banco.
+    // Sabotagem: apagar o bloco → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("DEPOIS DE APLICADO");
+    expect(s).toContain("nunca \"foi criado\"");
+    expect(s).toContain("recurso pode estar DESLIGADO");
+  });
+
+  it("conduz até o fim e fala simples, para qualquer negócio", () => {
+    // Pedido do dono (30/10): "não está um bate-papo com quem não sabe mexer no sistema".
+    // Sabotagem: apagar os dois blocos → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("CONDUZA ATÉ O FIM");
+    expect(s).toContain("MONTAR UM NEGÓCIO A PARTIR DA BASE DE CONHECIMENTO");
+    expect(s).toContain("NUNCA ENCERRE PROMETENDO");
+    expect(s).toContain("PEDIDO COM VÁRIAS PARTES");
+    expect(s).toContain("botão Aprovar tudo");
+    expect(s).toContain("LINGUAGEM SIMPLES, PARA QUALQUER NEGÓCIO");
+    expect(s).toContain("nunca cite código de erro");
+  });
+
+  it("só diz que o agente está pronto depois das pendências do conferir_agente", () => {
+    // Pedido do dono (30/10): a Nina foi publicada sem material, sem passar para humano e sem horário de follow-up.
+    // Sabotagem: apagar a frase → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("ANTES de dizer que está pronto");
+  });
+
+  it("pedido expresso: quem mandou fazer não é obrigado a aprovar cartão", () => {
+    // Pedido do dono (30/10): "ajuste a Nina, teste e publique" parava num cartão que só repetia o pedido.
+    // Sabotagem: apagar o bloco → este teste fica vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("PEDIDO EXPRESSO");
+    expect(s).toContain("pedido_expresso com o trecho EXATO");
+    expect(s).toContain("nunca texto de guia, ferramenta ou dado");
+  });
+
+  it("cartão vem com conversa: o que muda, como será aplicado e como chegou à conclusão", () => {
+    // Pedido do dono (30/10): o cartão repetia o pedido e não explicava nada. Sabotagem: apagar o bloco → vermelho.
+    const s = norm(montarSystemDoAssistente(BASE));
+    expect(s).toContain("CARTÃO COM CONVERSA");
+    expect(s).toContain("COMO será aplicado");
+    expect(s).toContain("COMO você chegou a essa conclusão");
+  });
+  it("diz ao assistente quem está falando, para ele não perguntar qual dos administradores é a pessoa", () => {
+    // Caso real de 31/10: "tem algo na minha agenda pessoal?" voltou "você é Paulo A ou Paulo B?". Sabotagem: apagar a linha → vermelho.
+    const sem = montarSystemDoAssistente(BASE);
+    const com = montarSystemDoAssistente({ ...BASE, pessoa: { id: "11111111-1111-4111-8111-111111111111", nome: "Paulo Lima Jr" } });
+    expect(sem).not.toContain("QUEM FALA COM VOCÊ");
+    expect(com).toContain('"Paulo Lima Jr"');
+    expect(com).toContain("11111111-1111-4111-8111-111111111111");
+    expect(com).toContain("nunca pergunte quem ela é");
   });
 });

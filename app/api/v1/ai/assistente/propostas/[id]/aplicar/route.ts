@@ -36,6 +36,7 @@ import type { PoolClient } from "pg";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
+import { recusarSeAssistenteDesligado } from "@/lib/assistente/ligado";
 import { getRequestPool } from "@/lib/agent-engine/db/request-pool";
 import { chamarRotaPorDentro, type HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
 import { abrirPorta } from "@/lib/assistente/portas/abrir";
@@ -90,6 +91,12 @@ function idDoArtefato(corpo: unknown): string | null {
   if (d.binding !== null && typeof d.binding === "object") {
     const idDoBinding = (d.binding as { id?: unknown }).id;
     if (typeof idDoBinding === "string") return idDoBinding;
+  }
+  // O POST de agentes devolve `{ agent: { id, … }, version: { … } }`: sem este caso a
+  // proposta aplicada não dizia QUAL agente criou (medido no espelho, 29/10/2026).
+  if (d.agent !== null && typeof d.agent === "object") {
+    const idDoAgente = (d.agent as { id?: unknown }).id;
+    if (typeof idDoAgente === "string") return idDoAgente;
   }
   return null;
 }
@@ -315,6 +322,8 @@ async function aplicarComTrava(
         operacao: p.metodo,
         risk: linha.risk,
         http_status: respostaDestino.status,
+        // O que nasceu desta proposta: liga "quem pediu / quem aplicou" ao artefato.
+        artefato_id: resultado.artefato.id,
       },
       requestId,
     });
@@ -435,6 +444,8 @@ async function aplicarComTrava(
         operacao: payloadDoTipo.operacao,
         risk: linha.risk,
         http_status: respostaDestino.status,
+        // O que nasceu desta proposta: liga "quem pediu / quem aplicou" ao artefato.
+        artefato_id: resultado.artefato.id,
       },
       requestId,
     });
@@ -472,6 +483,8 @@ export async function POST(_req: NextRequest, ctx: RouteCtx): Promise<Response> 
 
   const authz = await requireRole("admin", { requestId, resource: "assistente_propostas" });
   if (!authz.ok) return authz.response;
+  const desligado = await recusarSeAssistenteDesligado(authz.org.orgId, requestId, authz.user.idioma);
+  if (desligado) return desligado;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
   const orgId = authz.org.orgId;
   const userId = authz.user.id;

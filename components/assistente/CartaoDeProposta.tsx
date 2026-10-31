@@ -1,11 +1,13 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useT } from "@/hooks/i18n/useT";
 import {
   diffLegivel,
   type DiffLegivel,
 } from "@/lib/assistente/propostas/diff-legivel";
 import type { Tradutor } from "@/lib/assistente/propostas/tradutor";
+import { ESCRITA_PERMITIDA } from "@/lib/assistente/portas/listas";
 import { formatadorDeData } from "@/lib/cobranca/fuso";
 import { useIdioma } from "@/lib/i18n/IdiomaProvider";
 
@@ -37,6 +39,8 @@ export interface PropostaNaTela {
 /** Rótulo do TIPO em português (o `kind` é vocabulário do banco, não da tela). */
 function rotuloDoTipo(t: Tradutor, kind: string): string {
   switch (kind) {
+    case "acao":
+      return t("Mudança");
     case "roteador":
       return t("Roteador");
     case "conhecimento":
@@ -78,6 +82,21 @@ function rotuloDaOperacao(t: Tradutor, operacao: string | null): string {
   }
 }
 
+/**
+ * Verdadeiro quando a proposta (kind `acao`, porta+método no payload) casa
+ * uma entrada de ESCRITA_PERMITIDA marcada `externo: true` — efeito fora do
+ * sistema (mensagem a cliente, campanha, equipe ou automação).
+ */
+function ehExterno(payload: unknown): boolean {
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload))
+    return false;
+  const p = payload as { porta?: unknown; metodo?: unknown };
+  if (typeof p.porta !== "string" || typeof p.metodo !== "string") return false;
+  return ESCRITA_PERMITIDA.some(
+    (e) => e.porta === p.porta && e.metodo === p.metodo && e.externo === true,
+  );
+}
+
 /** O prazo em frase: "vence em N dias" / "venceu" / o estado já decidido. */
 function fraseDoPrazo(t: Tradutor, p: PropostaNaTela): string {
   if (p.status === "aplicada") return t("Aplicada");
@@ -86,7 +105,9 @@ function fraseDoPrazo(t: Tradutor, p: PropostaNaTela): string {
   if (p.vencida) return p.status === "pendente" ? t("Venceu sem decisão.") : t("Venceu sem aplicação.");
   const restante = new Date(p.expires_at).getTime() - Date.now();
   const dias = Math.max(1, Math.ceil(restante / UM_DIA_EM_MS));
-  return `${t("Vence em")} ${dias} ${dias === 1 ? t("dia") : t("dias")}`;
+  // "Vence em {dias}" (prazo) e não "Vence em" solto: o solto é o da data
+  // ("Vence el 03/11"), e em espanhol o prazo pede "Vence en".
+  return t("Vence em {dias}").replace("{dias}", `${dias} ${dias === 1 ? t("dia") : t("dias")}`);
 }
 
 /**
@@ -114,6 +135,7 @@ export function CartaoDeProposta({
   nomeDe,
   ocupado,
   erro,
+  desfecho = null,
   aoAplicar,
   aoNao,
 }: {
@@ -126,6 +148,8 @@ export function CartaoDeProposta({
   ocupado: boolean;
   /** O erro da última ação neste cartão, já em português. */
   erro: string | null;
+  /** O resultado da ação (o "Pronto: …" e os próximos passos), mostrado dentro do cartão. */
+  desfecho?: ReactNode;
   aoAplicar: (id: string) => void;
   aoNao: (id: string) => void;
 }) {
@@ -145,6 +169,7 @@ export function CartaoDeProposta({
   }
 
   const p = proposta;
+  const externo = p.kind === "acao" && ehExterno(p.payload);
   const diff: DiffLegivel = diffLegivel(t as Tradutor, {
     kind: p.kind,
     operacao: p.operacao,
@@ -203,6 +228,17 @@ export function CartaoDeProposta({
           {aviso}
         </p>
       ))}
+      {externo ? (
+        <p
+          role="alert"
+          data-testid={`proposta-externo-${p.id}`}
+          className="rounded-md border border-amber-600/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400"
+        >
+          {t(
+            "Atenção: esta mudança age fora do sistema (mensagem a cliente, campanha, equipe ou automação). Confira antes de aplicar.",
+          )}
+        </p>
+      ) : null}
 
       <p data-testid={`proposta-quem-${p.id}`} className="text-xs text-text-muted">
         {t("Pedido por")} {nomeDe(p.requested_by)} ·{" "}
@@ -230,6 +266,8 @@ export function CartaoDeProposta({
           {erro}
         </p>
       ) : null}
+
+      {desfecho}
 
       <div className="flex flex-wrap gap-2">
         {podeAplicar ? (

@@ -34,6 +34,7 @@ const alvos = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: vi.fn() }));
+vi.mock("@/lib/assistente/ligado", () => ({ recusarSeAssistenteDesligado: vi.fn(async () => null) }));
 vi.mock("@/lib/impersonate/support", () => ({ requireSupportWrite: vi.fn(async () => null) }));
 vi.mock("@/lib/agent-engine/db/request-pool", () => ({ getRequestPool: vi.fn() }));
 vi.mock("@/lib/audit", () => ({ audit: vi.fn(async () => undefined) }));
@@ -1040,5 +1041,34 @@ describe("POST — contexto da tela (o agente que a pessoa está vendo)", () => 
     const r = await POST(pedido(comCaminho(`/app/${"a".repeat(200)}`)));
     expect(r.status).toBe(422);
     expect(responderComoAssistente).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST — tela em vista (o caminho da pessoa)", () => {
+  it("caminho /app/kanban: o system cita a tela de funis com nome e descrição", async () => {
+    poolFalso();
+    const r = await POST(pedido({ ...CORPO_OK, contexto: { caminho: "/app/kanban" } }));
+    expect(r.status).toBe(200);
+    const { system } = chamadaDoModelo().entrada;
+    expect(system).toContain("A pessoa está vendo agora a tela");
+    expect(system).toContain("Funis");
+    expect(system).toContain("/app/kanban");
+    expect(system).toContain("funis de venda");
+    // Nunca o caminho completo com ids.
+    expect(system).not.toContain("/app/kanban/etapas/123");
+  });
+
+  it("sem contexto: nenhuma linha de tela é acrescentada", async () => {
+    poolFalso();
+    await POST(pedido(CORPO_OK));
+    const { system } = chamadaDoModelo().entrada;
+    expect(system).not.toContain("A pessoa está vendo agora a tela");
+  });
+
+  it("caminho fora do catálogo: nenhuma linha de tela é acrescentada", async () => {
+    poolFalso();
+    await POST(pedido({ ...CORPO_OK, contexto: { caminho: "/app/qualquer-coisa" } }));
+    const { system } = chamadaDoModelo().entrada;
+    expect(system).not.toContain("A pessoa está vendo agora a tela");
   });
 });

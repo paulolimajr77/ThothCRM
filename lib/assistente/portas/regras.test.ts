@@ -19,6 +19,7 @@ import {
   escritaPermitida,
   portaDeLeituraPermitida,
   acaoPermitida,
+  corpoVazioRecusado,
 } from "./regras";
 describe("casaComPrefixo", () => {
   it("id igual ao prefixo sem barra é verdadeiro", () => {
@@ -59,7 +60,7 @@ describe("portaDeLeituraPermitida", () => {
     expect(portaDeLeituraPermitida("settings/api-tokens")).toBe(false);
   });
 
-  it("as 8 portas com efeito colateral não são legíveis", () => {
+  it("as 9 portas com efeito colateral não são legíveis", () => {
     const proibidas = [
       "agenda/google/connect",
       "agenda/google/callback",
@@ -69,13 +70,14 @@ describe("portaDeLeituraPermitida", () => {
       "contacts/export",
       "contacts/:id/avatar",
       "conversations/:id/notes/:noteId/media",
+      "leads/:id/attachments/:attachmentId/media",
     ];
     for (const id of proibidas) {
       expect(portaDeLeituraPermitida(id)).toBe(false);
     }
   });
 
-  it("CARREGADORES não tem nenhuma das 8 portas com efeito colateral", () => {
+  it("CARREGADORES não tem nenhuma das 9 portas com efeito colateral", () => {
     const proibidas = [
       "agenda/google/connect",
       "agenda/google/callback",
@@ -85,6 +87,7 @@ describe("portaDeLeituraPermitida", () => {
       "contacts/export",
       "contacts/:id/avatar",
       "conversations/:id/notes/:noteId/media",
+      "leads/:id/attachments/:attachmentId/media",
     ];
     for (const id of proibidas) {
       expect(CARREGADORES).not.toHaveProperty(id);
@@ -174,21 +177,15 @@ describe("escritaPermitida", () => {
   });
 
   it("AREAS_SO_LEITURA nunca permite escrita, incluindo raiz", () => {
-    expect(escritaPermitida("messages", "POST")).toBe(false);
-    expect(escritaPermitida("messages", "PATCH")).toBe(false);
-    expect(escritaPermitida("campaigns", "POST")).toBe(false);
-    expect(escritaPermitida("team", "POST")).toBe(false);
-    for (const p of CATALOGO_DE_PORTAS) {
-      const area = AREAS_SO_LEITURA.some((pre) =>
-        casaComPrefixo(p.id, pre),
+    // AREAS_SO_LEITURA está vazio: messages/, campaigns/ e team/ saíram da
+    // lista. O controle de escrita agora é feito somente pela whitelist
+    // ESCRITA_PERMITIDA (apenas portas exatas aprovadas).
+    expect(AREAS_SO_LEITURA).toHaveLength(0);
+    for (const e of ESCRITA_PERMITIDA) {
+      const soLeitura = AREAS_SO_LEITURA.some((pre) =>
+        casaComPrefixo(e.porta, pre),
       );
-      if (area) {
-        for (const m of ["POST", "PATCH", "PUT"] as const) {
-          if (p.metodos.includes(m)) {
-            expect(escritaPermitida(p.id, m)).toBe(false);
-          }
-        }
-      }
+      expect(soLeitura).toBe(false);
     }
   });
 
@@ -204,6 +201,10 @@ describe("escritaPermitida", () => {
     for (const e of ESCRITA_PERMITIDA) {
       expect(escritaPermitida(e.porta, e.metodo as Metodo)).toBe(true);
     }
+  });
+
+  it("ai/followup-flows/from-model POST permite escrita (proposta do pacote do nicho)", () => {
+    expect(escritaPermitida("ai/followup-flows/from-model", "POST")).toBe(true);
   });
 
   it("nenhuma entrada de ESCRITA_PERMITIDA casa com proibidos", () => {
@@ -315,7 +316,42 @@ describe("acaoPermitida", () => {
     expect(escritaPermitida("ai/followup-flows/:id/publish", "POST")).toBe(true);
   });
 
-  it("campaigns/:id PATCH continua proibida", () => {
-    expect(escritaPermitida("campaigns/:id", "PATCH")).toBe(false);
+  it("campaigns/:id PATCH é permitida só como ação externa (cartão de alerta, fora do lote)", () => {
+    expect(escritaPermitida("campaigns/:id", "PATCH")).toBe(true);
+  });
+});
+
+describe("corpoVazioRecusado", () => {
+  it("as 6 portas que aplicavam com corpo vazio recusam vazio e aceitam corpo preenchido", () => {
+    const portas: Array<[string, "POST" | "PATCH"]> = [
+      ["contacts", "POST"],
+      ["companies", "POST"],
+      ["financeiro/comandas", "POST"],
+      ["settings/art15", "PATCH"],
+      ["settings/campanhas", "PATCH"],
+      ["settings/prospeccao", "PATCH"],
+    ];
+    for (const [porta, metodo] of portas) {
+      expect(corpoVazioRecusado(porta, metodo, {})).toBe(true);
+      expect(corpoVazioRecusado(porta, metodo, undefined)).toBe(true);
+      expect(corpoVazioRecusado(porta, metodo, { qualquer: 1 })).toBe(false);
+    }
+  });
+
+  it("porta fora da lista não é afetada por corpo vazio", () => {
+    expect(corpoVazioRecusado("ai/agents/:id/pause", "POST", {})).toBe(false);
+  });
+});
+
+describe("team/:user_id", () => {
+  it("troca de papel de membro continua fechada pelas duas portas", () => {
+    expect(escritaPermitida("team/:user_id", "PATCH")).toBe(false);
+    expect(escritaPermitida("team/:user_id/role", "PATCH")).toBe(false);
+  });
+});
+
+describe("portas fechadas por segurança e por falta de prova", () => {
+  it("a porta que recebe chave do mapa fica fechada para o assistente", () => {
+    expect(escritaPermitida("ai/mapas", "PUT")).toBe(false);
   });
 });

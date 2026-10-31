@@ -24,6 +24,7 @@ const PERMITIDOS = new Set([
   "lib/assistente/metricas/tipos.ts", // declara o campo
   "lib/assistente/metricas/modulos.ts", // lê os interruptores
   "lib/assistente/ferramentas/telas.ts", // lê os interruptores para listar telas
+  "lib/assistente/ferramentas/aplicar-modelo-de-cliente.ts", // lê os interruptores antes de propor
   "app/api/v1/ai/assistente/chat/route.ts", // monta o contexto
 ]);
 
@@ -52,7 +53,7 @@ describe("bancoDaInstalacao no contexto do assistente", () => {
     expect(codigo.map(relativo)).toContain("lib/assistente/metricas/tipos.ts");
   });
 
-  it("só os 4 arquivos permitidos citam o campo — e todos eles de fato citam", () => {
+  it("só os arquivos permitidos citam o campo — e todos eles de fato citam", () => {
     const quemCita = codigo.filter((caminho) => readFileSync(caminho, "utf8").includes("bancoDaInstalacao")).map(relativo);
     expect([...quemCita].sort()).toEqual([...PERMITIDOS].sort());
   });

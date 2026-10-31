@@ -12,6 +12,7 @@ const esquemaDeEntrada = z.strictObject({
   porta: z.string().min(1).max(200),
   valores: z.record(z.string(), z.string().min(1).max(64)).optional(),
   filtros: z.record(z.string(), z.string().min(1).max(200)).optional(),
+  campos: z.array(z.string().regex(/^[a-z_]{1,40}$/)).min(1).max(20).optional(),
 });
 type EntradaDeLerPorta = z.infer<typeof esquemaDeEntrada>;
 
@@ -27,21 +28,53 @@ function montarCaminhoComQuery(caminho: string, filtros?: Record<string, string>
   return url.pathname + url.search;
 }
 
+/**
+ * Só ENCOLHE a resposta: de cada linha da lista, fica só o que foi pedido. Medido no
+ * espelho (29/10/2026): os negócios de um funil vêm com todas as colunas e a lista
+ * passava dos 24 KB antes de chegar aos ganhos — o modelo não conseguia responder
+ * "quem fechou e os valores".
+ */
+function soOsCampos(dados: unknown, campos?: readonly string[]): unknown {
+  if (!campos || !Array.isArray(dados)) return dados;
+  return dados.map((linha) => {
+    if (linha === null || typeof linha !== "object" || Array.isArray(linha)) return linha;
+    const origem = linha as Record<string, unknown>;
+    const enxuta: Record<string, unknown> = {};
+    for (const campo of campos) if (campo in origem) enxuta[campo] = origem[campo];
+    return enxuta;
+  });
+}
+
 async function lerPorta(
   entrada: EntradaDasFerramentas,
   e: EntradaDeLerPorta,
-): Promise<{ dados: unknown; cortado: boolean } | { ok: false; motivo: "porta_proibida" }> {
+): Promise<
+  | { dados: unknown; cortado: boolean }
+  | { ok: false; motivo: "porta_proibida" }
+  | { ok: false; motivo: "porta_respondeu_erro"; status: number | null; codigo: string | null; mensagem: string | null }
+> {
   const aberto = await abrirPorta(e.porta, "GET", e.valores ?? {});
   if (!aberto) return { ok: false, motivo: "porta_proibida" };
 
   const caminhoComQuery = montarCaminhoComQuery(aberto.caminho, e.filtros);
   const resposta = await chamarRotaPorDentro(aberto.handler, caminhoComQuery, {});
-  if (!("status" in resposta) || resposta.status !== 200) {
-    return { ok: false, motivo: "porta_proibida" };
+  if (!("status" in resposta)) return { ok: false, motivo: "porta_proibida" };
+  if (resposta.status !== 200) {
+    // O erro da PORTA (tabela não encontrada, filtro inválido, limite de leituras) vai
+    // ao modelo como ela respondeu: chamar de "proibida" o fazia concluir que a
+    // leitura foi bloqueada e desistir, em vez de corrigir o pedido.
+    const erro = (resposta.corpo as { error?: { code?: unknown; message?: unknown } } | null)?.error;
+    return {
+      ok: false,
+      motivo: "porta_respondeu_erro",
+      status: resposta.status,
+      codigo: typeof erro?.code === "string" ? erro.code : null,
+      mensagem: typeof erro?.message === "string" ? erro.message.slice(0, 300) : null,
+    };
   }
 
   const corpo = resposta.corpo as { data?: unknown; meta?: unknown } | null | undefined;
-  let dados: unknown = corpo?.data ?? null;
+  let dados: unknown = soOsCampos(corpo?.data ?? null, e.campos);
   let cortado = false;
 
   const serializado = JSON.stringify(dados ?? {});
@@ -59,8 +92,13 @@ export function criarLerPorta(entrada: EntradaDasFerramentas): Tool {
       "Lê uma porta de leitura do catálogo (só GET). Passe o id da porta (ex.: `ai/agents`) " +
       "e, opcionalmente, `valores` para preencher parâmetros de caminho (ex.: `{id: \"abc\"}`) " +
       "e `filtros` para adicionar parâmetros de query. Devolve o campo `data` da resposta " +
-      "e `cortado: true` se o conteúdo foi truncado ao limite de 24 KB. Recusa portas " +
-      "proibidas, inexistentes ou sem GET.",
+      "e `cortado: true` se o conteúdo foi truncado ao limite de 24 KB — nesse caso, use um " +
+      "filtro (`procurar_porta` diz quais a porta aceita) ou `campos` (lista das colunas que " +
+      "você precisa, ex.: [\"title\",\"status\",\"value_cents\"]; cada linha volta só com elas) " +
+      "em vez de concluir pelo pedaço. " +
+      "Recusa portas proibidas, inexistentes ou sem GET (`porta_proibida`). Se a porta " +
+      "responder erro, devolve `porta_respondeu_erro` com o código e a mensagem dela: corrija " +
+      "o pedido (valores, filtros) e tente de novo; isso não é bloqueio.",
     inputSchema: esquemaDeEntrada,
     execute: protegida("ler_porta", esquemaDeEntrada, (e) => lerPorta(entrada, e)),
   });

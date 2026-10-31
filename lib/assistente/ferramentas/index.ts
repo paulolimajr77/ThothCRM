@@ -16,12 +16,15 @@
  * organização e o papel DA SESSÃO (nunca do corpo) e um coletor novo por
  * turno; no fim lê o coletor — as métricas que devolveram dado (auditoria) e
  * os botões que o chat mostra. Nenhum `inputSchema` aceita organização, papel,
- * usuário, URL, caminho ou SQL: isso vem do contexto/catálogo, não do modelo.
+ * usuário, URL ou caminho: isso vem do contexto/catálogo, não do modelo. A ÚNICA exceção é o SQL de
+ * `consultar_dados` (gerente e administrador), cercado pelo banco: `lib/assistente/consulta-livre/`.
  */
 import type { ToolSet } from "ai";
 
 import { criarAuditarEmpresa } from "./auditar-empresa";
+import { criarConsultarDados, criarDicionarioDeDados } from "./consultar-dados";
 import { criarConsultarMetrica } from "./consultar-metrica";
+import { criarLerFormatoDaPorta } from "./ler-formato-da-porta";
 import { criarLerGuia } from "./ler-guia";
 import { criarListarMetricas } from "./listar-metricas";
 import { criarLerPorta } from "./ler-porta";
@@ -29,6 +32,7 @@ import { criarMontarPacoteDoNicho } from "./montar-pacote-do-nicho";
 import { criarProcurarPorta } from "./procurar-porta";
 import { criarProporMudanca } from "./propor-mudanca";
 import { criarAbrirTela, criarListarTelas } from "./telas";
+import { criarConferirAgente } from "./conferir-agente";
 import { criarTestarAgente } from "./testar-agente";
 import type { EntradaDasFerramentas } from "./tipos";
 
@@ -40,8 +44,12 @@ export {
   type SkillDoAssistente,
 } from "./tipos";
 
-/** O teto do laço de chamadas de ferramenta num turno (o knob do turno, nunca constante solta). */
-export const MAXIMO_DE_PASSOS_DO_ASSISTENTE = 15;
+/**
+ * O teto do laço de chamadas de ferramenta num turno (o knob do turno, nunca constante solta).
+ * 20: um turno normal usa de 8 a 10 passos; "monte a oficina inteira" gastou os 15 só lendo e propondo
+ * (medido no espelho em 30/10). Passou de 25 para 15 e voltou a subir porque o corte escondia o que faltava.
+ */
+export const MAXIMO_DE_PASSOS_DO_ASSISTENTE = 20;
 
 export function montarFerramentasDoAssistente(entrada: EntradaDasFerramentas): ToolSet {
   const leitura = {
@@ -51,6 +59,7 @@ export function montarFerramentasDoAssistente(entrada: EntradaDasFerramentas): T
     abrir_tela: criarAbrirTela(entrada),
     ler_guia: criarLerGuia(entrada),
     ler_porta: criarLerPorta(entrada),
+    ler_formato_da_porta: criarLerFormatoDaPorta(entrada),
     procurar_porta: criarProcurarPorta(entrada),
     auditar_empresa: criarAuditarEmpresa(entrada),
   };
@@ -61,11 +70,21 @@ export function montarFerramentasDoAssistente(entrada: EntradaDasFerramentas): T
   } catch {
     papel = null;
   }
-  if (papel !== "admin") return leitura;
+  // Análise livre dos dados (SQL só de leitura, cercado pelo banco): gerente e administrador.
+  const comAnalise =
+    papel === "admin" || papel === "manager"
+      ? {
+          ...leitura,
+          dicionario_de_dados: criarDicionarioDeDados(entrada),
+          consultar_dados: criarConsultarDados(entrada),
+        }
+      : leitura;
+  if (papel !== "admin") return comAnalise;
   return {
-    ...leitura,
+    ...comAnalise,
     propor_mudanca: criarProporMudanca(entrada),
     montar_pacote_do_nicho: criarMontarPacoteDoNicho(entrada),
     testar_agente: criarTestarAgente(entrada),
+    conferir_agente: criarConferirAgente(entrada),
   };
 }

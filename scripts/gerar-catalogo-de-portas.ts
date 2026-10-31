@@ -28,6 +28,7 @@ import {
   PORTAS_PROIBIDAS,
   SUFIXOS_PROIBIDOS,
 } from "../lib/assistente/portas/listas";
+import { RESUMOS_ESCRITOS } from "../lib/assistente/portas/resumos-escritos";
 
 const ROOT = process.cwd();
 const API_DIR = path.join(ROOT, "app", "api", "v1");
@@ -63,16 +64,98 @@ function parametrosDe(segmentos: string[]): string[] {
   return out;
 }
 
-// Primeira frase do comentario de cabecalho (bloco /* ... */ no topo).
+const TETO_DO_RESUMO = 240;
+
+// Primeira frase do primeiro comentario de bloco (/** ... */) do arquivo, onde quer que
+// ele esteja antes do codigo da rota (muitas rotas abrem com um import e o comentario vem
+// depois; ler so o topo deixava mais da metade do catalogo sem resumo).
 function resumoDoCabecalho(conteudo: string): string {
-  const m = conteudo.match(/^\s*\/\*\*(?:(?!\*\/).)*\*\//s);
+  const m = conteudo.slice(0, 6000).match(/\/\*\*[\s\S]*?\*\//);
   if (!m) return "";
   let texto = m[0];
   texto = texto.replace(/^\s*\/\*\*\s*/, "").replace(/\*\/\s*$/, "");
-  texto = texto.replace(/^\s*\*\s?/gm, " ").trim();
+  texto = texto.replace(/^\s*\*\s?/gm, " ").replace(/\s+/g, " ").trim();
   const fim = texto.search(/\.(?=\s|$)/);
-  if (fim === -1) return texto;
-  return texto.slice(0, fim + 1).trim();
+  const frase = fim === -1 ? texto : texto.slice(0, fim + 1).trim();
+  return frase.length > TETO_DO_RESUMO ? frase.slice(0, TETO_DO_RESUMO).trim() : frase;
+}
+
+// Como a pessoa chama cada pedaco de caminho. Palavra fora da lista fica como esta.
+const PEDACOS_EM_PORTUGUES: Readonly<Record<string, string>> = {
+  agents: "agentes de IA",
+  versions: "versões",
+  publish: "publicar",
+  pause: "pausar",
+  duplicate: "duplicar",
+  test: "testar",
+  proposals: "propostas",
+  "followup-flows": "fluxos de follow-up",
+  followups: "follow-ups",
+  enrollments: "inscrições",
+  knowledge: "base de conhecimento",
+  sources: "fontes de material",
+  memory: "memória da empresa",
+  routers: "roteadores",
+  "channel-sessions": "canais de WhatsApp (números)",
+  pipelines: "funis",
+  leads: "negócios (cards do funil)",
+  contacts: "contatos (clientes)",
+  conversations: "conversas",
+  messages: "mensagens",
+  agenda: "agenda",
+  agendamentos: "agendamentos",
+  servicos: "serviços",
+  tipos: "tipos",
+  team: "equipe",
+  attendants: "atendentes",
+  financeiro: "financeiro",
+  comandas: "comandas",
+  compras: "compras",
+  campaigns: "campanhas",
+  templates: "modelos",
+  modelos: "modelos",
+  tags: "etiquetas",
+  stages: "etapas",
+  metrics: "métricas",
+  providers: "provedores de IA (chaves)",
+  jev: "Jev",
+  mapas: "mapas",
+  budget: "orçamento de IA",
+  inbox: "central de avisos",
+  cases: "casos",
+  "guardrail-layers": "camadas de proteção",
+  reindex: "reindexar",
+  upload: "enviar arquivo",
+  busca: "busca",
+  products: "produtos",
+  settings: "configurações",
+  organization: "organização",
+  tasks: "tarefas",
+  activities: "atividades",
+  timeline: "histórico",
+  links: "vínculos",
+  vinculos: "vínculos",
+  import: "importar",
+  export: "exportar",
+  bulk: "em lote",
+};
+
+const VERBOS_EM_PORTUGUES: Readonly<Record<string, string>> = {
+  GET: "consulta",
+  POST: "cria ou executa",
+  PATCH: "altera",
+  PUT: "substitui",
+  DELETE: "remove",
+};
+
+// Ultimo recurso, para a rota sem comentario: o que o CAMINHO diz, em portugues.
+function resumoDoCaminho(segmentos: string[], metodos: Metodo[]): string {
+  const pedacos = segmentos
+    .filter((s) => !/^\[.+\]$/.test(s))
+    .map((s) => PEDACOS_EM_PORTUGUES[s] ?? s.replace(/-/g, " "));
+  if (pedacos.length === 0) return "";
+  const verbos = metodos.map((m) => VERBOS_EM_PORTUGUES[m]).filter(Boolean).join(" / ");
+  return `${verbos}: ${pedacos.join(" › ")}.`;
 }
 
 interface Porta {
@@ -109,7 +192,9 @@ function lerPorta(arquivoAbsoluto: string): Porta | null {
     metodos,
     parametros: parametrosDe(segmentos),
     area: areaDe(segmentos),
-    resumo: resumoDoCabecalho(conteudo),
+    resumo:
+      RESUMOS_ESCRITOS[idDe(segmentos)] ??
+      (resumoDoCabecalho(conteudo) || resumoDoCaminho(segmentos, metodos)),
   };
 }
 

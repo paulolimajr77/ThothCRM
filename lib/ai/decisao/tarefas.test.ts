@@ -27,6 +27,7 @@ import {
   TAREFA_DO_PEDIDO_DE_HUMANO,
   TAREFA_DO_PEDIDO_PARA_PARAR,
   TAREFA_DO_FOLLOWUP,
+  TAREFA_DA_PORTA_DO_ASSISTENTE,
   tarefaPodeDecidir,
   tarefaSemFluxo,
   type TarefaDoJev,
@@ -295,10 +296,11 @@ describe("a tarefa do follow-up", () => {
     expect(rotuloDaChamadaDoJev("followup_classify")).toBe(TAREFA_DO_FOLLOWUP.rotulo);
   });
 
-  it("tarefaPodeDecidir: só o follow-up e a conferência de fato não podem", () => {
+  it("tarefaPodeDecidir: só o follow-up, a conferência de fato e a consulta do assistente não podem", () => {
     expect(TAREFAS_DO_JEV.filter((t) => !tarefaPodeDecidir(t)).map((t) => t.id)).toEqual([
       TAREFA_DO_FOLLOWUP.id,
       "afirmacao_de_fato",
+      "porta_do_assistente",
     ]);
   });
 
@@ -346,5 +348,38 @@ describe("a tarefa do follow-up", () => {
       expect(tarefaSemFluxo(TAREFA_DO_FOLLOWUP, true)).toBe(false);
       expect(TAREFAS_DO_JEV.filter((t) => tarefaSemFluxo(t, false)).map((t) => t.id)).toEqual([TAREFA_DO_FOLLOWUP.id]);
     });
+  });
+});
+
+/**
+ * A consulta do assistente (observação): mora no ponto `porta_do_assistente`,
+ * escolhe entre as consultas achadas, cabe no aceite de cada mensagem — então
+ * nasce observando para quem já aceitou o Jev, sem novo aceite — e nunca decide.
+ */
+describe("a tarefa da consulta do assistente", () => {
+  const ligado = (tarefas?: unknown) => config({ ligado: true, aceite: ACEITE, ...(tarefas ? { tarefas } : {}) });
+
+  it("mora no ponto dela, escolhe entre opções, cada mensagem sozinha, e só observa", () => {
+    expect(TAREFA_DA_PORTA_DO_ASSISTENTE).toMatchObject({
+      id: "porta_do_assistente",
+      ponto: "porta_do_assistente",
+      primitiva: "choice",
+      alcance: "mensagem",
+      familia: "novo",
+    });
+    const comoTarefa: TarefaDoJev = TAREFA_DA_PORTA_DO_ASSISTENTE;
+    expect(tarefaPodeDecidir(comoTarefa)).toBe(false);
+    expect(rotuloDaChamadaDoJev("porta_do_assistente")).toBe(TAREFA_DA_PORTA_DO_ASSISTENTE.rotulo);
+  });
+
+  it("nasce observando com o aceite de cada mensagem (sem novo aceite), e desligada com o Jev desligado", () => {
+    expect(estadoEfetivoDaTarefa(ligado(), TAREFA_DA_PORTA_DO_ASSISTENTE)).toBe("observando");
+    expect(tarefaEhNova(ligado(), TAREFA_DA_PORTA_DO_ASSISTENTE)).toBe(true);
+    expect(estadoEfetivoDaTarefa(config({ ligado: false }), TAREFA_DA_PORTA_DO_ASSISTENTE)).toBe("desligada");
+  });
+
+  it("pausada continua pausada, e um `decidindo` gravado vale observando", () => {
+    expect(estadoEfetivoDaTarefa(ligado({ porta_do_assistente: { estado: "desligada" } }), TAREFA_DA_PORTA_DO_ASSISTENTE)).toBe("desligada");
+    expect(estadoEfetivoDaTarefa(ligado({ porta_do_assistente: { estado: "decidindo" } }), TAREFA_DA_PORTA_DO_ASSISTENTE)).toBe("observando");
   });
 });

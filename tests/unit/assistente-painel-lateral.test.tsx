@@ -161,6 +161,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  window.sessionStorage.clear();
   cleanup();
   vi.unstubAllGlobals();
   fetchMock.mockClear();
@@ -219,12 +220,15 @@ describe("(a) o painel sobrevive à troca de página", () => {
     const casca = readFileSync("app/app/_components/AppShell.tsx", "utf8")
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/\/\/.*$/gm, "");
-    const painel = casca.indexOf("<PainelDoAssistente />");
+    const painel = casca.indexOf("assistenteLigado ? <PainelDoAssistente /> : null");
+    // O provedor só existe com o assistente ligado pela plataforma: `ComPainelDoAssistente` o monta ou não.
+    expect(casca).toContain("<AssistentePainelProvider>{children}</AssistentePainelProvider>");
+    expect(casca).toContain("assistenteLigado ? <PainelDoAssistente /> : null");
     const fimDoMain = casca.indexOf("</main>");
     expect(painel, "a casca não monta o painel").toBeGreaterThan(-1);
     expect(painel, "o painel voltou para dentro do <main>").toBeGreaterThan(fimDoMain);
-    expect(casca.indexOf("<AssistentePainelProvider>")).toBeLessThan(casca.indexOf("<TopBar />"));
-    expect(casca.indexOf("</AssistentePainelProvider>")).toBeGreaterThan(painel);
+    expect(casca.indexOf("<ComPainelDoAssistente ligado={assistenteLigado}>")).toBeLessThan(casca.indexOf("<TopBar />"));
+    expect(casca.indexOf("</ComPainelDoAssistente>")).toBeGreaterThan(painel);
     // Chave por caminho desmontaria o painel a cada troca de página.
     expect(casca).not.toMatch(/key=\{[^}]*(pathname|caminho)/);
   });

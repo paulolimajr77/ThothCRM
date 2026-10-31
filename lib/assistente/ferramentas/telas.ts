@@ -103,9 +103,9 @@ const esquemaDeAbrir = z.strictObject({ destino: z.string().max(200) });
 export function criarAbrirTela(entrada: EntradaDasFerramentas): Tool {
   return tool({
     description:
-      "Mostra à pessoa um botão para abrir uma tela do CRM. `destino` é o `destino` EXATO de um item " +
-      "de `listar_telas`. Você não navega: o botão só aparece no chat e a pessoa decide se clica. " +
-      "Use quando a resposta terminar em 'abra tal tela'. No máximo 3 botões por resposta.",
+      "Põe no chat um botão para a pessoa abrir uma tela do CRM (ela clica). `destino` é o `destino` " +
+      "EXATO de um item de `listar_telas`. NÃO leva a pessoa até lá: quando você propõe, cria ou testa " +
+      "algo, a tela dele abre sozinha no momento certo. No máximo 3 telas por resposta.",
     inputSchema: esquemaDeAbrir,
     execute: protegida("abrir_tela", esquemaDeAbrir, async ({ destino }) => {
       const visiveis = await telasVisiveis(entrada.ctx);
@@ -123,7 +123,10 @@ export function criarAbrirTela(entrada: EntradaDasFerramentas): Tool {
           href: tela.href,
         });
       }
-      return { ok: true as const, mensagem: "O botão será mostrado; a pessoa decide se clica." };
+      return {
+        ok: true as const,
+        mensagem: "O botão da tela ficou no chat; a pessoa abre quando quiser.",
+      };
     }),
   });
 }

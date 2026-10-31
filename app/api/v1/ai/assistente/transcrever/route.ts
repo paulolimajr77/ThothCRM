@@ -26,6 +26,7 @@ import { checkRateLimit } from "@/lib/ai/dispatcher/rate-limit";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
+import { recusarSeAssistenteDesligado } from "@/lib/assistente/ligado";
 import {
   MIMES_DE_AUDIO_ACEITOS,
   TAMANHO_MAXIMO_DO_AUDIO,
@@ -50,6 +51,8 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const authz = await requireRole("viewer", { requestId, resource: "assistente" });
   if (!authz.ok) return authz.response;
+  const desligado = await recusarSeAssistenteDesligado(authz.org.orgId, requestId, authz.user.idioma);
+  if (desligado) return desligado;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
   const orgId = authz.org.orgId;
   const userId = authz.user.id;

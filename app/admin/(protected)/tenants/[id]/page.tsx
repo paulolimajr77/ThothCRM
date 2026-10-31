@@ -5,6 +5,8 @@ import {
   type AssinaturaDoCard,
   type PlanoDoCard,
 } from "@/components/admin/tenants/CardDeCobranca";
+import { CardDoAssistente } from "@/components/admin/tenants/CardDoAssistente";
+import { capacidadesDaOrganizacao } from "@/lib/organizacao/capacidades";
 import { provedorDaInstalacao } from "@/lib/cobranca/configuracao";
 import { exigeDocumento, sugestaoDoCadastro } from "@/lib/cobranca/documento";
 import type { ProvedorDeCobranca } from "@/lib/cobranca/vocabulario";
@@ -20,10 +22,14 @@ interface TenantDetailPageProps {
 export default async function TenantDetailPage({ params }: TenantDetailPageProps) {
   const { id } = await params;
   const cobranca = await lerCobrancaDoTenant(id);
+  const assistenteLigado = z.string().uuid().safeParse(id).success
+    ? (await capacidadesDaOrganizacao(createAdminClient(), id)).includes("assistente")
+    : null;
   return (
     <div className="space-y-6">
       <TenantOverviewClient id={id} cobrancaLigada={cobranca !== null} />
       {cobranca && <CardDeCobranca orgId={id} {...cobranca} />}
+      {assistenteLigado !== null && <CardDoAssistente orgId={id} ligadoInicial={assistenteLigado} />}
     </div>
   );
 }

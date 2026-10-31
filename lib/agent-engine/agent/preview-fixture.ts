@@ -114,7 +114,7 @@ export function previewFixtureRegistry() {
       // Ramo do PAR (T17): o pedido "monta o agente da minha clínica" desce
       // até `montar_pacote_do_nicho` de verdade — o dublê só finge o raciocínio
       // do modelo (qual ferramenta chamar, com dados do nicho com prompt
-      // pronto); criar o rascunho, ler de volta e anotar o cartão é a
+      // pronto); PROPOR o rascunho e anotar o cartão da proposta é a
       // ferramenta real, com a sessão do administrador. NUNCA lança.
       const extrairNomeDoAgente = (resultados: unknown[]): string | null => {
         for (const item of resultados) {
@@ -154,8 +154,8 @@ export function previewFixtureRegistry() {
             type: 'text',
             text:
               nome === null
-                ? 'Não consegui criar o rascunho agora — confira o motivo e tente de novo.'
-                : `Criei o rascunho do ${nome}. Confira o cartão abaixo — nada foi publicado.`,
+                ? 'Não consegui propor o rascunho agora — confira o motivo e tente de novo.'
+                : `Propus o rascunho do ${nome}. Confira o cartão abaixo e clique em Aplicar — nada foi criado ainda.`,
           });
         } else if (/fila/i.test(textoDaUltimaMensagemDoUsuario) && temConsulta === true && !consultou) {
           content.push({

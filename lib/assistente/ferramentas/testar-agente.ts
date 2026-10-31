@@ -18,11 +18,14 @@ import { z } from "zod";
 import { chamarRotaPorDentro, type HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
 
 import { protegida } from "./protegida";
-import type { EntradaDasFerramentas } from "./tipos";
+import { avisarTelaDaPorta, avisarTurno, type EntradaDasFerramentas } from "./tipos";
+
+/** Uma ou duas mensagens bastam para ver se o agente atende; mais que isso é gasto sem ganho. */
+export const MAXIMO_DE_MENSAGENS_NO_TESTE = 2;
 
 const esquemaDeEntrada = z.strictObject({
   agente_id: z.string().uuid(),
-  mensagens: z.array(z.string().trim().min(1).max(500)).min(1).max(5),
+  mensagens: z.array(z.string().trim().min(1).max(500)).min(1).max(MAXIMO_DE_MENSAGENS_NO_TESTE),
 });
 
 /** A resposta é longa por natureza; a ferramenta entrega o começo, não tudo. */
@@ -122,16 +125,35 @@ function custoDe(resultados: ResultadoDeTesteDoAgente[]): string {
   );
 }
 
+/** O cartão que fica na conversa: o que foi perguntado, o que o agente respondeu e se passou. */
+function anotarCartaoDeTeste(
+  entrada: EntradaDasFerramentas,
+  versao: number,
+  resultados: ResultadoDeTesteDoAgente[],
+): void {
+  if (resultados.length === 0) return;
+  entrada.coletor.acoes.push({
+    tipo: "teste",
+    versao,
+    resultados: resultados.map((r) => ({
+      mensagem: r.mensagem,
+      resposta: r.resposta,
+      passou: r.passou,
+      simulado: r.simulado,
+      ferramentas: r.ferramentas,
+    })),
+  });
+}
+
 export function criarTestarAgente(entrada: EntradaDasFerramentas): Tool {
   return tool({
     description:
-      "Roda o botão Testar num agente em RASCUNHO: manda até 5 mensagens de exemplo e o " +
+      "Roda o botão Testar num agente em RASCUNHO: manda 1 ou 2 mensagens de exemplo (basta; não use mais) e o " +
       "agente responde de verdade (chama o modelo da empresa e consome crédito), sem WhatsApp " +
       "e sem contato real. Só testa rascunho (o de maior número); versão publicada nunca é " +
-      "testada. `agente_id` e `mensagens` (1 a 5 textos de até 500 caracteres).",
+      "testada. `agente_id` e `mensagens` (1 ou 2 textos de até 500 caracteres). O resultado aparece para a pessoa em um cartão na tela.",
     inputSchema: esquemaDeEntrada,
     execute: protegida("testar_agente", esquemaDeEntrada, async ({ agente_id, mensagens }) => {
-      void entrada;
       // 1. A versão em rascunho de MAIOR número — publicada nunca.
       const respostaVersoes = await chamarRotaPorDentro(
         await handlerDeVersoes(agente_id),
@@ -165,7 +187,9 @@ export function criarTestarAgente(entrada: EntradaDasFerramentas): Tool {
 
       // 2. Uma mensagem por vez, em SEQUÊNCIA; a primeira falha para tudo.
       const resultados: ResultadoDeTesteDoAgente[] = [];
+      avisarTelaDaPorta(entrada.coletor, "ai/agents");
       for (const mensagem of mensagens) {
+        avisarTurno(entrada.coletor, { tipo: "teste_comecou", mensagem });
         const resposta = await chamarRotaPorDentro(
           await handlerDeTeste(agente_id, alvo.id),
           `/api/v1/ai/agents/${agente_id}/versions/${alvo.id}/test`,
@@ -201,7 +225,15 @@ export function criarTestarAgente(entrada: EntradaDasFerramentas): Tool {
           };
         }
         resultados.push(projetado);
+        avisarTurno(entrada.coletor, {
+          tipo: "teste_resultado",
+          mensagem,
+          resposta: projetado.resposta,
+          passou: projetado.passou,
+          simulado: projetado.simulado,
+        });
       }
+      anotarCartaoDeTeste(entrada, alvo.numero, resultados);
 
       return {
         ok: true as const,

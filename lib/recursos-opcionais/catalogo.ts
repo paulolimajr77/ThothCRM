@@ -29,7 +29,7 @@
  * Os textos são a CHAVE em português do dicionário (`lib/i18n/dicionario.ts`);
  * quem desenha passa por `t()`/`traduzir()`.
  */
-import type { Role } from "@/lib/auth/types";
+import { type Role, visibilidadeRestritaAoAtendente } from "@/lib/auth/types";
 import { MODULOS_OPCIONAIS, MODULOS_OPCIONAIS_POR_FLAG, MODULOS_SO_DA_INSTALACAO, type ModuloOpcional } from "@/lib/instalacao/modulos";
 import { NAV_CATALOG, type NavMetadata } from "@/lib/navigation/catalogo";
 import { vendaPeloCanalLigada } from "@/lib/conversoes/venda-pelo-canal";
@@ -133,6 +133,10 @@ const TEXTO_DO_MODULO: Record<ModuloOpcional, { nome: string; oQueFaz: string }>
     nome: "Login do Codex por assinatura",
     oQueFaz:
       "Conecta a assinatura do ChatGPT (o mesmo login do Codex): cada empresa conecta a própria conta, em Credenciais, com a chave de API da mesma empresa como reserva. Desligado por padrão.",
+  },
+  setores: {
+    nome: "Setores de atendimento",
+    oQueFaz: "Agrupa os atendentes da Equipe por área e filtra a aba Atendimento por setor. Não muda quem recebe as conversas.",
   },
 };
 
@@ -330,10 +334,10 @@ const DO_SERVIDOR: RecursoOpcional[] = [
     nome: "Notificação com a aba fechada",
     oQueFaz: "Os alertas chegam na bandeja do computador mesmo com o sistema fechado.",
     nivel: "servidor",
-    padrao: "desligado",
+    padrao: "ligado",
     quemDecide: "dono_do_servidor",
     href: null,
-    comoLigar: "No arquivo de ambiente, o par VAPID_PUBLIC_KEY e VAPID_PRIVATE_KEY.",
+    comoLigar: "Nasce pronto pelo kit de instalação, mas só funciona em endereço com https (em http://IP nenhum navegador entrega o aviso com o sistema fechado). Se aparecer desligado, rode no servidor: bash hostgator-setup-kit/update.sh",
     ler: peloServidor("web_push"),
   },
   {
@@ -378,7 +382,7 @@ const DA_EMPRESA: RecursoOpcional[] = [
     padrao: "desligado",
     quemDecide: "manager",
     href: "/app/settings/atendimento",
-    ler: peloSettings((s) => s.visibility_mode === "own" || s.visibility_mode === "own_and_unassigned"),
+    ler: peloSettings((s) => visibilidadeRestritaAoAtendente(s.visibility_mode)),
   },
   {
     id: "assinatura_do_emissor",
@@ -459,6 +463,17 @@ const DA_EMPRESA: RecursoOpcional[] = [
     quemDecide: "admin",
     href: "/app/settings/tenant/agenda",
     ler: peloSettings((s) => objeto(s.crm)?.cliente_pela_agenda === true),
+  },
+  {
+    id: "cliente_pela_venda",
+    nome: "Quem já comprou volta pelo funil de clientes",
+    oQueFaz:
+      "Contato com negócio ganho e nenhum aberto entra no funil de clientes, não no de captação.",
+    nivel: "organizacao",
+    padrao: "desligado",
+    quemDecide: "admin",
+    href: "/app/settings/atendimento",
+    ler: peloSettings((s) => objeto(s.crm)?.cliente_pela_venda === true),
   },
   {
     id: "colegas_mexem_na_agenda",
@@ -614,6 +629,22 @@ const DA_EMPRESA: RecursoOpcional[] = [
       f.settings === null || f.modulos === null
         ? "nao_lido"
         : capacidadesLigadas(f.settings, f.modulos).includes("propostas")
+          ? "ligado"
+          : "desligado",
+  },
+  {
+    id: "assistente_interno",
+    nome: "Assistente interno de configuração",
+    oQueFaz: "O dono do servidor liga, empresa por empresa, o assistente de IA que propõe a configuração em cartões.",
+    nivel: "organizacao",
+    padrao: "desligado",
+    quemDecide: "dono_do_servidor",
+    href: "/admin/tenants",
+    capacidade: "assistente",
+    ler: (f) =>
+      f.settings === null || f.modulos === null
+        ? "nao_lido"
+        : capacidadesLigadas(f.settings, f.modulos).includes("assistente")
           ? "ligado"
           : "desligado",
   },

@@ -123,7 +123,7 @@ interface BaseProps {
    */
   provedoresOferecidos?: readonly string[];
   channelSessions: ChannelSessionLite[];
-  routerMembership?: { routerId: string; routerName: string } | null;
+  routerMembership?: { routerId: string; routerName: string; channelSessionId: string; channelStatus: string | null } | null;
   readOnly?: boolean;
   organizationTimezone?: string;
 }
@@ -525,7 +525,7 @@ export function AgentForm(props: Props) {
    * chave que tinha acabado de escolher.
    */
   const publishBlockReason = React.useMemo(() => {
-    if (!isEdit) return t("Salve o agent antes de publicar.");
+    if (!isEdit) return t("Salve o agente antes de publicar.");
     const motivo = bloqueioDePublicacao({
       temRascunhoVigente: !!props.draft,
       formularioValido: isValid,
@@ -539,6 +539,9 @@ export function AgentForm(props: Props) {
         estadoDaCredencialDaOrg: credSt,
       },
       numero: { estado: channelSession?.status ?? null },
+      roteador: props.routerMembership
+        ? { estadoDoCanal: props.routerMembership.channelStatus }
+        : null,
     });
     if (!motivo) return null;
     switch (motivo.codigo) {
@@ -614,7 +617,7 @@ export function AgentForm(props: Props) {
           toast.error(res.message ?? `${t("Erro")}: ${res.error}`);
           return;
         }
-        toast.success(t("Agent criado."));
+        toast.success(t("Agente criado."));
         router.push(`/app/ai/agents/${res.data!.agent_id}`);
       }
     } finally {
@@ -748,15 +751,18 @@ export function AgentForm(props: Props) {
         texto da tela, e o `aria-describedby` do botão o anuncia junto do rótulo.
       */}
       {isEdit && publishBlockReason ? (
-        <p
-          id={ID_DO_MOTIVO_DO_PUBLICAR}
-          data-testid={ID_DO_MOTIVO_DO_PUBLICAR}
-          role="status"
-          aria-live="polite"
-          className="-mt-2 text-xs text-muted-foreground"
-        >
-          {publishBlockReason}
-        </p>
+        <div className="rounded-md border border-warning-bg bg-warning-bg/30 px-3 py-2 text-sm font-medium text-warning-fg">
+          <span aria-hidden>{t("Para publicar:")} </span>
+          <p
+            id={ID_DO_MOTIVO_DO_PUBLICAR}
+            data-testid={ID_DO_MOTIVO_DO_PUBLICAR}
+            role="status"
+            aria-live="polite"
+            className="inline"
+          >
+            {publishBlockReason}
+          </p>
+        </div>
       ) : null}
 
       {/*
@@ -969,7 +975,7 @@ export function AgentForm(props: Props) {
                   >
                     «{props.routerMembership.routerName}»
                   </Link>{" "}
-                  {t("— o campo de número abaixo não se aplica.")}
+                  {t("— a publicação usa o canal do roteador, sem número próprio neste especialista.")}
                 </p>
               </div>
             )}
@@ -1011,7 +1017,7 @@ export function AgentForm(props: Props) {
                 travava o botão de salvar — o dono de uma instalação nova escrevia
                 o prompt inteiro e não conseguia guardar nada.
               */}
-              {!form.channel_session_id ? (
+              {!form.channel_session_id && !props.routerMembership ? (
                 <p className="text-xs text-muted-foreground">
                   {props.channelSessions.length === 0 ? (
                     <>
@@ -1271,6 +1277,7 @@ export function AgentForm(props: Props) {
               onChange={(v) => patch({ trigger_config: v })}
               disabled={disabled}
               organizationTimezone={props.organizationTimezone}
+              funis={props.funis}
             />
           </Card>
 
@@ -1444,11 +1451,17 @@ export function AgentForm(props: Props) {
           )}
 
           {/* Servidor MCP externo no atendimento (#2147). Só admin vê e
-              grava; salva em `ai_agents.config.mcp_externo_no_atendimento`. */}
+              grava; salva em `ai_agents.config.mcp_externo_no_atendimento`.
+              A ESCOLHA das ferramentas do servidor (#3586) vai para o
+              `tool_ids` da versão, pelo mesmo salvar do resto do formulário —
+              por isso o cartão recebe o valor e o setter do formulário, como o
+              `ToolPicker` acima. */}
           {isEdit && !readOnly && (
             <ServidorExternoNoAtendimento
               agentId={props.agent.id}
               inicial={(props.agent.config ?? {}).mcp_externo_no_atendimento}
+              toolIds={form.tool_ids}
+              onChangeToolIds={(ids) => patch({ tool_ids: ids })}
               disabled={disabled}
             />
           )}

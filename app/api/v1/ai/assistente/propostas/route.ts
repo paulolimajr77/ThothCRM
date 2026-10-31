@@ -21,7 +21,7 @@
  *     `method`, `metodo`) em qualquer nível do `payload` é recusada: o destino
  *     é do código (`operacoes.ts`), nunca do dado.
  *  4. (POST) O INSERT usa o cliente da SESSÃO (`createClient`), nunca o de
- *     serviço: é a RLS da 9002 que prende `requested_by = auth.uid()`,
+ *     serviço: é a RLS da 8002 que prende `requested_by = auth.uid()`,
  *     `status = 'pendente'` e o papel admin. `organization_id` sai da sessão;
  *     se vier no corpo, o esquema estrito recusa. O `risk` sai do código, por
  *     tipo. (GET) O select também é pelo cliente da SESSÃO — a RLS já limita
@@ -39,7 +39,8 @@ import { z } from "zod";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
-import { destinoDaOperacao, riscoDoTipo } from "@/lib/assistente/propostas/operacoes";
+import { recusarSeAssistenteDesligado } from "@/lib/assistente/ligado";
+import { destinoDaOperacao, riscoDaProposta } from "@/lib/assistente/propostas/operacoes";
 import {
   COLUNAS_DA_PROPOSTA,
   dadosDaProposta,
@@ -73,6 +74,8 @@ export async function GET(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
   const authz = await requireRole("admin", { requestId, resource: "assistente_propostas" });
   if (!authz.ok) return authz.response;
+  const desligado = await recusarSeAssistenteDesligado(authz.org.orgId, requestId, authz.user.idioma);
+  if (desligado) return desligado;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
   const orgId = authz.org.orgId;
 
@@ -85,7 +88,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   }
   const { status, limit, cursor } = parsed.data;
 
-  // Leitura pelo cliente da SESSÃO: a RLS da 9002 só deixa admin ler, e o
+  // Leitura pelo cliente da SESSÃO: a RLS da 8002 só deixa admin ler, e o
   // filtro de organização é redundância defensiva — nunca da query string.
   const supabase = await createClient();
   let consulta = supabase
@@ -141,6 +144,8 @@ export async function POST(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
   const authz = await requireRole("admin", { requestId, resource: "assistente_propostas" });
   if (!authz.ok) return authz.response;
+  const desligado = await recusarSeAssistenteDesligado(authz.org.orgId, requestId, authz.user.idioma);
+  if (desligado) return desligado;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
   const orgId = authz.org.orgId;
   const userId = authz.user.id;
@@ -209,7 +214,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       thread_id: proposta.thread_id ?? null,
       turn_id: proposta.turn_id ?? null,
       kind: proposta.kind,
-      risk: riscoDoTipo(proposta.kind),
+      risk: riscoDaProposta(proposta.kind, proposta.payload),
       resumo: proposta.resumo,
       motivo: proposta.motivo,
       antes: proposta.antes ?? null,

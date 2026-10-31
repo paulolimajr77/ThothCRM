@@ -20,6 +20,7 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
 import { checkRateLimit } from "@/lib/ai/dispatcher/rate-limit";
 import { TAMANHO_MAXIMO_DO_AUDIO } from "@/lib/assistente/transcricao/limites";
 
+vi.mock("@/lib/assistente/ligado", () => ({ recusarSeAssistenteDesligado: vi.fn(async () => null) }));
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/impersonate/support", () => ({ requireSupportWrite: vi.fn(async () => null) }));
 vi.mock("@/lib/audit", () => ({ audit: vi.fn(async () => undefined) }));

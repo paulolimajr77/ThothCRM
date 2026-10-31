@@ -12,6 +12,7 @@ import { fail } from "@/lib/api/wrappers";
 import type { AuthUser } from "@/lib/auth/types";
 
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: vi.fn() }));
+vi.mock("@/lib/assistente/ligado", () => ({ recusarSeAssistenteDesligado: vi.fn(async () => null) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 
 const { GET: GET_THREADS } = await import("@/app/api/v1/ai/assistente/threads/route");

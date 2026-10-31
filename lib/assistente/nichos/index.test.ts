@@ -219,3 +219,20 @@ describe("NICHOS_DO_ASSISTENTE — campos cobre os marcadores do esqueleto", () 
     }
   });
 });
+
+describe("NICHOS_DO_ASSISTENTE — propostasComerciais por nicho", () => {
+  it("todo nicho declara propostasComerciais booleano", () => {
+    for (const nicho of NICHOS_DO_ASSISTENTE) {
+      expect(typeof nicho.propostasComerciais, `propostasComerciais de ${nicho.id}`).toBe("boolean");
+    }
+  });
+
+  it("clinica tem propostasComerciais false; os demais, true", () => {
+    const clinica = nichoPorId("clinica");
+    expect(clinica?.propostasComerciais).toBe(false);
+    for (const nicho of NICHOS_DO_ASSISTENTE) {
+      if (nicho.id === "clinica") continue;
+      expect(nicho.propostasComerciais, `propostasComerciais de ${nicho.id}`).toBe(true);
+    }
+  });
+});

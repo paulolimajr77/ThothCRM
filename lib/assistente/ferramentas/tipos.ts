@@ -31,7 +31,39 @@ export interface CartaoDeArtefato {
 }
 
 /** O botão existente continua exatamente como é; o cartão é o segundo tipo. */
-export type AcaoDoChat = AcaoDeTela | CartaoDeArtefato | CartaoDeProposta | CartaoDeCheckup;
+export type AcaoDoChat =
+  | AcaoDeTela
+  | CartaoDeArtefato
+  | CartaoDeProposta
+  | CartaoDeCheckup
+  | CartaoDeTeste;
+
+/**
+ * O resultado de um teste interno de agente, para a pessoa VER o que aconteceu:
+ * o que foi perguntado, o que o agente respondeu e se passou. Só texto curto;
+ * nenhum id, trace ou prompt (a projeção vem de `testar-agente.ts`).
+ */
+export interface CartaoDeTeste {
+  tipo: "teste";
+  versao: number;
+  resultados: {
+    mensagem: string;
+    resposta: string;
+    passou: boolean;
+    simulado: boolean;
+    ferramentas: string[];
+  }[];
+}
+
+/**
+ * Algo que aconteceu DURANTE o turno e que a pessoa deve ver já, sem esperar a
+ * resposta final: abrir a tela em que o assistente está mexendo, o teste que
+ * começou e o resultado dele. Vive só na memória do servidor (`progresso-do-turno.ts`).
+ */
+export type EventoDoTurno =
+  | { tipo: "tela"; href: string; rotulo: string }
+  | { tipo: "teste_comecou"; mensagem: string }
+  | { tipo: "teste_resultado"; mensagem: string; resposta: string; passou: boolean; simulado: boolean };
 
 /** O botão de tela e o cartão de rascunho: as ações que a tela desenha COMO LINK. */
 export type AcaoComLink = AcaoDeTela | CartaoDeArtefato;
@@ -63,6 +95,17 @@ export interface CartaoDeCheckup {
 export interface ColetorDoTurno {
   metricas: string[];
   acoes: AcaoDoChat[];
+  /** Avisa a tela, em tempo real, do que acabou de acontecer (opcional: sem ele nada quebra). */
+  aoOcorrer?: (evento: EventoDoTurno) => void;
+}
+
+/** Nunca lança: aviso ao vivo é cortesia, não pode derrubar o turno. */
+export function avisarTurno(coletor: ColetorDoTurno, evento: EventoDoTurno): void {
+  try {
+    coletor.aoOcorrer?.(evento);
+  } catch {
+    /* sem aviso ao vivo, o resultado final continua chegando */
+  }
 }
 
 export function criarColetorDoTurno(): ColetorDoTurno {
@@ -95,6 +138,25 @@ export function anotarCartaoDeArtefato(
     rotulo: traduzir(ROTULO_DO_CARTAO[cartao.artefato], idioma),
     href: cartao.href,
   });
+  avisarTurno(coletor, { tipo: "tela", href: cartao.href, rotulo: cartao.nome.slice(0, 120) });
+}
+
+/**
+ * A tela em que o TRABALHO de uma porta acontece. O href vem desta tabela fixa (catálogo de navegação),
+ * nunca do texto do modelo; porta sem tela própria não move a pessoa.
+ */
+const TELAS_DAS_PORTAS: { prefixo: string; href: string; rotulo: string }[] = [
+  { prefixo: "ai/followup-flows", href: "/app/ai/followups", rotulo: "Follow-ups" },
+  { prefixo: "ai/routers", href: "/app/ai/routers", rotulo: "Roteadores" },
+  { prefixo: "ai/knowledge", href: "/app/ai/knowledge/sources", rotulo: "Material de conhecimento" },
+  { prefixo: "ai/agents", href: "/app/ai/agents", rotulo: "Agentes" },
+  { prefixo: "pipelines", href: "/app/kanban", rotulo: "Funis" },
+];
+
+/** Leva a pessoa à tela da porta no MOMENTO em que o trabalho nela acontece (não antes, não depois). */
+export function avisarTelaDaPorta(coletor: ColetorDoTurno, porta: string): void {
+  const tela = TELAS_DAS_PORTAS.find((t) => porta === t.prefixo || porta.startsWith(`${t.prefixo}/`));
+  if (tela) avisarTurno(coletor, { tipo: "tela", href: tela.href, rotulo: tela.rotulo });
 }
 
 /** O que `loadSkills` devolve, já filtrado por quem chama (`name` começa com "assistente-"). */
@@ -110,6 +172,8 @@ export function anotarCartaoDeProposta(coletor: ColetorDoTurno, id: string): voi
 export interface TurnoDoChat {
   threadId: string;
   turnId: string;
+  /** O texto que a PESSOA escreveu neste turno (nunca o de uma ferramenta): é contra ele que o pedido expresso é conferido. */
+  pergunta?: string;
 }
 
 export interface EntradaDasFerramentas {
@@ -122,6 +186,14 @@ export interface EntradaDasFerramentas {
    * turno. Ausente (teste, outro chamador), a proposta nasce sem vínculo.
    */
   turno?: TurnoDoChat;
+  /**
+   * A pessoa é admin PLENO da plataforma (`escreveComoPlatformAdmin`), lido da
+   * sessão pela rota do chat — nunca do modelo. Só com isso (e `admin` da
+   * organização) entram as ferramentas de modelo de cliente. Ausente = não.
+   */
+  adminDaPlataforma?: boolean;
+  /** O usuário da SESSÃO (nunca do modelo): é com a identidade dele que `consultar_dados` roda a RLS. */
+  usuarioId?: string;
 }
 
 /** O que uma ferramenta devolve quando não pôde trabalhar — sem a mensagem do erro. */

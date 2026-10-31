@@ -26,6 +26,7 @@ import { metricaLeadsPorOrigem } from "./adaptadores/leads_por_origem";
 import { metricaPropostasAceitasPorProduto } from "./adaptadores/propostas_aceitas_por_produto";
 import { metricaAnunciosMeta } from "./adaptadores/anuncios_meta";
 import { metricaConversoesEnviadas } from "./adaptadores/conversoes_enviadas";
+import { metricaTempoAtePrimeiroValor } from "./adaptadores/tempo_ate_primeiro_valor";
 import { estadoDoModulo, moduloLigado } from "./modulos";
 import type { ContextoDeConsulta, DefinicaoDeMetrica, Papel, ResultadoDeMetrica } from "./tipos";
 
@@ -48,6 +49,7 @@ export const METRICAS: readonly DefinicaoDeMetrica<unknown>[] = [
   metricaPropostasAceitasPorProduto,
   metricaAnunciosMeta,
   metricaConversoesEnviadas,
+  metricaTempoAtePrimeiroValor,
 ];
 
 const mapaDasMetricas = new Map(METRICAS.map((def) => [def.id, def]));

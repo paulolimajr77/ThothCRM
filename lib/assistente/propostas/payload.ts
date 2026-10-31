@@ -21,7 +21,7 @@
 import { z } from "zod";
 
 import { ehProvedorSuportado } from "@/lib/ai/pontos/provedores";
-import { escritaPermitida } from "@/lib/assistente/portas/regras";
+import { corpoVazioRecusado, escritaPermitida } from "@/lib/assistente/portas/regras";
 
 import type { TipoDeProposta } from "./tipos";
 
@@ -234,6 +234,9 @@ const esquemaDeAcao = z.strictObject({
 }).refine(
   (dados) => escritaPermitida(dados.porta, dados.metodo),
   { message: "A porta não libera esse método de escrita.", path: ["porta"] },
+).refine(
+  (dados) => !corpoVazioRecusado(dados.porta, dados.metodo, dados.corpo),
+  { message: "Esta porta precisa dizer o que escrever: o corpo veio vazio.", path: ["corpo"] },
 );
 
 /** O esquema do `payload` de cada tipo de proposta. */

@@ -361,7 +361,7 @@ export const PONTOS_DE_IA: readonly PontoDeIa[] = [
     id: "assistente_chat",
     rotulo: "Conversar com o assistente da empresa",
     oQueFaz:
-      "Responde a perguntas de gestores e equipe sobre a operação — números, telas e guias — consultando só dados agregados pelas métricas oficiais. Para o administrador, monta rascunhos do agente e dos follow-ups e testa — sem publicar nada. Nunca fala com o cliente.",
+      "Responde a perguntas da equipe sobre a operação lendo as mesmas telas que ela vê — contatos, negócios, agenda, equipe, números e guias. Para o administrador, propõe mudanças (criar ou ajustar agente, follow-up, funil) e só aplica depois do sim dele. Nunca fala com o cliente, não envia mensagem nem apaga nada.",
     papel: "melhorar",
     // O ponto roda COM FERRAMENTAS (o catálogo de métricas da F1b): sem
     // `tools: true`, a tela aceitaria um modelo sem tool calling e o turno
@@ -372,6 +372,26 @@ export const PONTOS_DE_IA: readonly PontoDeIa[] = [
     sintomaDeFalha:
       "Quem pergunta ao assistente não recebe a análise com inteligência: o chat volta às respostas prontas dos guias e a pessoa precisa consultar as telas por conta própria.",
     registraEm: "llm_calls",
+  },
+  {
+    // A escolha da consulta do assistente (observação): o Jev é quem responde
+    // aqui, e a credencial é a que resolve. Só observa — o que o assistente
+    // devolve não muda, e o ponto grava só a comparação com a busca por palavra.
+    id: "porta_do_assistente",
+    rotulo: "Escolher a consulta que o assistente usa",
+    oQueFaz:
+      "Lê a pergunta que a equipe fez ao assistente e escolhe, entre as consultas que a busca por palavra achou, a que serve para respondê-la. Nesta versão só observa: nada muda no que o assistente responde.",
+    papel: "entender",
+    exige: {},
+    emissor: "lib/ai/decisao/porta-do-assistente.ts",
+    sintomaDeFalha:
+      "Nada muda para quem pergunta ao assistente: a escolha da consulta continua pela busca por palavra, e só deixa de se medir se ela acerta.",
+    registraEm: "llm_calls",
+    decisaoRapida: {
+      primitiva: "choice",
+      oQueOJevFaz:
+        "Lê a pergunta que a equipe fez ao assistente e escolhe, entre as consultas que a busca por palavra achou, a que serve para respondê-la. Nesta versão só observa: nada muda no que o assistente responde.",
+    },
   },
   {
     id: "sentiment_classify",
@@ -583,7 +603,7 @@ export const PONTOS_DE_IA: readonly PontoDeIa[] = [
     emissor: "lib/messaging/media/transcription.ts",
     fixo: {
       razao:
-        "Este ponto não tem modelo escolhido no painel: quem ouve o áudio é a escada de transcrição, e ela decide a cada nota de voz. Primeiro o serviço desta instalação (TRANSCRIPTION_API_KEY); na falta dele, a chave OpenAI com o modelo de transcrição de sempre (whisper-1, ou o que TRANSCRIPTION_MODEL trouxer); e quando não há chave OpenAI nenhuma, o modelo de conversa da organização — desde que ele declare a capacidade de áudio, que é como uma organização só com Gemini transcreve. Sem nenhum dos três, o áudio não vira texto, e o motivo aparece aqui. Por isso fixar um provedor aqui apagaria os degraus seguintes.",
+        "Este ponto não tem modelo escolhido no painel: quem ouve o áudio é a escada de transcrição, e ela decide a cada nota de voz. Primeiro o serviço desta instalação (TRANSCRIPTION_API_KEY); na falta dele, a chave OpenAI com o modelo de transcrição de sempre (whisper-1, ou o que TRANSCRIPTION_MODEL trouxer); se a conversa da organização for OpenRouter, a própria OpenRouter transcreve com a mesma chave; e quando não há chave OpenAI nenhuma, o modelo de conversa da organização — desde que ele declare a capacidade de áudio, que é como uma organização só com Gemini transcreve. Sem nenhum dos quatro, o áudio não vira texto, e o motivo aparece aqui. Por isso fixar um provedor aqui apagaria os degraus seguintes.",
       // ⚠️ POR QUE NÃO HÁ MAIS um par fixo (provider "openai" + "whisper-1")
       // neste ponto (#2190): o objeto `fixo` vive sem o campo que declarava
       // esse par.

@@ -20,6 +20,8 @@
  * O risco (`seguro`/`atencao`) é decidido por TIPO, aqui, pelo código — nunca
  * pelo modelo.
  */
+import { ESCRITA_PERMITIDA } from "@/lib/assistente/portas/listas";
+
 import type { RiscoDaProposta, TipoDeProposta } from "./tipos";
 
 export interface DestinoDaOperacao {
@@ -125,6 +127,19 @@ export const RISCO_POR_TIPO: Readonly<Record<TipoDeProposta, RiscoDaProposta>> =
 
 export function riscoDoTipo(tipo: TipoDeProposta): RiscoDaProposta {
   return RISCO_POR_TIPO[tipo];
+}
+
+/**
+ * O risco gravado na proposta. Para `acao` (o caminho genérico das portas), o
+ * tipo sozinho diria sempre `atencao`: o risco sai da entrada da porta em
+ * `ESCRITA_PERMITIDA` (lista fechada no código). Medido no espelho (29/10/2026):
+ * "guarde na memória" virou `acao` de atenção e o lote das seguras nunca aparecia.
+ */
+export function riscoDaProposta(tipo: TipoDeProposta, payload: unknown): RiscoDaProposta {
+  if (tipo !== "acao") return riscoDoTipo(tipo);
+  const p = payload !== null && typeof payload === "object" ? (payload as { porta?: unknown; metodo?: unknown }) : {};
+  const entrada = ESCRITA_PERMITIDA.find((e) => e.porta === p.porta && e.metodo === p.metodo);
+  return entrada?.risco ?? riscoDoTipo(tipo);
 }
 
 /** O destino de uma (tipo, operação), ou `null` se a combinação não existe. */

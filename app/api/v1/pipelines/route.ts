@@ -20,6 +20,9 @@ import {
   validarNomeDeFunil,
   type FunilEditavel,
 } from "@/lib/pipelines/pipeline-editing";
+import { diffParaUpdates, validarMapeamento } from "@/lib/leads/agent-mapping";
+import { chaveDeNome, slugDeNome } from "@/lib/leads/stage-editing";
+import { pipelineConfigPatchSchema } from "@/lib/schemas/settings";
 import { createClient } from "@/lib/supabase/server";
 import { conflitoDoBanco, corpo, lerFunis } from "./_funis";
 import { listPipelinesHandler } from "./_handler";
@@ -29,7 +32,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
   const requestId = randomUUID();
-  const authz = await requireRole("manager", { requestId, resource: "pipelines" });
+  // Leitura da configuração vale para a equipe toda; criar e alterar seguem no papel de cima
+  // (decisão do Paulo, 29/10/2026). A RLS de SELECT já era por organização.
+  const authz = await requireRole("viewer", { requestId, resource: "pipelines" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
 
@@ -48,16 +53,103 @@ export async function GET(): Promise<Response> {
 
 // `.max(80)`: o nome é o título de uma linha da lista e o topo do quadro, não um
 // parágrafo. O banco não limita, mas a tela quebra muito antes disso.
+//
+// `stages` (opcional): o funil nasce com ESTAS etapas em vez das iniciais — é
+// como um modelo de cliente traz o funil inteiro numa escrita só. A régua é a
+// dos índices do banco: no máximo uma etapa de ganho e uma de perda, e ao menos
+// uma etapa aberta para o negócio entrar.
+const etapaDoCorpoSchema = z
+  .object({
+    name: z.string().trim().min(1).max(60),
+    is_won: z.boolean().optional(),
+    is_lost: z.boolean().optional(),
+    // A ordem já é a do array; quem manda `position` por hábito não leva 422.
+    position: z.number().optional(),
+    // O que a tela de etapas também configura por coluna (mesmas réguas do PATCH da etapa).
+    win_probability: z.number().int().min(0).max(100).nullable().optional(),
+    expected_duration_hours: z.number().int().min(1).max(8760).nullable().optional(),
+    avisar_na_central: z.boolean().optional(),
+  })
+  .strict();
+
 const bodySchema = z
   .object({
     name: z.string().min(1).max(80),
     description: z.string().max(280).nullable().optional(),
+    // `config` (opcional): a configuração do funil (campos personalizados, motivos
+    // de ganho e perda, vocabulário...) gravada na mesma escrita, com a MESMA régua
+    // de `PATCH /pipelines/[id]/config`. Funil e configuração num cartão só.
+    config: pipelineConfigPatchSchema.optional(),
+    // "Para onde o card vai em cada passo": cada passo do atendimento do agente →
+    // NOME da etapa (as etapas ainda não têm id). `null` = não mover.
+    agent_mapping: z
+      .record(z.string(), z.string().min(1).nullable())
+      .optional(),
+    // Forma que quem monta o funil escreve por instinto (a mesma do banco):
+    // `settings` com os campos/motivos e `vocabulary` ao lado. Aceitas como
+    // sinônimo de `config`; se vierem os dois, `config` vence em cada chave.
+    settings: pipelineConfigPatchSchema.omit({ vocabulary: true }).optional(),
+    vocabulary: pipelineConfigPatchSchema.shape.vocabulary,
+    stages: z
+      .array(etapaDoCorpoSchema)
+      .min(2)
+      .max(30)
+      .optional()
+      .superRefine((etapas, ctx) => {
+        if (!etapas) return;
+        const erro = (message: string) => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+        if (etapas.some((e) => e.is_won && e.is_lost)) erro("Uma etapa não pode ser de ganho e de perda.");
+        if (etapas.filter((e) => e.is_won).length > 1) erro("Só uma etapa pode ser de ganho.");
+        if (etapas.filter((e) => e.is_lost).length > 1) erro("Só uma etapa pode ser de perda.");
+        if (!etapas.some((e) => !e.is_won && !e.is_lost)) erro("O funil precisa de uma etapa aberta.");
+        const chaves = etapas.map((e) => chaveDeNome(e.name));
+        if (new Set(chaves).size !== chaves.length) erro("Duas etapas com o mesmo nome.");
+      }),
   })
   .strict();
 
+type EtapaDoCorpo = z.infer<typeof etapaDoCorpoSchema>;
+
 /** As etapas com que o funil nasce, já com a régua de posição do board. */
-function etapasIniciais(orgId: string, pipelineId: string) {
-  return ETAPAS_INICIAIS.map((etapa, i) => ({
+function etapasIniciais(orgId: string, pipelineId: string, pedidas?: EtapaDoCorpo[]) {
+  const slugs: string[] = [];
+  const etapas = pedidas
+    ? pedidas.map((e) => {
+        const slug = slugDeNome(e.name, slugs);
+        slugs.push(slug);
+        return {
+          name: e.name,
+          slug,
+          is_won: e.is_won === true,
+          is_lost: e.is_lost === true,
+          win_probability: e.win_probability ?? null,
+          expected_duration_hours: e.expected_duration_hours ?? null,
+          avisar_na_central: e.avisar_na_central === true,
+        };
+      })
+    : ETAPAS_INICIAIS.map((e) => ({ ...e, win_probability: null, expected_duration_hours: null, avisar_na_central: false }));
+  // Funil sem etapa de ganho (ou de perda) não consegue fechar negócio: completa
+  // com as etapas padrão, nos nomes de sempre, ao fim da lista.
+  if (pedidas) {
+    for (const [campo, nome] of [
+      ["is_won", "Ganho"],
+      ["is_lost", "Perdido"],
+    ] as const) {
+      if (etapas.some((e) => e[campo])) continue;
+      const slug = slugDeNome(nome, slugs);
+      slugs.push(slug);
+      etapas.push({
+        name: nome,
+        slug,
+        is_won: campo === "is_won",
+        is_lost: campo === "is_lost",
+        win_probability: null,
+        expected_duration_hours: null,
+        avisar_na_central: false,
+      });
+    }
+  }
+  return etapas.map((etapa, i) => ({
     organization_id: orgId,
     pipeline_id: pipelineId,
     name: etapa.name,
@@ -65,6 +157,9 @@ function etapasIniciais(orgId: string, pipelineId: string) {
     position: (i + 1) * 1000,
     is_won: etapa.is_won,
     is_lost: etapa.is_lost,
+    win_probability: etapa.win_probability,
+    expected_duration_hours: etapa.expected_duration_hours,
+    avisar_na_central: etapa.avisar_na_central,
   }));
 }
 
@@ -87,7 +182,16 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
-    return fail("unprocessable_entity", t("Dê um nome ao funil — é o que aparece na lista."), 422, {
+    const daEtapa = parsed.error.issues.find((i) => i.path[0] === "stages");
+    const daConfig = parsed.error.issues.some((i) => ["config", "settings", "vocabulary"].includes(String(i.path[0])));
+    const mensagem = daConfig
+      ? t("Confira a configuração do funil (campos, motivos, vocabulário).")
+      : daEtapa
+      ? daEtapa.code === "custom"
+        ? daEtapa.message
+        : t("Confira as etapas: de 2 a 30, cada uma com nome de até 60 letras.")
+      : t("Dê um nome ao funil — é o que aparece na lista.");
+    return fail("unprocessable_entity", mensagem, 422, {
       requestId,
       details: parsed.error.flatten(),
     });
@@ -140,7 +244,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const { error: etapasErr } = await supabase
     .from("crm_stages")
-    .insert(etapasIniciais(orgId, pipelineId));
+    .insert(etapasIniciais(orgId, pipelineId, parsed.data.stages));
 
   // ⚠️ COMPENSAÇÃO, PORQUE SÃO DUAS ESCRITAS SEM TRANSAÇÃO. Um funil sem etapa é
   // quadro morto: o board abre sem coluna nenhuma, não recebe negócio, e quem
@@ -163,6 +267,126 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
+  // "Para onde o card vai em cada passo": traduz NOME de etapa em id (só agora
+  // existem) e grava com a mesma régua de `PUT /pipelines/[id]/agent-mapping`.
+  // Recusa → desfaz o funil inteiro.
+  {
+    const desfazer = async () => {
+      await supabase.from("crm_stages").delete().eq("pipeline_id", pipelineId).eq("organization_id", orgId);
+      await supabase.from("crm_pipelines").delete().eq("id", pipelineId).eq("organization_id", orgId);
+    };
+    const { data: criadas } = await supabase
+      .from("crm_stages")
+      .select("id, name, is_won, is_lost, agent_stage_hint")
+      .eq("pipeline_id", pipelineId)
+      .eq("organization_id", orgId);
+    const etapasDoMapa = (criadas ?? []) as {
+      id: string;
+      name: string;
+      is_won: boolean;
+      is_lost: boolean;
+      agent_stage_hint: string | null;
+    }[];
+    const porNome = new Map(etapasDoMapa.map((e) => [chaveDeNome(e.name), e.id]));
+    const entrada: Record<string, string | null> = {};
+    const desconhecidas: string[] = [];
+    // Ganho e perda sempre apontam para as etapas de fechamento e de perda: sem
+    // isso a tela mostra «Não mover o card» e o agente nunca leva o card até lá.
+    // O que o pedido disser sobre `won`/`lost` (inclusive `null`) vence.
+    const aoGanho = etapasDoMapa.find((e) => e.is_won);
+    const aPerda = etapasDoMapa.find((e) => e.is_lost);
+    if (aoGanho) entrada.won = aoGanho.id;
+    if (aPerda) entrada.lost = aPerda.id;
+    for (const [passo, nomeDaEtapa] of Object.entries(parsed.data.agent_mapping ?? {})) {
+      if (nomeDaEtapa === null) {
+        entrada[passo] = null;
+        continue;
+      }
+      const id = porNome.get(chaveDeNome(nomeDaEtapa));
+      if (id) entrada[passo] = id;
+      else desconhecidas.push(nomeDaEtapa);
+    }
+    const veredito = desconhecidas.length
+      ? { ok: false as const, erros: [`O mapeamento cita etapas que o funil não tem: ${desconhecidas.join(", ")}.`] }
+      : validarMapeamento(entrada, etapasDoMapa);
+    if (!veredito.ok) {
+      await desfazer();
+      return fail("unprocessable_entity", veredito.erros[0]!, 422, { requestId, details: { erros: veredito.erros } });
+    }
+    // Em sequência, liberações antes das ocupações (índice único imediato).
+    for (const u of diffParaUpdates(etapasDoMapa, entrada)) {
+      const { error: erroDoMapa } = await supabase
+        .from("crm_stages")
+        .update({ agent_stage_hint: u.hint })
+        .eq("id", u.stageId)
+        .eq("organization_id", orgId)
+        .eq("pipeline_id", pipelineId);
+      if (erroDoMapa) {
+        await desfazer();
+        return fail(
+          "internal_error",
+          `Não consegui gravar para onde o card vai em cada passo de «${name}». Nada foi salvo — tente de novo.`,
+          500,
+          { requestId, details: { erro: erroDoMapa.message } },
+        );
+      }
+    }
+  }
+
+  // A configuração viaja junto: mesma gravação de `PATCH /pipelines/[id]/config`.
+  // Falhou → desfaz o funil inteiro (nasce completo ou não nasce).
+  const { settings: configEmSettings, vocabulary: configEmVocabulario } = parsed.data;
+  const config =
+    parsed.data.config || configEmSettings || configEmVocabulario
+      ? {
+          ...configEmSettings,
+          ...(configEmVocabulario ? { vocabulary: configEmVocabulario } : {}),
+          ...parsed.data.config,
+        }
+      : undefined;
+  if (config) {
+    const { data: atual } = await supabase
+      .from("crm_pipelines")
+      .select("vocabulary, settings")
+      .eq("id", pipelineId)
+      .eq("organization_id", orgId)
+      .maybeSingle();
+    const settings: Record<string, unknown> = { ...((atual?.settings as Record<string, unknown> | null) ?? {}) };
+    for (const chave of [
+      "fields",
+      "lost_reasons",
+      "won_reasons",
+      "won_reason_required",
+      "comanda_no_ganho",
+      "reabertura",
+      "reabertura_campos",
+      "entrada_do_inbox",
+      "ocultar_encerrados_dias",
+      "atalhos",
+    ] as const) {
+      if (config[chave] !== undefined) settings[chave] = config[chave];
+    }
+    const vocabulary = {
+      ...((atual?.vocabulary as Record<string, unknown> | null) ?? {}),
+      ...(config.vocabulary ?? {}),
+    };
+    const { error: configErr } = await supabase
+      .from("crm_pipelines")
+      .update({ settings, vocabulary })
+      .eq("id", pipelineId)
+      .eq("organization_id", orgId);
+    if (configErr) {
+      await supabase.from("crm_stages").delete().eq("pipeline_id", pipelineId).eq("organization_id", orgId);
+      await supabase.from("crm_pipelines").delete().eq("id", pipelineId).eq("organization_id", orgId);
+      return fail(
+        "internal_error",
+        `Não consegui gravar a configuração de «${name}». Nada foi salvo — tente de novo.`,
+        500,
+        { requestId, details: { erro: configErr.message } },
+      );
+    }
+  }
+
   void audit({
     action: "pipeline.created",
     actorUserId: authz.user.id,
@@ -170,7 +394,14 @@ export async function POST(req: NextRequest): Promise<Response> {
     resourceType: "crm_pipeline",
     resourceId: pipelineId,
     requestId,
-    metadata: { name, slug: row.slug, is_default: row.is_default },
+    metadata: {
+      name,
+      slug: row.slug,
+      is_default: row.is_default,
+      etapas: parsed.data.stages ? parsed.data.stages.length : "iniciais",
+      com_configuracao: !!config,
+      com_mapeamento_do_agente: true,
+    },
   });
 
   // Relê em vez de espelhar o que foi pedido: a tela mostra o que o banco tem.

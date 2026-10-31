@@ -47,6 +47,12 @@ export interface EstadoDaChave {
 export const AVISO_DA_FAMILIA_ILEGIVEL =
   "Não consegui confirmar agora com que provedor a base é preparada. Recarregue em instantes.";
 
+export const AVISO_DA_CHAVE_RECUSADA =
+  "A última leitura do material falhou: a chave foi recusada. Cadastre uma chave da OpenAI ou do Google em IA › Credenciais e clique em “Preparar tudo de novo”.";
+
+/** Erro de quem recusou a chave (não é falha de rede nem de texto): a chave existe, mas não vale. */
+const RECUSA_DE_CHAVE = /user not found|invalid[_ ]api[_ ]key|incorrect api key|unauthorized|authentication|401|403/i;
+
 export async function montarEstadoDaChave(
   supabase: SupabaseClient,
   organizationId: string,
@@ -70,6 +76,17 @@ export async function montarEstadoDaChave(
       .in("provider", ["openai", "openrouter", "google"])
       .order("created_at", { ascending: true }),
   ]);
+  // A tela diz "pronto" pela PRESENÇA da chave. Se a última leitura foi recusada
+  // pelo provedor, o visto verde mente: o aviso diz o que fazer.
+  const { data: ultima } = await supabase
+    .from("ai_knowledge_versions")
+    .select("status, error_message")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const chaveRecusada =
+    ultima?.status === "failed" && RECUSA_DE_CHAVE.test(String(ultima.error_message ?? ""));
   const credenciais = (data ?? []) as EstadoDaChave["credenciais_embedding"];
   const provedor = familiaIlegivel ? null : (familia ?? (chave ? provedorDaBase(chave) : null));
 
@@ -90,6 +107,7 @@ export async function montarEstadoDaChave(
     avisos: [
       ...(chave?.avisos ?? []),
       ...(familiaIlegivel ? [AVISO_DA_FAMILIA_ILEGIVEL] : []),
+      ...(chaveRecusada ? [AVISO_DA_CHAVE_RECUSADA] : []),
     ],
     provedor,
     familia_sem_chave: familia !== null && chave === null ? familia : null,

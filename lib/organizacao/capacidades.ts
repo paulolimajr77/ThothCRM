@@ -16,7 +16,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { modulosLigados, type ModuloOpcional } from "@/lib/instalacao/modulos";
 import { logger } from "@/lib/logger";
 
-export const CAPACIDADES_DA_ORGANIZACAO = ["propostas"] as const;
+export const CAPACIDADES_DA_ORGANIZACAO = ["propostas", "assistente"] as const;
 export type CapacidadeDaOrganizacao = (typeof CAPACIDADES_DA_ORGANIZACAO)[number];
 
 /**
@@ -25,8 +25,10 @@ export type CapacidadeDaOrganizacao = (typeof CAPACIDADES_DA_ORGANIZACAO)[number
  * e é aqui, e não em cada consumidor, que as duas se somam: tela, menu, rota,
  * ferramenta do agente e cron leem a mesma resposta.
  */
-const MODULO_DA_CAPACIDADE: Record<CapacidadeDaOrganizacao, ModuloOpcional> = {
+const MODULO_DA_CAPACIDADE: Record<CapacidadeDaOrganizacao, ModuloOpcional | null> = {
   propostas: "propostas",
+  // O assistente não tem módulo da instalação: quem o liga é o administrador da PLATAFORMA, por empresa.
+  assistente: null,
 };
 
 function objeto(v: unknown): Record<string, unknown> | null {
@@ -42,8 +44,14 @@ export function capacidadesLigadas(
   modulos: readonly ModuloOpcional[],
 ): CapacidadeDaOrganizacao[] {
   const propostas = objeto(objeto(settings)?.proposals);
-  const daEmpresa: CapacidadeDaOrganizacao[] = propostas?.enabled === true ? ["propostas"] : [];
-  return daEmpresa.filter((c) => modulos.includes(MODULO_DA_CAPACIDADE[c]));
+  const assistente = objeto(objeto(settings)?.assistente);
+  const daEmpresa: CapacidadeDaOrganizacao[] = [];
+  if (propostas?.enabled === true) daEmpresa.push("propostas");
+  if (assistente?.enabled === true) daEmpresa.push("assistente");
+  return daEmpresa.filter((c) => {
+    const modulo = MODULO_DA_CAPACIDADE[c];
+    return modulo === null || modulos.includes(modulo);
+  });
 }
 
 /** Lê a linha da organização. Nunca lança: erro = nenhuma capacidade. */

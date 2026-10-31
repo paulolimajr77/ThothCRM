@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { fail, ok } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
+import { recusarSeAssistenteDesligado } from "@/lib/assistente/ligado";
 import { createClient } from "@/lib/supabase/server";
 import { traduzir } from "@/lib/i18n/dicionario";
 
@@ -22,6 +23,8 @@ export async function GET(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
   const authz = await requireRole("viewer", { requestId, resource: "assistente" });
   if (!authz.ok) return authz.response;
+  const desligado = await recusarSeAssistenteDesligado(authz.org.orgId, requestId, authz.user.idioma);
+  if (desligado) return desligado;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
 
   const parsed = querySchema.safeParse(Object.fromEntries(new URL(req.url).searchParams));

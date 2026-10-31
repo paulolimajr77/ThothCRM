@@ -23,7 +23,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const AGENT_COLUMNS =
-  "id, organization_id, name, description, model, system_prompt, is_active, is_default, kind, channel, priority, published_version_id, paused_at, operation_mode, operation_revision, archived_at, config, guardrails, active_kb_version_id, created_at, updated_at";
+  "id, organization_id, name, description, model, system_prompt, is_active, is_default, kind, channel, priority, published_version_id, paused_at, operation_mode, operation_revision, archived_at, config, guardrails, active_kb_version_id, created_at, created_by, updated_at";
 
 type RouteCtx = { params: Promise<{ id: string }> };
 
@@ -44,7 +44,9 @@ export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const authz = await resolveAuthDual(req, {
     requestId,
     resource: "ai_agents",
-    role: "manager",
+    // Leitura da configuração vale para a equipe toda; criar e alterar seguem no papel
+    // de cima (decisão do Paulo, 29/10/2026). A RLS de SELECT já era por organização.
+    role: "viewer",
     scope: "config:read",
     tokenRole: "admin",
   });

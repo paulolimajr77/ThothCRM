@@ -109,6 +109,8 @@ export interface PedidoDeAgenteRascunho {
   pacotes?: ToolBundle[];
   funis?: string[];
   materiais?: string[];
+  /** Quando definido, entra em `version.proposal_ai_draft_enabled`; quando ausente, a chave fica fora do corpo (usa o default do esquema). */
+  propostasComerciais?: boolean;
 }
 
 export type MotivoDeFalhaAoAlcancarAgente =
@@ -124,13 +126,43 @@ export type ResultadoDeAgenteRascunho =
   | { ok: false; motivo: MotivoDeFalhaAoAlcancarAgente; detalhe?: string };
 
 /**
- * O miolo de `criar_rascunho_de_agente`, extraído sem mudar comportamento:
- * mesmas checagens, na mesma ordem, com os mesmos motivos.
+ * Tudo o que vem antes do POST de `ai/agents`: prompt curto,
+ * provedor/modelo/credencial padrão, funis, materiais, ferramentas.
+ * Devolve o MESMO objeto que iria no POST (`{ ok: true, corpo }`) ou o
+ * MESMO `{ ok: false, motivo, detalhe? }` de hoje — sem chamar o POST.
  */
-export async function criarAgenteRascunho(
+export interface CorpoDoAgenteRascunho {
+  name: string;
+  description?: string;
+  priority: number;
+  version: {
+    system_prompt: string;
+    provider: string;
+    model: string;
+    credential_id: string;
+    channel_session_id: null;
+    tool_ids: string[];
+    pipeline_ids: string[];
+    knowledge_source_ids: string[];
+    /** Só entra no corpo quando o chamador (nicho) define explicitamente. */
+    proposal_ai_draft_enabled?: boolean;
+  };
+}
+
+export type MontagemDeAgenteRascunho =
+  | { ok: true; corpo: CorpoDoAgenteRascunho }
+  | { ok: false; motivo: MotivoDeFalhaAoAlcancarAgente; detalhe?: string };
+
+/**
+ * O miolo de montagem do corpo do agente rascunho, extraído sem mudar
+ * comportamento: mesmas checagens, na mesma ordem, com os mesmos motivos.
+ * Reusado por `criarAgenteRascunho` (POST direto) e pelo pacote do nicho
+ * (proposta, não POST).
+ */
+export async function montarCorpoDoAgenteRascunho(
   pedido: PedidoDeAgenteRascunho,
-): Promise<ResultadoDeAgenteRascunho> {
-  const { nome, descricao, prompt, pacotes, funis, materiais } = pedido;
+): Promise<MontagemDeAgenteRascunho> {
+  const { nome, descricao, prompt, pacotes, funis, materiais, propostasComerciais } = pedido;
   // Decisão do dono (delegada): prompt curto nem chama a rota.
   if (prompt.trim().length < 10) {
     return { ok: false, motivo: "prompt_curto" };
@@ -203,24 +235,24 @@ export async function criarAgenteRascunho(
 
   // Escopo: funil/material de fora da org (ou inativo) nem chega ao POST.
   if (funisPedidos.length > 0) {
-    const funis = await lerLista(await handlerDeFunis(), "/api/v1/pipelines");
-    if (funis === null) return { ok: false, motivo: "indisponivel" };
-    const ids = new Set(funis.map((f) => f.id));
+    const funisLista = await lerLista(await handlerDeFunis(), "/api/v1/pipelines");
+    if (funisLista === null) return { ok: false, motivo: "indisponivel" };
+    const ids = new Set(funisLista.map((f) => f.id));
     if (!funisPedidos.every((id) => ids.has(id))) {
       return { ok: false, motivo: "escopo_invalido" };
     }
   }
   if (materiaisPedidos.length > 0) {
-    const materiais = await lerLista(await handlerDeMateriais(), "/api/v1/ai/knowledge/sources");
-    if (materiais === null) return { ok: false, motivo: "indisponivel" };
-    const ids = new Set(materiais.map((m) => m.id));
+    const materiaisLista = await lerLista(await handlerDeMateriais(), "/api/v1/ai/knowledge/sources");
+    if (materiaisLista === null) return { ok: false, motivo: "indisponivel" };
+    const ids = new Set(materiaisLista.map((m) => m.id));
     if (!materiaisPedidos.every((id) => ids.has(id))) {
       return { ok: false, motivo: "escopo_invalido" };
     }
   }
 
-  const resposta = await chamarRotaPorDentro(await handlerDeCriacao(), "/api/v1/ai/agents", {}, {
-    metodo: "POST",
+  return {
+    ok: true,
     corpo: {
       name: nome,
       ...(descricao === undefined ? {} : { description: descricao }),
@@ -234,8 +266,24 @@ export async function criarAgenteRascunho(
         tool_ids: toolIds,
         pipeline_ids: funisPedidos,
         knowledge_source_ids: materiaisPedidos,
+        ...(propostasComerciais === undefined ? {} : { proposal_ai_draft_enabled: propostasComerciais }),
       },
     },
+  };
+}
+
+/**
+ * O miolo de `criar_rascunho_de_agente`, extraído sem mudar comportamento:
+ * mesmas checagens, na mesma ordem, com os mesmos motivos.
+ */
+export async function criarAgenteRascunho(
+  pedido: PedidoDeAgenteRascunho,
+): Promise<ResultadoDeAgenteRascunho> {
+  const montagem = await montarCorpoDoAgenteRascunho(pedido);
+  if (!montagem.ok) return montagem;
+  const resposta = await chamarRotaPorDentro(await handlerDeCriacao(), "/api/v1/ai/agents", {}, {
+    metodo: "POST",
+    corpo: montagem.corpo,
   });
   if (!("status" in resposta) || resposta.status !== 201) {
     return { ok: false, motivo: "indisponivel" };

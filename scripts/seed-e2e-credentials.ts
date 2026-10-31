@@ -84,6 +84,23 @@ const USERS: Array<{
   { chave: "dono", email: "e2e-dono@deskcomm.test", role: "admin", full_name: "E2E Dono do Servidor" },
 ];
 
+/**
+ * O assistente interno vem DESLIGADO por empresa (só a plataforma liga). As
+ * specs `assistente-*` dirigem o painel, então a org do seed nasce com ele
+ * ligado — o mesmo valor que o cartão "Assistente interno" do admin grava.
+ */
+async function ligarAssistente(orgId: string): Promise<void> {
+  const { data, error } = await admin.from("organizations").select("settings").eq("id", orgId).maybeSingle();
+  if (error) throw new Error(`ler settings da org: ${error.message}`);
+  const settings = ((data as { settings: unknown } | null)?.settings ?? {}) as Record<string, unknown>;
+  const atual = (settings.assistente ?? {}) as Record<string, unknown>;
+  const { error: erroGrava } = await admin
+    .from("organizations")
+    .update({ settings: { ...settings, assistente: { ...atual, enabled: true } } } as never)
+    .eq("id", orgId);
+  if (erroGrava) throw new Error(`ligar o assistente da org: ${erroGrava.message}`);
+}
+
 async function ensureOrg(): Promise<string> {
   const { data: existing } = await admin
     .from("organizations")
@@ -124,6 +141,7 @@ async function ensureOrg(): Promise<string> {
       throw new Error(`reafirmar org onboarded: ${erroOnboard.message}`);
     }
 
+    await ligarAssistente(orgExistente);
     console.log(`[seed] org existing: ${orgExistente}`);
     return orgExistente;
   }
@@ -141,6 +159,7 @@ async function ensureOrg(): Promise<string> {
     .single();
   if (error || !data) throw new Error("create org: " + error?.message);
   const orgId = (data as { id: string }).id;
+  await ligarAssistente(orgId);
   console.log(`[seed] org created: ${orgId}`);
   return orgId;
 }

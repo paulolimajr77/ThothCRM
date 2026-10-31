@@ -197,4 +197,18 @@ describe("o cartão de proposta", () => {
       "Solicitado por Ana Admin · 16/10/2026",
     );
   });
+
+  it("kind 'acao' mostra rótulo 'Mudança' (não a palavra técnica 'acao')", () => {
+    montar(proposta({ kind: "acao", operacao: null }));
+
+    expect(screen.getByText("Mudança ·")).toBeTruthy();
+    expect(screen.queryByText("acao")).toBeNull();
+  });
+
+  it("em espanhol, kind 'acao' mostra 'Cambio'", () => {
+    idioma.atual = "es";
+    montar(proposta({ kind: "acao", operacao: null }));
+
+    expect(screen.getByText("Cambio ·")).toBeTruthy();
+  });
 });

@@ -322,7 +322,7 @@ lados):
    Nenhuma delas chama rota de escrita de roteador, conhecimento, memória,
    provedor ou funil (só GET e o POST de propostas); `credential_id` não existe.
 6. **Insert pela sessão do admin, aplicação só na T20.** O POST de propostas usa
-   o cliente da SESSÃO (RLS da 9002: `requested_by = auth.uid()`, `status =
+   o cliente da SESSÃO (RLS da 8002: `requested_by = auth.uid()`, `status =
    'pendente'`, papel admin), nunca service role; `organization_id` e `risk`
    saem da sessão e do código. O audit (`assistente.proposta_criada`) leva só
    tipo, operação e risco, sem o texto. Nada muda no negócio até o clique de
@@ -332,7 +332,7 @@ lados):
    `aplicar` em `propostas/[id]/…`) são sessão-cookie, `requireSupportWrite`
    antes de qualquer efeito e `requireRole("admin")` da SESSÃO; `[id]` é
    validado como uuid. O GET nunca escreve (`vencida` é CALCULADO, nunca
-   coluna). A mudança de estado é exclusiva do servidor (a 9002 tirou
+   coluna). A mudança de estado é exclusiva do servidor (a 8002 tirou
    `update` de `authenticated`): compare-and-swap no pool de serviço com o
    estado esperado na PRÓPRIA condição e `organization_id` da sessão como
    parâmetro — nunca do corpo; zero linhas lê a linha (com org) para explicar
@@ -388,6 +388,20 @@ resposta, mas o teto diário conta perguntas ao assistente, não testes — ver
 | T6 | Guard de SSRF existe; o E2E que o prova não roda no CI | 🟢 | baixo |
 | T9 | Assistente interno manda agregado ao modelo; residual é destino e gasto insider | 🟢 | — (construído com as cercas) |
 | T10 | Assistente com escrita cria só rascunho (só admin); residual é gasto do Testar fora do teto diário | 🟢 | — (travas nas rotas + par no e2e) |
+
+## 4.5 Banco externo — receitas prontas (Spec 25, R1)
+
+Superfície nova, toda atrás de sessão + `requireRole("admin")` + `requireSupportWrite()`:
+
+| Path | Guard | Rate limit | O que expõe |
+|------|-------|------------|-------------|
+| `PUT /api/v1/external-db/connections/:id/recipes` | admin + requireSupportWrite | `external-db:write` (30/60s) | gravar instâncias de receita (audit: só contagens) |
+| `POST /api/v1/external-db/connections/:id/recipes/preview` | admin + requireSupportWrite | `external-db:write` (30/60s) | executar uma instância, devolve linhas (audit: só contagens) |
+| `crm_consultar_receita` (tool MCP) | agente, `modulo: "banco_externo"` | teto de token do turno | listar/executar instâncias; organização **sempre do `ctx`** |
+
+Controles: a coluna `receitas` fica FORA da view `external_db_connections_safe` (só `receitas_count` exposta); o prefixo das tabelas entra no SQL quotado com crase (nunca cru); todo valor vai por placeholder `?`; o validador `validarConsultaDeReceita` é a segunda trava (SELECT-only, sem `;`/`--`/`INTO`/`SLEEP(`/etc.); o rastro da execução resume `linhas` (nunca o conteúdo — regra de escopo da D8).
+
+A receita `wordpress-conteudo` (R2) pode ler, além de `posts`/`postmeta`, as **tabelas de categoria** do WordPress (`terms`, `term_taxonomy`, `term_relationships`) — e só quando o administrador mapeou alguma categoria. Elas passam pela MESMA lista de fontes liberadas (`tabelaLiberada`/`colunasLiberadas`, em `lib/external-db/fontes.ts`), então o administrador precisa liberá-las como qualquer outra tabela: quem não libera, recebe `fonte_nao_liberada` e a consulta não roda. O conteúdo dos termos é dado de terceiro (o autor do site), e ele chega ao agente como NOME de categoria — o mesmo regime do resto da receita: o rastro guarda contagens, nunca o conteúdo.
 
 **Conclusão honesta:** os *mecanismos* de segurança deste projeto são acima da média para
 um CRM open-source — HMAC em tempo constante em toda borda, fail-closed nos crons, hash de

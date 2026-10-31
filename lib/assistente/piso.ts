@@ -66,7 +66,7 @@ export async function respostaDoPiso(pool: Queryable, entrada: EntradaDoPiso): P
     );
   }
 
-  const skills = (await loadSkills(pool, orgId)).filter((s) => s.name.startsWith("assistente-"));
+  const skills = (await loadSkills(pool, orgId, { comGuiasDoAssistente: true })).filter((s) => s.name.startsWith("assistente-"));
   const { matched } = matchSkills(skills, pergunta);
   const guia = matched[0];
   if (guia !== undefined) {

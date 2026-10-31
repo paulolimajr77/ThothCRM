@@ -3,8 +3,12 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { ToolSet } from "ai";
 
 import { criarProcurarPorta } from "./procurar-porta";
-import { montarParaTeste, chamar } from "./auxiliar-de-teste";
+import { montarParaTeste, chamar, ORG } from "./auxiliar-de-teste";
 import { CATALOGO_DE_PORTAS } from "@/lib/assistente/portas/catalogo.gerado";
+import { observarEscolhaDePorta } from "@/lib/ai/decisao/porta-do-assistente";
+
+// O Jev só observa: o teste isola a chamada para provar que ela sai (sem await) e não muda a resposta.
+vi.mock("@/lib/ai/decisao/porta-do-assistente", () => ({ observarEscolhaDePorta: vi.fn(async () => undefined) }));
 
 vi.mock("@/lib/assistente/portas/regras", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/assistente/portas/regras")>();
@@ -137,6 +141,111 @@ describe("procurar_porta", () => {
     const { ferramentas } = montarParaTeste("admin");
     const saida = await chamar(ferramentas, "procurar_porta", { pergunta: "x".repeat(201) });
     expect(saida).toEqual({ ok: false, motivo: "parametro_invalido" });
+  });
+
+  // Medido no espelho em 29/10/2026: "Quem é a equipe e o cargo de cada um?" não
+  // achava `team` (id em inglês, resumo vazio em 213 de 373 portas) e a descrição
+  // da ferramenta dizia que equipe era proibida — o modelo desistiu sem ler.
+  const idsDa = async (pergunta: string): Promise<string[]> => {
+    const { ferramentas } = montarParaTeste("admin");
+    const saida = await chamar(ferramentas, "procurar_porta", { pergunta });
+    return (saida as { portas: PortaEncontrada[] }).portas.map((p) => p.id);
+  };
+
+  it.each([
+    ["equipe e cargo de cada um", "team"],
+    ["aniversário dos clientes", "contacts"],
+    ["últimas compras do cliente", "contacts/:id/compras"],
+    ["negócios do funil", "leads"],
+    ["etapas do funil", "pipelines"],
+    ["imóveis do banco externo", "external-db/connections"],
+    ["compromissos da agenda", "agenda/agendamentos"],
+  ])("a pergunta em português %s acha a porta %s", async (pergunta, porta) => {
+    expect(await idsDa(pergunta)).toContain(porta);
+  });
+
+  it("a porta que casa mais palavras vem antes do corte de 12", async () => {
+    // `contacts` tem 20 portas: sem ordem, o corte de 12 podia deixar a de compras de fora.
+    const ids = await idsDa("compras do contato");
+    expect(ids.indexOf("contacts/:id/compras")).toBeGreaterThanOrEqual(0);
+    expect(ids.indexOf("contacts/:id/compras")).toBeLessThan(3);
+  });
+
+  it("sem nenhuma porta, devolve as áreas para tentar de novo", async () => {
+    const { ferramentas } = montarParaTeste("admin");
+    const saida = (await chamar(ferramentas, "procurar_porta", { pergunta: "zzzzqqq" })) as {
+      portas: PortaEncontrada[];
+      areas?: string[];
+    };
+    expect(saida.portas).toEqual([]);
+    expect(saida.areas).toContain("team");
+    expect(saida.areas).toContain("contacts");
+  });
+
+  it("a porta de contatos chega com a dica do filtro de aniversário e da busca por nome", async () => {
+    const { ferramentas } = montarParaTeste("admin");
+    const saida = (await chamar(ferramentas, "procurar_porta", { pergunta: "aniversariantes da semana" })) as {
+      portas: (PortaEncontrada & { filtros?: { filtros: string[] } })[];
+    };
+    const contatos = saida.portas.find((p) => p.id === "contacts");
+    expect(contatos?.filtros?.filtros).toEqual(expect.arrayContaining(["aniversario", "search"]));
+  });
+
+  // Medido no espelho em 29/10/2026: um ATENDENTE perguntou "quais clientes fecharam
+  // e os valores"; o modelo leu `pipelines` (só gestor), levou 403 e desistiu. A
+  // porta que a tela do atendente usa é `pipelines/:id/leads` (piso viewer).
+  it("quem fechou acha os negócios do funil, com a dica de onde sai o id do funil", async () => {
+    const { ferramentas } = montarParaTeste("agent");
+    const saida = (await chamar(ferramentas, "procurar_porta", { pergunta: "quais clientes fecharam e os valores" })) as {
+      portas: (PortaEncontrada & { filtros?: { filtros: string[]; uso: string } })[];
+    };
+    const ids = saida.portas.map((p) => p.id);
+    expect(ids).toContain("pipelines/:id/leads");
+    const negocios = saida.portas.find((p) => p.id === "pipelines/:id/leads");
+    expect(negocios?.filtros?.uso).toMatch(/pipelines\/default/);
+    expect(negocios?.filtros?.uso).toMatch(/won/);
+  });
+
+  it("a descrição não diz ao modelo que ler a equipe é proibido", () => {
+    const { ferramentas } = montarParaTeste("admin");
+    const descricao = String((ferramentas.procurar_porta as { description?: string }).description);
+    expect(descricao).not.toMatch(/proibidas \([^)]*equipe/);
+    expect(descricao).toMatch(/equipe/i);
+  });
+
+  describe("observação do Jev (só observa)", () => {
+    const mockObservar = observarEscolhaDePorta as ReturnType<typeof vi.fn>;
+
+    it("com 2 ou mais candidatas, entrega ao Jev a organização da sessão, as candidatas e a 1ª da busca — sem esperar", async () => {
+      const { ferramentas } = montarParaTeste("admin");
+      // Nunca resolve: a resposta do assistente não pode depender dele.
+      mockObservar.mockImplementation(() => new Promise<void>(() => undefined));
+      const saida = (await chamar(ferramentas, "procurar_porta", { pergunta: "agents" })) as { portas: PortaEncontrada[] };
+      expect(saida.portas.length).toBeGreaterThanOrEqual(2);
+      expect(mockObservar).toHaveBeenCalledTimes(1);
+      expect(mockObservar).toHaveBeenCalledWith({
+        organizationId: ORG,
+        pergunta: "agents",
+        candidatas: saida.portas.map((p) => ({ id: p.id, resumo: p.resumo })),
+        primeiraDaBusca: saida.portas[0]!.id,
+      });
+    });
+
+    it("com uma candidata só, ou nenhuma, o Jev não é chamado", async () => {
+      const { ferramentas } = montarParaTeste("admin");
+      await chamar(ferramentas, "procurar_porta", { pergunta: "zzzqqq" });
+      expect(mockObservar).not.toHaveBeenCalled();
+    });
+
+    it("uma falha do observador não muda o que a ferramenta devolve", async () => {
+      const { ferramentas } = montarParaTeste("admin");
+      const sem = (await chamar(ferramentas, "procurar_porta", { pergunta: "agents" })) as { portas: PortaEncontrada[] };
+      mockObservar.mockImplementation(() => {
+        throw new Error("falha síncrona inesperada");
+      });
+      const com = (await chamar(ferramentas, "procurar_porta", { pergunta: "agents" })) as { portas: PortaEncontrada[] };
+      expect(com).toEqual(sem);
+    });
   });
 });
 

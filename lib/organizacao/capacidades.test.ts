@@ -28,6 +28,30 @@ describe("capacidadesLigadas — só o booleano true liga", () => {
   });
 });
 
+describe("capacidadesLigadas — assistente (ligado pela plataforma, sem módulo)", () => {
+  it("só o booleano true liga, e independe de módulo da instalação", () => {
+    expect(capacidadesLigadas({ assistente: { enabled: true } }, [])).toEqual(["assistente"]);
+    expect(capacidadesLigadas({ assistente: { enabled: true }, proposals: { enabled: true } }, ["propostas"])).toEqual([
+      "propostas",
+      "assistente",
+    ]);
+  });
+  it("false, ausente, string e lixo: desligado, sem lançar", () => {
+    for (const s of [
+      { assistente: { enabled: false } },
+      { assistente: {} },
+      { assistente: { enabled: "true" } },
+      { assistente: "ligado" },
+      {},
+      null,
+      undefined,
+      [],
+    ]) {
+      expect(capacidadesLigadas(s, ["propostas"]), JSON.stringify(s)).toEqual([]);
+    }
+  });
+});
+
 /** Banco falso das duas leituras: a linha da organização e `platform_config`. */
 function dbQueDevolve(
   resultado: { data: unknown; error: unknown } | Error,

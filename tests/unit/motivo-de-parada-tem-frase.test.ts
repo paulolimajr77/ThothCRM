@@ -2,10 +2,13 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { erroTecnicoConhecido } from "@/lib/automation/resultado-para-recibo";
+
 import {
   cobrarFrases,
   descrever,
   lerMapaDeMotivos,
+  literaisDoProdutor,
   varrerMotivosDeParada,
   type DeclaracaoDeOrigem,
 } from "./helpers/motivos-de-parada";
@@ -132,6 +135,20 @@ const ORIGENS: DeclaracaoDeOrigem[] = [
     produtor: { arquivo: "lib/automation/decider.ts" },
   },
   {
+    arquivo: "lib/automation/actions/notify-team.ts",
+    expressao: "motivo",
+    porque:
+      "o resumo vazio devolve o motivo por `resumoVazio(motivo)`, e ele chega à tela como `reason` do resultado; os códigos possíveis são os literais do próprio arquivo, varridos no produtor declarado ao lado",
+    produtor: { arquivo: "lib/automation/actions/notify-team.ts" },
+  },
+  {
+    arquivo: "lib/automation/actions/notify-team.ts",
+    expressao: "bloqueio",
+    porque:
+      "o bloqueio vem de `motivoDeBloqueioDoCanal(canal)` (arquivado, pausado, desligado, sem provedor, sem texto livre) e é devolvido como `reason` do resultado",
+    produtor: { arquivo: "lib/automation/actions/notify-team.ts" },
+  },
+  {
     arquivo: "lib/automation/actions/send-email.ts",
     expressao: "para.motivo",
     porque:
@@ -185,6 +202,27 @@ describe("o mapa de frases e o código que emite os motivos não podem divergir"
       `${semDeclaracao.length} motivo(s) que a guarda não sabe cobrar: declare a origem em ORIGENS, ` +
         `neste arquivo, com o \`porque\` escrito e o produtor varrido.\n  ${semDeclaracao.join("\n  ")}`,
     ).toEqual([]);
+  });
+
+  /**
+   * Frase no mapa não basta: o recibo (`resultadoParaRecibo`) troca por
+   * `internal_error` todo `reason`/`error` que `erroTecnicoConhecido` não
+   * reconhece, e a tela passa a mostrar "Falhou… internal_error" no lugar da
+   * frase. Foi o que aconteceu com `set_lead_date_field` (PR #3741): seis
+   * motivos com frase, nenhum em `CODIGOS_DAS_ACOES`.
+   */
+  it("todo motivo com frase sobrevive ao recibo (está em CODIGOS_DAS_ACOES)", () => {
+    const emitidos = [
+      ...varredura.literais,
+      ...ORIGENS.flatMap((o) => (o.produtor ? literaisDoProdutor(RAIZ, o.produtor.arquivo) : [])),
+    ];
+    const apagados = emitidos.filter((o) => mapa.has(o.motivo) && !erroTecnicoConhecido(o.motivo));
+    expect(
+      apagados.length,
+      `${apagados.length} motivo(s) com frase que o recibo troca por internal_error:\n` +
+        `${descrever(apagados)}\nConserto: acrescente o código a CODIGOS_DAS_ACOES em ` +
+        "lib/automation/resultado-para-recibo.ts.",
+    ).toBe(0);
   });
 
   it("declaração que o código não usa mais é vermelho — a lista só encolhe", () => {

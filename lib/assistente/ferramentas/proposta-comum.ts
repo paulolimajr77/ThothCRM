@@ -14,13 +14,14 @@
  */
 import { z } from "zod";
 
+import { escritaPermitida, acaoPermitida } from "@/lib/assistente/portas/regras";
 import { chamarRotaPorDentro, type HandlerDeRota } from "@/lib/assistente/metricas/chamar-rota";
-import { riscoDoTipo } from "@/lib/assistente/propostas/operacoes";
+import { riscoDaProposta } from "@/lib/assistente/propostas/operacoes";
 import { esquemaDoCorpoDaProposta } from "@/lib/assistente/propostas/payload";
 import type { TipoDeProposta } from "@/lib/assistente/propostas/tipos";
 
 import type { EntradaDasFerramentas } from "./tipos";
-import { anotarCartaoDeProposta } from "./tipos";
+import { anotarCartaoDeProposta, avisarTelaDaPorta } from "./tipos";
 
 /** O texto que toda proposta traz: o título para leigo e o porquê. */
 export const camposDeTexto = {
@@ -41,6 +42,8 @@ export interface FontesDeProposta {
   etapas?: HandlerDeRota;
   provedores?: HandlerDeRota;
   propostas?: HandlerDeRota;
+  aprovar?: HandlerDeRota;
+  aplicar?: HandlerDeRota;
 }
 
 let sobrepostas: FontesDeProposta | null = null;
@@ -197,6 +200,152 @@ export interface PedidoDeProposta {
 }
 
 /**
+ * Parâmetros para propor uma ação (`kind: "acao"`) numa porta de escrita.
+ * `antes` é `null` para POST (não há estado anterior a ler).
+ */
+export interface PedidoDePropostaAcao {
+  porta: string;
+  metodo: "POST" | "PATCH" | "PUT";
+  corpo: unknown;
+  resumo: string;
+  motivo: string;
+  /** Parâmetros de caminho (ex.: { id: "..." } para `contacts/:id`). */
+  valores?: Record<string, string>;
+  /** `antes` lido pela GET da porta; `null` para POST. */
+  antes?: Record<string, unknown> | null;
+}
+
+function semAcento(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * PEDIDO EXPRESSO: a pessoa mandou fazer ("ajuste", "teste e publique"), então o cartão
+ * só repetiria o que ela acabou de pedir. O modelo cita o trecho EXATO da mensagem dela
+ * que manda fazer isto; o servidor confere que o trecho existe na mensagem que a pessoa
+ * escreveu NESTE turno (texto de ferramenta, de guia ou de dado não vale) e só então
+ * aprova e aplica pelas MESMAS rotas do cartão (mesma permissão de administrador,
+ * mesma auditoria, mesmo registro). Sem trecho válido nada muda: fica o cartão.
+ */
+export function trechoVemDoPedido(trecho: string | undefined, pergunta: string | undefined): boolean {
+  if (trecho === undefined || pergunta === undefined) return false;
+  const t = semAcento(trecho);
+  if (t.length < 6) return false;
+  return semAcento(pergunta).includes(t);
+}
+
+export type DesfechoDoPedidoExpresso =
+  | { aplicada: true; resumo: string }
+  | { aplicada: false; motivo: "sem_pedido_expresso" }
+  /** `por_que`: o que a rota respondeu (código do destino e status), para o modelo explicar sem adivinhar. */
+  | { aplicada: false; motivo: "nao_aplicou"; por_que: string };
+
+function porQueFalhou(corpo: unknown, status: number | null): string {
+  const erro =
+    typeof corpo === "object" && corpo !== null ? (corpo as { error?: { details?: unknown } }).error : undefined;
+  const detalhes =
+    erro && typeof erro.details === "object" && erro.details !== null
+      ? (erro.details as { codigo_do_destino?: unknown })
+      : {};
+  const codigo = typeof detalhes.codigo_do_destino === "string" ? detalhes.codigo_do_destino : null;
+  return `status ${status ?? "sem resposta"}${codigo === null ? "" : `, código ${codigo}`}`;
+}
+
+export async function aplicarPorPedidoExpresso(
+  entrada: EntradaDasFerramentas,
+  propostaId: string,
+  trecho: string | undefined,
+): Promise<DesfechoDoPedidoExpresso> {
+  if (!trechoVemDoPedido(trecho, entrada.turno?.pergunta)) {
+    return { aplicada: false, motivo: "sem_pedido_expresso" };
+  }
+  const handlerDe = async (qual: "aprovar" | "aplicar"): Promise<HandlerDeRota> => {
+    if (sobrepostas?.[qual]) return sobrepostas[qual]!;
+    const modulo =
+      qual === "aprovar"
+        ? await import("@/app/api/v1/ai/assistente/propostas/[id]/aprovar/route")
+        : await import("@/app/api/v1/ai/assistente/propostas/[id]/aplicar/route");
+    return (req) => modulo.POST(req, { params: Promise.resolve({ id: propostaId }) });
+  };
+  const base = `${CAMINHOS.propostas}/${propostaId}`;
+  const aprovada = await chamarRotaPorDentro(await handlerDe("aprovar"), `${base}/aprovar`, {}, { metodo: "POST" });
+  if (!("status" in aprovada) || aprovada.status !== 200) {
+    return { aplicada: false, motivo: "nao_aplicou", por_que: "a aprovação foi recusada" };
+  }
+  const aplicada = await chamarRotaPorDentro(await handlerDe("aplicar"), `${base}/aplicar`, {}, { metodo: "POST" });
+  if (!("status" in aplicada) || aplicada.status !== 200) {
+    return {
+      aplicada: false,
+      motivo: "nao_aplicou",
+      por_que: porQueFalhou("status" in aplicada ? aplicada.corpo : undefined, "status" in aplicada ? aplicada.status : null),
+    };
+  }
+  const dados = eObjeto(aplicada.corpo) ? (aplicada.corpo as { data?: unknown }).data : undefined;
+  const resumo = eObjeto(dados) && typeof dados.resumo === "string" ? dados.resumo : "";
+  return { aplicada: true, resumo };
+}
+
+/**
+ * Propoe uma ação (`kind: "acao"`) numa porta de escrita, via POST de
+ * propostas. Usado por `propor_mudanca` e pelo pacote do nicho (T14b).
+ * Devolve o `id` da proposta ou `{ ok: false, motivo }`.
+ */
+export async function proporAcao(
+  entrada: EntradaDasFerramentas,
+  pedido: PedidoDePropostaAcao,
+): Promise<{ ok: true; propostaId: string } | { ok: false; motivo: string }> {
+  if (!escritaPermitida(pedido.porta, pedido.metodo)) {
+    return { ok: false, motivo: "porta_nao_liberada" };
+  }
+  if (!acaoPermitida(pedido.porta, pedido.metodo, pedido.corpo)) {
+    return { ok: false, motivo: "acao_nao_liberada" };
+  }
+
+  const corpo = {
+    kind: "acao" as const,
+    resumo: pedido.resumo,
+    motivo: pedido.motivo,
+    antes: pedido.antes ?? null,
+    payload: {
+      porta: pedido.porta,
+      metodo: pedido.metodo,
+      ...(pedido.valores !== undefined ? { valores: pedido.valores } : {}),
+      ...(pedido.corpo !== undefined ? { corpo: pedido.corpo } : {}),
+    },
+  };
+
+  const resposta = await chamarRotaPorDentro(
+    await FONTES.propostas(),
+    CAMINHOS.propostas,
+    {},
+    { metodo: "POST", corpo },
+  );
+
+  if (!("status" in resposta) || (resposta.status !== 200 && resposta.status !== 201)) {
+    return { ok: false, motivo: "indisponivel" };
+  }
+
+  const dados =
+    typeof resposta.corpo === "object" && resposta.corpo !== null
+      ? (resposta.corpo as { data?: { id?: string } })
+      : undefined;
+  const propostaId = dados?.data?.id;
+  if (!propostaId) {
+    return { ok: false, motivo: "indisponivel" };
+  }
+
+  anotarCartaoDeProposta(entrada.coletor, propostaId);
+  avisarTelaDaPorta(entrada.coletor, pedido.porta);
+
+  return { ok: true, propostaId };
+}
+
+/**
  * Valida com o MESMO esquema da rota, chama o POST de propostas por dentro e
  * devolve o texto honesto: "propôs", nunca "mudou".
  */
@@ -270,7 +419,7 @@ export async function enviarProposta(
       id: dados.id,
       tipo: pedido.kind,
       operacao,
-      risco: riscoDoTipo(pedido.kind),
+      risco: riscoDaProposta(pedido.kind, validacao.data.payload),
       resumo: dados.resumo,
       expira_em: typeof dados.expires_at === "string" ? dados.expires_at : null,
     },

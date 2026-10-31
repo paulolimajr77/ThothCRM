@@ -68,6 +68,8 @@ import { checkRateLimit } from "@/lib/ai/dispatcher/rate-limit";
 import { fail, ok } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/auth/require-role";
+import { recusarSeAssistenteDesligado } from "@/lib/assistente/ligado";
+import { escreveComoPlatformAdmin } from "@/lib/auth/types";
 import {
   criarColetorDoTurno,
   MAXIMO_DE_PASSOS_DO_ASSISTENTE,
@@ -77,9 +79,11 @@ import type { AcaoDoChat } from "@/lib/assistente/ferramentas/tipos";
 import { comandoDaPergunta } from "@/lib/assistente/comandos";
 import { executarComando } from "@/lib/assistente/comandos/executar";
 import { agenteVistoNaTela } from "@/lib/assistente/contexto-da-tela";
+import { telaPorCaminho } from "@/lib/assistente/telas/tela-por-caminho";
 import { verificarLimiteDePerguntas } from "@/lib/assistente/limites";
 import type { ContextoDeConsulta, Papel } from "@/lib/assistente/metricas";
 import { respostaDoPiso } from "@/lib/assistente/piso";
+import { registrarEventoDoTurno } from "@/lib/assistente/progresso-do-turno";
 import { traduzir } from "@/lib/i18n/dicionario";
 import { requireSupportWrite } from "@/lib/impersonate/support";
 import { logger } from "@/lib/logger";
@@ -96,6 +100,8 @@ const JANELA_SEGUNDOS = 60;
 
 /** Quantas mensagens anteriores o modelo enxerga, e o teto de caracteres da soma delas. */
 const MAXIMO_DE_MENSAGENS_NO_HISTORICO = 20;
+/** Quantas vezes o servidor continua sozinho um turno que o modelo largou sem texto no meio do trabalho. */
+const MAXIMO_DE_CONTINUACOES = 2;
 const MAXIMO_DE_CARACTERES_NO_HISTORICO = 8000;
 
 const corpoDoPost = z
@@ -161,6 +167,8 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const authz = await requireRole("viewer", { requestId, resource: "assistente" });
   if (!authz.ok) return authz.response;
+  const desligado = await recusarSeAssistenteDesligado(authz.org.orgId, requestId, authz.user.idioma);
+  if (desligado) return desligado;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
   const orgId = authz.org.orgId;
   const userId = authz.user.id;
@@ -294,6 +302,8 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   // ─── O turno com o modelo; qualquer falha cai no piso ────────────────────
   const coletor = criarColetorDoTurno();
+  // A tela pergunta o andamento enquanto o modelo trabalha (rota `progresso`).
+  coletor.aoOcorrer = (evento) => registrarEventoDoTurno(orgId, userId, turn_id, evento);
   let textoDoModelo = "";
   let callId: string | null = null;
   let motivoDoPiso: MotivoDoPiso | null = null;
@@ -322,7 +332,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       acoesDoComando = saida.acoes;
     }
     if (comando === null) {
-      const skills = (await loadSkills(pool, orgId)).filter((s) =>
+      const skills = (await loadSkills(pool, orgId, { comGuiasDoAssistente: true })).filter((s) =>
         s.name.startsWith("assistente-"),
       );
       // `turno`: a conversa e o turno desta pergunta, para as ferramentas `propor_*`
@@ -331,14 +341,27 @@ export async function POST(req: NextRequest): Promise<Response> {
         ctx,
         skills,
         coletor,
-        turno: { threadId, turnId: turn_id },
+        turno: { threadId, turnId: turn_id, pergunta: perguntaEfetiva },
+        adminDaPlataforma: escreveComoPlatformAdmin(authz.user),
+        usuarioId: userId,
       });
       // Contexto da tela: o agente que a pessoa está vendo, só se for desta organização.
       // Não vai para a auditoria, não entra no limite nem no replay.
       const agenteEmTela = await agenteVistoNaTela(pool, orgId, contexto?.caminho);
+      // Qual tela da navegação a pessoa está vendo (rótulo e descrição do
+      // catálogo — nunca o caminho completo com ids).
+      const telaEmVista = telaPorCaminho(contexto?.caminho);
       // O bloco "Regras de conduta" do `system` só entra para `admin` — o papel
       // vem DA SESSÃO (nunca do corpo), como as ferramentas de escrita.
-      const system = montarSystemDoAssistente({ idioma, fuso, agoraIso, papel, agenteEmTela });
+      const system = montarSystemDoAssistente({
+        idioma,
+        fuso,
+        agoraIso,
+        papel,
+        agenteEmTela,
+        telaEmVista,
+        pessoa: { id: userId, nome: authz.user.full_name ?? authz.user.email },
+      });
 
       // As mensagens ANTERIORES a este turno. Pegamos as mais recentes (desc) e
       // devolvemos em ordem cronológica; o recorte por caracteres vem depois.
@@ -360,20 +383,34 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
 
       const deps = requestTurnDeps();
-      const saida = await responderComoAssistente(
-        pool,
-        deps.llmCfg,
-        {
-          tenantId: orgId,
-          system,
-          historico,
-          pergunta: perguntaEfetiva,
-          tools,
-          maxSteps: MAXIMO_DE_PASSOS_DO_ASSISTENTE,
-        },
-        { registry: deps.registry, log: deps.log },
-      );
-      if (saida.texto.trim() === "") {
+      const chamarModelo = (texto: string) =>
+        responderComoAssistente(
+          pool,
+          deps.llmCfg,
+          { tenantId: orgId, system, historico, pergunta: texto, tools, maxSteps: MAXIMO_DE_PASSOS_DO_ASSISTENTE },
+          { registry: deps.registry, log: deps.log },
+        );
+      let saida = await chamarModelo(perguntaEfetiva);
+      // O modelo às vezes termina o turno SEM texto depois de já ter feito parte do trabalho (medido em
+      // 30/10: parava logo após criar o agente, com poucos passos usados). A pessoa não deve ter que
+      // escrever "continua": o servidor continua sozinho, até 2 vezes, e o que já foi feito não se refaz.
+      // Só continua quando já houve progresso de ESCRITA (proposta ou teste): ler guia não conta. Cada
+      // continuação é uma chamada a mais ao modelo, limitada a MAXIMO_DE_CONTINUACOES por pergunta.
+      const houveProgresso = () => coletor.acoes.some((a) => a.tipo === "proposta" || a.tipo === "teste");
+      for (let volta = 0; volta < MAXIMO_DE_CONTINUACOES && saida.texto.trim() === "" && houveProgresso(); volta += 1) {
+        saida = await chamarModelo(
+          `${perguntaEfetiva}\n\n(Nota do sistema: sua resposta anterior parou no meio, antes de terminar o pedido. ` +
+            "O que você já fez continua feito. Veja o estado atual com as ferramentas de leitura e de conferência, " +
+            "siga do PRÓXIMO passo sem refazer o que já existe e termine com a resposta à pessoa.)",
+        );
+      }
+      if (saida.texto.trim() === "" && coletor.acoes.some((a) => a.tipo === "proposta" || a.tipo === "teste")) {
+        // Acabou o limite de passos antes de o modelo escrever a resposta: o que já foi feito
+        // aparece nos cartões, e a pessoa é avisada de que FALTA o resto (nunca "preparei o que pediu",
+        // que escondia o que ficou por fazer).
+        textoDoModelo = t("Parei antes de terminar. O que já foi feito está nos cartões abaixo. Escreva \"continua\" e eu sigo de onde parei.");
+        callId = saida.callId;
+      } else if (saida.texto.trim() === "") {
         motivoDoPiso = "resposta_vazia";
         logger.warn("assistente.chat.modelo_nao_respondeu", {
           requestId,

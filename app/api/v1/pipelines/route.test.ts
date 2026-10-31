@@ -165,6 +165,67 @@ describe("POST /api/v1/pipelines", () => {
     expect(db.escritas).toEqual([]);
   });
 
+  it("`settings` inválido (campo sem rótulo) também é a configuração → 422, nenhuma escrita", async () => {
+    authOk();
+    const db = makeDb({ pipelines: umFunil() });
+    const { POST } = await import("./route");
+    const res = await POST(reqPost({ name: "Oficina", settings: { fields: [{ key: "placa", type: "text" }] } }));
+    expect(res.status).toBe(422);
+    expect(db.escritas).toEqual([]);
+  });
+
+  it("`config` inválida (campo sem rótulo) → 422 dizendo que é a configuração, nenhuma escrita", async () => {
+    authOk();
+    const db = makeDb({ pipelines: umFunil() });
+    const { POST } = await import("./route");
+    const res = await POST(reqPost({ name: "Oficina", config: { fields: [{ key: "placa", type: "text" }] } }));
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { error: { message: string } };
+    expect(body.error.message).toContain("configuração do funil");
+    expect(db.escritas).toEqual([]);
+  });
+
+  it("com `stages`, o funil nasce com ESSAS etapas, na ordem, com ganho e perda marcados", async () => {
+    authOk();
+    const db = makeDb({ pipelines: umFunil() });
+    const { POST } = await import("./route");
+    const res = await POST(
+      reqPost({
+        name: "Consultas",
+        stages: [
+          { name: "Primeiro contato" },
+          { name: "Consulta marcada" },
+          { name: "Compareceu", is_won: true },
+          { name: "Desistiu", is_lost: true },
+        ],
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    const etapas = db.escritas.find((e) => e.table === "crm_stages")?.patch as Record<string, unknown>[];
+    expect(etapas.map((e) => e.name)).toEqual(["Primeiro contato", "Consulta marcada", "Compareceu", "Desistiu"]);
+    expect(etapas.map((e) => e.slug)).toEqual(["primeiro-contato", "consulta-marcada", "compareceu", "desistiu"]);
+    expect(etapas.map((e) => e.position)).toEqual([1000, 2000, 3000, 4000]);
+    expect(etapas.filter((e) => e.is_won).map((e) => e.name)).toEqual(["Compareceu"]);
+    expect(etapas.filter((e) => e.is_lost).map((e) => e.name)).toEqual(["Desistiu"]);
+    expect(etapas.every((e) => e.organization_id === ORG_ID)).toBe(true);
+  });
+
+  it.each([
+    ["duas de ganho", [{ name: "A", is_won: true }, { name: "B", is_won: true }, { name: "C" }], "Só uma etapa pode ser de ganho."],
+    ["nenhuma aberta", [{ name: "A", is_won: true }, { name: "B", is_lost: true }], "O funil precisa de uma etapa aberta."],
+    ["nome repetido", [{ name: "Novo" }, { name: "novo" }], "Duas etapas com o mesmo nome."],
+    ["ganho e perda juntos", [{ name: "A", is_won: true, is_lost: true }, { name: "B" }], "Uma etapa não pode ser de ganho e de perda."],
+  ])("etapas inválidas (%s) → 422 com a regra, e nenhuma escrita", async (_caso, stages, mensagem) => {
+    authOk();
+    const db = makeDb({ pipelines: umFunil() });
+    const { POST } = await import("./route");
+    const res = await POST(reqPost({ name: "Consultas", stages }));
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { error: { message: string } }).error.message).toBe(mensagem);
+    expect(db.escritas).toEqual([]);
+  });
+
   it("corpo que não é JSON → 400", async () => {
     authOk();
     makeDb({ pipelines: umFunil() });

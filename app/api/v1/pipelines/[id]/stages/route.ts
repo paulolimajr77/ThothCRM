@@ -62,7 +62,9 @@ const bodySchema = z
  */
 export async function GET(_req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const requestId = randomUUID();
-  const authz = await requireRole("manager", { requestId, resource: "pipeline_stages" });
+  // Leitura da configuração vale para a equipe toda; criar e alterar seguem no papel de cima
+  // (decisão do Paulo, 29/10/2026). A RLS de SELECT já era por organização.
+  const authz = await requireRole("viewer", { requestId, resource: "pipeline_stages" });
   if (!authz.ok) return authz.response;
   const t = (texto: string) => traduzir(texto, authz.user.idioma);
   const { id } = await ctx.params;

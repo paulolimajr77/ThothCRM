@@ -36,16 +36,20 @@ const PROPRIEDADES_ESPERADAS: Record<string, string[]> = {
   listar_telas: ["busca"],
   abrir_tela: ["destino"],
   ler_guia: ["guia"],
-  ler_porta: ["porta", "valores", "filtros"],
+  ler_porta: ["porta", "valores", "filtros", "campos"],
+  ler_formato_da_porta: ["porta", "metodo"],
   procurar_porta: ["pergunta"],
   propor_mudanca: [
-    "porta", "metodo", "valores", "corpo", "resumo", "motivo",
+    "porta", "metodo", "valores", "corpo", "resumo", "motivo", "pedido_expresso",
   ],
   montar_pacote_do_nicho: [
-    "nicho", "negocio", "descricao", "nome_do_agente", "followups",
+    "nicho", "negocio", "descricao", "nome_do_agente", "followups", "pedido_expresso",
   ],
   testar_agente: ["agente_id", "mensagens"],
+  conferir_agente: ["agente_id"],
   auditar_empresa: [],
+  dicionario_de_dados: ["busca"],
+  consultar_dados: ["sql"],
 };
 
 const FERRAMENTAS_DE_LEITURA = [
@@ -53,16 +57,21 @@ const FERRAMENTAS_DE_LEITURA = [
   "auditar_empresa",
   "consultar_metrica",
   "ler_guia",
+  "ler_formato_da_porta",
   "ler_porta",
   "listar_metricas",
   "listar_telas",
   "procurar_porta",
 ];
 
+/** Análise livre dos dados: gerente e administrador (a cerca é o banco, não o papel). */
+const FERRAMENTAS_DE_ANALISE = ["consultar_dados", "dicionario_de_dados"];
+
 const FERRAMENTAS_SO_ADMIN = [
   "propor_mudanca",
   "montar_pacote_do_nicho",
   "testar_agente",
+  "conferir_agente",
 ];
 
 /** Todos os nomes de propriedade de um JSON Schema, em qualquer profundidade. */
@@ -102,28 +111,40 @@ describe("montarFerramentasDoAssistente", () => {
     vi.restoreAllMocks();
   });
 
-  it("viewer, agent e manager não recebem nenhuma das 3 ferramentas de escrita", () => {
+  it("viewer, agent e manager não recebem nenhuma das ferramentas de escrita", () => {
     for (const papel of ["viewer", "agent", "manager"] as const) {
       const { ferramentas } = montarParaTeste(papel);
+      const esperadas = papel === "manager" ? [...FERRAMENTAS_DE_LEITURA, ...FERRAMENTAS_DE_ANALISE] : FERRAMENTAS_DE_LEITURA;
 
-      expect(Object.keys(ferramentas).sort()).toEqual([...FERRAMENTAS_DE_LEITURA].sort());
+      expect(Object.keys(ferramentas).sort()).toEqual([...esperadas].sort());
       for (const f of FERRAMENTAS_SO_ADMIN) {
         expect(ferramentas).not.toHaveProperty(f);
       }
     }
   });
 
+  it("a análise livre dos dados é só de gerente e administrador (sabotagem: dar a viewer/agent deixa vermelho)", () => {
+    for (const papel of ["viewer", "agent"] as const) {
+      const { ferramentas } = montarParaTeste(papel);
+      for (const f of FERRAMENTAS_DE_ANALISE) expect(ferramentas).not.toHaveProperty(f);
+    }
+    for (const papel of ["manager", "admin"] as const) {
+      const { ferramentas } = montarParaTeste(papel);
+      for (const f of FERRAMENTAS_DE_ANALISE) expect(ferramentas).toHaveProperty(f);
+    }
+  });
+
   it("admin recebe as 3 ferramentas de escrita + as de leitura", () => {
     const { ferramentas: doAdmin } = montarParaTeste("admin");
     const adminChaves = Object.keys(doAdmin).sort();
-    expect(adminChaves).toEqual([...FERRAMENTAS_DE_LEITURA, ...FERRAMENTAS_SO_ADMIN].sort());
+    expect(adminChaves).toEqual([...FERRAMENTAS_DE_LEITURA, ...FERRAMENTAS_DE_ANALISE, ...FERRAMENTAS_SO_ADMIN].sort());
     for (const f of FERRAMENTAS_SO_ADMIN) {
       expect(doAdmin).toHaveProperty(f);
     }
   });
 
   it("o teto de passos do turno é 15", () => {
-    expect(MAXIMO_DE_PASSOS_DO_ASSISTENTE).toBe(15);
+    expect(MAXIMO_DE_PASSOS_DO_ASSISTENTE).toBe(20);
   });
 
   it("cada esquema de entrada tem exatamente as propriedades esperadas", async () => {
@@ -143,7 +164,10 @@ describe("montarFerramentasDoAssistente", () => {
 
     for (const nome of Object.keys(ferramentas)) {
       const esquema = await esquemaDeEntradaDe(ferramentas, nome);
-      const proibidas = nomesDePropriedades(esquema).filter((propriedade) => PROIBIDAS.includes(propriedade));
+      // Única exceção, de propósito: o SQL de `consultar_dados` (cercado pelo banco, ver consulta-livre/).
+      const proibidas = nomesDePropriedades(esquema).filter(
+        (propriedade) => PROIBIDAS.includes(propriedade) && !(nome === "consultar_dados" && propriedade === "sql"),
+      );
       expect({ nome, proibidas }).toEqual({ nome, proibidas: [] });
     }
   });
@@ -176,6 +200,7 @@ describe("montarFerramentasDoAssistente", () => {
     ["abrir_tela", { destino: ["/app/inbox"] }],
     ["ler_guia", { guia: {} }],
     ["ler_porta", { porta: 123 }],
+    ["ler_formato_da_porta", { porta: 123 }],
     ["procurar_porta", { pergunta: 123 }],
     ["propor_mudanca", { porta: 123 }],
     ["montar_pacote_do_nicho", { nicho: 123 }],
@@ -197,10 +222,12 @@ describe("montarFerramentasDoAssistente", () => {
     "abrir_tela",
     "ler_guia",
     "ler_porta",
+    "ler_formato_da_porta",
     "procurar_porta",
     "propor_mudanca",
     "montar_pacote_do_nicho",
     "testar_agente",
+    "conferir_agente",
     "auditar_empresa",
   ])(
     "%s com entrada nula não lança e devolve parametro_invalido",

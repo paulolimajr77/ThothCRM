@@ -88,7 +88,7 @@ async function lerLlmDaOrganizacao(
 }
 
 const AGENT_COLUMNS =
-  "id, organization_id, name, description, model, system_prompt, is_active, is_default, kind, priority, published_version_id, paused_at, operation_mode, operation_revision, archived_at, config, guardrails, active_kb_version_id, created_at, updated_at";
+  "id, organization_id, name, description, model, system_prompt, is_active, is_default, kind, priority, published_version_id, paused_at, operation_mode, operation_revision, archived_at, config, guardrails, active_kb_version_id, created_at, created_by, updated_at";
 
 /**
  * As mesmas colunas MAIS o join da versão publicada — só para a LISTAGEM.
@@ -119,7 +119,9 @@ export async function GET(req: NextRequest): Promise<Response> {
   const authz = await resolveAuthDual(req, {
     requestId,
     resource: "ai_agents",
-    role: "manager",
+    // Leitura da configuração vale para a equipe toda; criar e alterar seguem no papel
+    // de cima (decisão do Paulo, 29/10/2026). A RLS de SELECT já era por organização.
+    role: "viewer",
     scope: "mcp:read",
   });
   if (!authz.ok) return authz.response;
