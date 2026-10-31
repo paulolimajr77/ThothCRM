@@ -17,10 +17,14 @@ permissions:
 jobs:
   curso:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 330
     env:
       E2E_PORT: "3460"
       CURSO_URL: http://localhost:3460
+      # só português (decisão do Paulo, 31/10/2026)
+      CURSO_IDIOMA: pt-BR
+      # vazio = todas as jornadas; "pular" = nenhuma (rodada curta de diagnóstico)
+      CURSO_JORNADAS: ""
       # vazio = todos os módulos; com nomes = rodada curta de diagnóstico
       CURSO_MODULOS: ""
       NEXT_TELEMETRY_DISABLED: "1"
@@ -32,6 +36,14 @@ jobs:
 
       - name: Tags do upstream (a versão do rodapé sai do git describe)
         run: git fetch --tags --force https://github.com/melgarafael/DeskcommCRM.git
+
+      - name: Versão e commit do app fotografado (o capturador exige os dois)
+        run: |
+          set -euo pipefail
+          versao=$(git describe --tags --abbrev=0)
+          echo "versão: $versao  commit: $GITHUB_SHA"
+          echo "CURSO_VERSAO_FOTOS=${versao#v}" >> "$GITHUB_ENV"
+          echo "CURSO_COMMIT_FOTOS=$GITHUB_SHA" >> "$GITHUB_ENV"
 
       - name: Tirar as portas do Supabase da faixa efêmera
         run: |
@@ -181,10 +193,36 @@ jobs:
           echo "falhos: $(paste -sd' ' /tmp/modulos-falhos)"
           [ -s /tmp/modulos-ok ]
 
-      - name: Montar o site (só módulos com todas as fotos)
+      # A história da loja consulta uma fonte de pedidos fictícia de verdade: banco
+      # separado no Postgres da bancada, lido pelo IP de rede do runner (o leitor de
+      # dados externos recusa localhost, e essa guarda do produto fica como está).
+      - name: Fotografar as jornadas por ramo
+        if: env.CURSO_JORNADAS != 'pular'
+        run: |
+          set -uo pipefail
+          pnpm exec tsx curso/semear-demonstracao.ts || exit 1
+          ip_lan=$(hostname -I | tr ' ' '\n' | grep -E '^(10|192\.168|172\.(1[6-9]|2[0-9]|3[01]))\.' | head -1)
+          echo "IP da bancada: $ip_lan"
+          SUPABASE_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+          CURSO_FONTE_HOST="$ip_lan" CURSO_FONTE_PORT=54322 \
+            pnpm exec tsx curso/preparar-fonte-loja.ts || echo "fonte da loja: FALHOU"
+          if pnpm exec tsx curso/capturar-jornadas.ts ${CURSO_JORNADAS}; then
+            echo ok > /tmp/jornadas-ok
+          else
+            echo "jornadas com falha (o site sai sem as histórias pendentes)"
+          fi
+
+      # Completo quando tudo deu certo; senão, só os módulos inteiros.
+      - name: Montar o site
         run: |
           set -euo pipefail
-          CURSO_BASE="/curso/" pnpm exec tsx curso/montar.ts $(cat /tmp/modulos-ok)
+          if [ -s /tmp/modulos-falhos ] || [ ! -f /tmp/jornadas-ok ]; then
+            echo "montagem parcial: $(wc -l < /tmp/modulos-ok) módulos"
+            CURSO_BASE="/curso/" pnpm exec tsx curso/montar.ts $(cat /tmp/modulos-ok)
+          else
+            echo "montagem completa"
+            CURSO_BASE="/curso/" pnpm exec tsx curso/montar.ts
+          fi
 
       - name: Trocar a marca do site do curso
         run: |
@@ -221,6 +259,19 @@ jobs:
           name: curso-thoth
           path: /tmp/pacote
           retention-days: 90
+
+      - name: Fotos das falhas (se algo falhou)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: curso-thoth-falhas
+          path: |
+            curso/saida/falha-*.jpg
+            curso/saida/capturas.json
+            /tmp/modulos-ok
+            /tmp/modulos-falhos
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Log do app (se algo falhou)
         if: failure()
