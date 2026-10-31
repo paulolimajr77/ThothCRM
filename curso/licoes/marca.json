@@ -284,7 +284,7 @@
         {
           "id": "p5",
           "titulo": "Salvar e ver no menu",
-          "texto": "Clique em \"Salvar\", no fim da página. Um aviso rápido \"Marca salva.\" confirma e, sem recarregar nada, os botões passam a usar a sua cor, ou o tom dela que o sistema escolheu na escala. Se a empresa ainda não tem logo, o alto do menu lateral passa a mostrar o nome da empresa.",
+          "texto": "Clique em \"Salvar\", no fim da página. Um aviso rápido \"Marca salva.\" confirma e, sem recarregar nada, os botões passam a usar a sua cor, ou o tom dela que o sistema escolheu na escala. Se a empresa ainda não tem logo, o alto do menu lateral passa a mostrar o nome da empresa. Com logo, o logo continua ali.",
           "dica": "Para voltar ao que era antes, apague o nome e a cor, deixe os campos em branco e salve de novo.",
           "antes": [
             {
@@ -298,7 +298,8 @@
             {
               "acao": "aguardar",
               "alvo": {
-                "css": "aside span[title='Clínica Bem Viver']"
+                "css": "aside img[alt='Clínica Bem Viver']",
+                "n": 0
               }
             },
             {
@@ -309,9 +310,10 @@
           "destaques": [
             {
               "alvo": {
-                "css": "aside span[title='Clínica Bem Viver']"
+                "css": "aside img[alt='Clínica Bem Viver']",
+                "n": 0
               },
-              "rotulo": "Nome no menu",
+              "rotulo": "Logo no alto do menu",
               "tipo": "seta"
             },
             {
@@ -602,9 +604,7 @@
             {
               "acao": "rolar",
               "alvo": {
-                "role": "button",
-                "nome": "Salvar",
-                "exato": true
+                "css": "#org_email_reply_to"
               }
             }
           ],
@@ -619,12 +619,10 @@
             },
             {
               "alvo": {
-                "role": "button",
-                "nome": "Salvar",
-                "exato": true
+                "css": "#org_email_reply_to"
               },
-              "rotulo": "Salvar apagado",
-              "tipo": "seta"
+              "rotulo": "Corrija aqui",
+              "tipo": "caixa"
             }
           ]
         }

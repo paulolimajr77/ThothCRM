@@ -411,39 +411,23 @@
               "rotulo": "Escolher foto",
               "tipo": "caixa"
             }
-          ],
-          "clicar": {
-            "role": "button",
-            "nome": "Áudio",
-            "exato": true
-          }
+          ]
         },
         {
           "id": "p2",
-          "titulo": "Uma resposta que é um áudio",
-          "texto": "No alto da janela, em \"Tipo de resposta rápida\", clique em \"Áudio\". O campo de mensagem dá lugar a \"Arquivo de áudio\": escolha o arquivo gravado (OGG, MP3, AAC, AMR ou WAV, até 16 MB). A resposta de áudio não tem texto: na Inbox, o clique abre a janela \"Enviar anexo\" com o arquivo pronto, e você confere e clica em \"Enviar\". Para ouvir antes, use o lápis aqui nesta tela.",
+          "titulo": "Um áudio na resposta",
+          "texto": "Logo abaixo das imagens fica \"Arquivo de áudio\": escolha o arquivo gravado (OGG, OPUS, MP3, AAC, AMR ou WAV). A mesma resposta pode levar texto, imagem e áudio juntos. Na Inbox, a imagem e o áudio entram na fila de anexos, com prévia, e você confere antes de enviar. Para ouvir um áudio já salvo, use o lápis aqui nesta tela.",
           "dica": "O áudio do gravador do iPhone e do Mac (M4A) não é aceito e nem aparece na hora de escolher o arquivo. Converta para MP3 antes.",
           "antes": [
             {
-              "acao": "click",
+              "acao": "rolar",
               "alvo": {
-                "role": "button",
-                "nome": "Áudio",
+                "rotulo": "Arquivo de áudio",
                 "exato": true
               }
             }
           ],
           "destaques": [
-            {
-              "alvo": {
-                "css": "div.space-y-2:has(> div.flex.gap-1 > button)",
-                "dentro": {
-                  "role": "dialog"
-                }
-              },
-              "rotulo": "Texto ou Áudio",
-              "tipo": "caixa"
-            },
             {
               "alvo": {
                 "rotulo": "Arquivo de áudio",

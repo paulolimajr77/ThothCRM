@@ -242,12 +242,10 @@
           "titulo": "O que ninguém cobrou",
           "rota": "/app/comandas",
           "texto": "Embaixo da lista fica \"Atendimentos sem comanda\": os atendimentos da agenda dos últimos 30 dias que já aconteceram, não foram cancelados nem tiveram falta, e ainda não viraram comanda. Nada vem marcado: você confere e marca o que vai cobrar. O atendimento de um serviço sem preço aparece com o aviso \"sem preço no serviço\" e não pode ser marcado. Abra uma comanda à mão para ele, ou ponha o preço no serviço em Configurações › Tipos de agendamento.",
+          "antes": [
+            { "acao": "rolar", "alvo": { "testid": "pendente-f1b00007-0000-4000-8000-000000000001" } }
+          ],
           "destaques": [
-            {
-              "alvo": { "role": "heading", "nome": "Atendimentos sem comanda", "exato": true },
-              "rotulo": "Esquecidos",
-              "tipo": "caixa"
-            },
             {
               "alvo": { "testid": "pendente-f1b00007-0000-4000-8000-000000000001" },
               "rotulo": "Marcar para cobrar",

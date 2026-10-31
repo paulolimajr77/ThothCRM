@@ -169,7 +169,8 @@
             {
               "acao": "rolar",
               "alvo": {
-                "css": "[role='img'][aria-label^='Escala']"
+                "css": "[role='img'][aria-label^='Escala']",
+                "n": 0
               }
             }
           ],
