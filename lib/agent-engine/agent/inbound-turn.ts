@@ -1166,6 +1166,35 @@ const AGENDA_CADEIA_SYSTEM_BLOCK =
   'Nunca invente um `slug`: ele vem da lista, escrito igualzinho.';
 
 /**
+ * O bloco de modo da PRÉVIA, por tipo (#3757).
+ *
+ * As duas prévias rodam o agente publicado, mas o destino do texto é outro:
+ *
+ *   - `sandbox` — o botão "Testar" do agente. Quem lê é quem está configurando o
+ *     agente, e a fala é do próprio agente. O texto abaixo NÃO muda: é o mesmo de
+ *     antes desta separação.
+ *   - `assisted` — o botão "Sugerir resposta" do Inbox. O rascunho cai na caixa do
+ *     atendente HUMANO, que vai revisar e enviar. Sem dizer isso, o prompt de
+ *     atendimento automático (que ensina a passar a vez a uma pessoa) vazava: a
+ *     sugestão saía na voz do assistente — "vou avisar o atendente e ele já te
+ *     responde" — e o atendente descartava o rascunho.
+ */
+const BLOCO_PREVIA: Record<TurnPreview['kind'], string> = {
+  sandbox:
+    'MODO PRÉVIA: proponha a resposta com send_message. Operações são propostas separadas; nunca diga que executou uma proposta. Nenhum envio real acontece.',
+  assisted:
+    'MODO ASSISTIDO: você escreve o RASCUNHO da próxima mensagem que o atendente humano desta conversa vai revisar e enviar ao cliente, em nome dele. ' +
+    'Escreva na primeira pessoa, como esse atendente, com base no histórico, nas notas e no conhecimento disponível. ' +
+    'Não fale como assistente nem como IA, não diga que vai avisar, chamar ou transferir para alguém e não proponha passar o atendimento. ' +
+    'Proponha a mensagem com send_message. Operações são propostas separadas; nunca diga que executou uma proposta. Nenhum envio real acontece.',
+};
+
+/** O bloco do modo de prévia que entra no `system` — decisão num lugar só, testável. */
+export function blocoDoModoDePrevia(kind: TurnPreview['kind']): string {
+  return BLOCO_PREVIA[kind];
+}
+
+/**
  * Os blocos de agenda que ESTE agente recebe — a decisão num lugar só, testável.
  *
  * A régua é o que o agente TEM: os dois blocos de ensino nomeiam ferramentas, e
@@ -2766,10 +2795,14 @@ async function executarTurnoDoAgente(
   // testada (o bloco da cadeia nomeia `crm_list_event_types`, e nomear
   // ferramenta ausente faz o modelo tentar chamá-la).
   if (agentConfig !== null) blocosResidentes.push(...blocosDeAgendaResidentes(agentConfig.toolIds));
-  if (preview)
-    blocosResidentes.push(
-      'MODO PRÉVIA: proponha a resposta com send_message. Operações são propostas separadas; nunca diga que executou uma proposta. Nenhum envio real acontece.',
-    );
+  // #3757: o bloco da prévia diz de QUEM é a voz. São duas prévias com donos
+  // diferentes — o "Testar" (sandbox) é do agente falando como agente, mas o
+  // "Sugerir resposta" (assisted) escreve o rascunho que o ATENDENTE humano vai
+  // revisar e enviar. Com um bloco só, o prompt de atendimento automático (que
+  // ensina a passar a vez a uma pessoa) vazava para a caixa do atendente e o
+  // rascunho saía em terceira pessoa — "vou avisar o atendente e ele responde".
+  // Vive em função de módulo (`blocoDoModoDePrevia`) para poder ser testada.
+  if (preview) blocosResidentes.push(blocoDoModoDePrevia(preview.kind));
   const system = blocosResidentes.join('\n\n');
   const openingContext = preview
     ? preview.context
@@ -2974,6 +3007,34 @@ async function executarTurnoDoAgente(
       lead_avisado: aviso.avisado,
     });
     return; // bot silencia: a confirmação já saiu, e nada mais sai neste turno
+  }
+
+  // O PÚBLICO DO AGENTE (#3722) — a segunda régua de ENTRADA, ao lado do
+  // filtro de palavra-chave e pelo mesmo motivo: ela decide se o MODELO entra,
+  // nunca se a pessoa é ouvida. As detecções determinísticas acima (pedido de
+  // humano, opt-out) já rodaram — quem escreveu "SAIR" segue registrado mesmo
+  // que nenhum agente atenda este público.
+  //
+  // SILÊNCIO, e o genérico NÃO assume: `config` já veio `null` da seleção
+  // (`escolherAgenteDoNumero`), e sem esta guarda o turno seguiria no agente
+  // genérico — que não tem público nenhum e voltaria a vender para o cliente
+  // com contrato, que é o defeito da issue com outro nome. O turno termina sem
+  // modelo, sem caso e sem aviso; a mensagem continua na caixa de entrada, onde
+  // o operador vê e responde à mão (a mesma defesa do filtro de palavra-chave).
+  //
+  // Vale em TODO turno — resposta e follow-up —, ao contrário da janela
+  // horária: um follow-up armado antes de o contato virar cliente também
+  // calaria pelo mesmo critério.
+  if (
+    !preview &&
+    'silencioPeloPublico' in routed &&
+    routed.silencioPeloPublico === true
+  ) {
+    runLog.info('turno pulado — nenhum agente publicado neste número atende ao público deste contato (#3722)', {
+      kind: liveJob().kind,
+      conversation_id: input.conversationId,
+    });
+    return;
   }
 
   // O FILTRO DE PALAVRA-CHAVE da versão publicada (#2679) — DEPOIS das duas
