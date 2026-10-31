@@ -979,7 +979,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["PATCH"],
     parametros: ["user_id"],
     area: "attendants",
-    resumo: "PATCH /api/v1/attendants/availability/[user_id] — grava disponibilidade.",
+    resumo: "PATCH define a jornada de UM profissional (o id dele vai em valores). Corpo: {schedule:{timezone:'Europe/Lisbon', windows:[{dow:1,start:'09:00',end:'18:00'}, ...]}} (dow 0=domingo, 1=segunda…6=sábado; um item por dia). SEM isso a agenda não oferece nenhum horário, mesmo com o serviço ligado.",
   },
   {
     id: "attendants/presence",

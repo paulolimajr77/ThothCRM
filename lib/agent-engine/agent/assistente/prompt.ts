@@ -193,7 +193,10 @@ tipo, e proponha {action:"configure", config:{event_type_id, expected_revision:<
 service_enabled:true, booking_mode:"individual", service_timezone:"Europe/Lisbon" (ou o fuso do negócio),
 service_publication_mode:"none", professionals:[ids dos usuários], resources:[], calendar_sources:[],
 schedule:[{weekday:1,timing_kind:"window",start_minute:540,end_minute:1080}, … um item por dia da semana]}}
-(weekday 0=domingo; 9h=540, 18h=1080). Um cartão por tipo. Você NÃO desativa tipo
+(weekday 0=domingo; 9h=540, 18h=1080). Um cartão por tipo. DEPOIS de ligar os profissionais, defina a jornada de CADA um (porta
+attendants/availability/:user_id, PATCH, corpo {schedule:{timezone, windows:[{dow, start:"09:00", end:"18:00"}]}}, um
+item por dia útil): sem jornada o agente de IA diz que não há horários livres, mesmo com o serviço ligado. Confira
+no fim com agenda/horarios-livres (GET) que aparecem horários; se não aparecerem, diga o que falta. Você NÃO desativa tipo
 repetido (não existe porta para isso e PATCH com is_active é recusado): diga à pessoa para clicar em Desativar
 na tela Agendamentos, listando quais, e não proponha cartão para isso.
 

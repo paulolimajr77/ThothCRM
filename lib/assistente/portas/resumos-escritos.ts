@@ -23,6 +23,7 @@ export const RESUMOS_ESCRITOS: Readonly<Record<string, string>> = {
   "ai/knowledge/busca": "POST pergunta à base de conhecimento (corpo: pergunta) e devolve os trechos achados. Só consulta, não muda nada.",
   "ai/routers/:id/test": "POST testa como o roteador classifica uma mensagem (corpo: message). Só teste, não muda nada.",
   "ai/knowledge/reindex-all": "POST prepara de novo todos os materiais da base. Gasta chave de IA: avise antes.",
+  "attendants/availability/:user_id": "PATCH define a jornada de UM profissional (o id dele vai em valores). Corpo: {schedule:{timezone:'Europe/Lisbon', windows:[{dow:1,start:'09:00',end:'18:00'}, ...]}} (dow 0=domingo, 1=segunda…6=sábado; um item por dia). SEM isso a agenda não oferece nenhum horário, mesmo com o serviço ligado.",
   "agenda/tipos/reativar": "POST reativa um tipo de agendamento que estava desativado (corpo: id). Gerente ou acima.",
   "ai/agents": "GET lista os agentes de IA da empresa (publicado, pausado, modelo); POST cria um agente novo (só administrador).",
   "ai/agents/:id": "GET mostra um agente de IA; PATCH altera os dados do agente (nome e configuração). Alterar é só para administrador.",

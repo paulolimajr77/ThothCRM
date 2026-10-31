@@ -13,6 +13,7 @@ import { z, type ZodType } from "zod";
 
 import { configuracaoDoServicoSchema } from "@/lib/agenda/servicos/regras";
 import { versionPatchSchema } from "@/lib/ai/agents/validation";
+import { availabilityPatchSchema } from "@/lib/schemas/routing";
 import { createFollowupFlowSchema, patchFollowupFlowSchema } from "@/lib/followup/api-schemas";
 
 // Espelho dos campos OBRIGATÓRIOS de `agenda/tipos` (a rota não exporta o esquema; ela continua sendo a autoridade).
@@ -38,6 +39,7 @@ const ESQUEMAS: Record<string, ZodType> = {
   "ai/agents/:id/versions/:vid|PATCH": versionPatchSchema,
   "agenda/tipos|POST": tipoDeAgendamentoPost,
   "agenda/tipos|PATCH": tipoDeAgendamentoPatch,
+  "attendants/availability/:user_id|PATCH": availabilityPatchSchema,
   "agenda/servicos|POST": servicoDaAgendaPost,
 };
 
