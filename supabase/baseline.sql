@@ -72047,5 +72047,18 @@ begin
        where organization_id is null and name = 'assistente-sistema-vivo-completo';
     end if;
   end if;
+  select v.* into v_antigo from skill_pointers p join skill_versions v on v.id = p.version_id
+   where p.organization_id is null and p.name = 'assistente-triagem-do-negocio';
+  if found then
+    v_corpo := v_antigo.body;
+    v_corpo := replace(v_corpo, $o$Equipe e papéis são do dono, na tela; você só registra o que ele precisa fazer.$o$, $n$Papéis, convites e remoção de pessoas são do dono, na tela; você só registra o que ele precisa fazer. Já os SETORES de atendimento (criar, renomear) e pôr cada atendente num setor você propõe por cartão, nas portas de setores.$n$);
+    if v_corpo is distinct from v_antigo.body then
+      insert into skill_versions (organization_id, name, description, body, matcher, manifest)
+      values (null, v_antigo.name, v_antigo.description, v_corpo, v_antigo.matcher, v_antigo.manifest)
+      returning id into v_id;
+      update skill_pointers set version_id = v_id, updated_at = now()
+       where organization_id is null and name = 'assistente-triagem-do-negocio';
+    end if;
+  end if;
 end
 $guias$;
