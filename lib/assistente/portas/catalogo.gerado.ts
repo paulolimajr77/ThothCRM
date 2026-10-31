@@ -475,7 +475,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["GET", "PATCH", "DELETE"],
     parametros: ["id"],
     area: "ai",
-    resumo: "GET mostra o follow-up (rascunho, gatilho, regra de passar ao humano); PATCH altera o rascunho do follow-up. Gerente ou acima.",
+    resumo: "GET mostra o follow-up (rascunho, gatilho, regra de passar ao humano); PATCH altera o rascunho do follow-up. Para MOVER O CARD de etapa no fim do fluxo (ex.: 'Não marcou'), o grafo tem o nó type 'move_lead' com config {stage_id: id da etapa lido do funil, lost_reason: motivo curto se a etapa for de perda}, ligado antes do nó final: isso existe, não diga que não dá. Gerente ou acima.",
   },
   {
     id: "ai/followup-flows/:id/disable",
@@ -995,7 +995,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["PUT"],
     parametros: ["user_id"],
     area: "attendants",
-    resumo: "PUT põe o atendente (user_id) num setor, troca ou tira. Corpo: { sector_id } com o id do setor, ou null para tirar do setor. Muda para onde vão as conversas dele (cartão de alerta).",
+    resumo: "PUT põe o atendente (user_id) num setor, troca ou tira. Corpo: { sector_id } com o id do setor, ou null para tirar do setor. Muda para onde vão as conversas dele.",
   },
   {
     id: "attendants/sectors",

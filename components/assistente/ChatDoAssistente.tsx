@@ -632,18 +632,33 @@ export function ChatDoAssistente({
     tipo: "ok" | "erro",
     proximosPassos?: ProximoPasso[],
   ) {
-    setMensagens((atuais) => [
-      ...atuais,
-      {
-        id: `desfecho-${randomId()}`,
-        author_kind: "ai",
-        body: texto,
-        desfecho: tipo,
-        ...(proximosPassos === null || proximosPassos === undefined
-          ? {}
-          : { proximosPassos }),
-      },
-    ]);
+    setMensagens((atuais) => {
+      // Vários "Pronto" seguidos (um por cartão aplicado) viram UMA mensagem que cresce, em vez de
+      // uma pilha de mensagens que empurra os cartões para longe no chat.
+      const ultima = atuais[atuais.length - 1];
+      if (
+        ultima !== undefined &&
+        ultima.desfecho === "ok" &&
+        tipo === "ok" &&
+        ultima.proximosPassos === undefined &&
+        (proximosPassos === null || proximosPassos === undefined)
+      ) {
+        return [...atuais.slice(0, -1), { ...ultima, body: `${ultima.body}
+${texto}` }];
+      }
+      return [
+        ...atuais,
+        {
+          id: `desfecho-${randomId()}`,
+          author_kind: "ai",
+          body: texto,
+          desfecho: tipo,
+          ...(proximosPassos === null || proximosPassos === undefined
+            ? {}
+            : { proximosPassos }),
+        },
+      ];
+    });
   }
 
   /** A resposta da ação já traz a proposta nova: o cartão muda na hora. */

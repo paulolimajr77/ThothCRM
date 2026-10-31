@@ -67,7 +67,7 @@ describe("idsParaAprovarTudo", () => {
         id: "x",
         risk: "atencao",
         created_at: "2026-10-30T10:02:00Z",
-        payload: { porta: "attendants/sector/:user_id", metodo: "PUT" },
+        payload: { porta: "ai/followups/enrollments", metodo: "POST" },
       }),
       proposta({ id: "d", risk: "atencao", status: "aprovada", created_at: "2026-10-30T10:04:00Z" }),
       proposta({ id: "v", risk: "atencao", vencida: true, created_at: "2026-10-30T10:05:00Z" }),

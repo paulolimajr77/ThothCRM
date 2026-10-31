@@ -289,10 +289,10 @@ export const ESCRITA_PERMITIDA: readonly {
   { porta: "agenda/google/calendarios/atualizar", metodo: "POST", descricao: "atualizar calendário Google" },
   // ---- Grupo 3: efeito fora do sistema (cartão de ALERTA, aprovação individual, nunca em lote) ----
   // Versão 1.95.0 (aprovado pelo Paulo, 30/10/2026): setores, grupos de respostas rápidas e "não são a
-  // mesma pessoa". Colocar uma pessoa num setor muda para onde vão as conversas dela: cartão de alerta.
+  // mesma pessoa". Pôr uma pessoa num setor só muda para onde vão as conversas dela (interno, reversível): cartão comum, entra no Aprovar tudo (pedido do Paulo, 31/10).
   { porta: "attendants/sectors", metodo: "POST", descricao: "criar setor de atendimento" },
   { porta: "attendants/sectors/:id", metodo: "PATCH", descricao: "renomear ou redescrever um setor de atendimento" },
-  { porta: "attendants/sector/:user_id", metodo: "PUT", descricao: "pôr um atendente num setor, trocar ou tirar do setor", externo: true },
+  { porta: "attendants/sector/:user_id", metodo: "PUT", descricao: "pôr um atendente num setor, trocar ou tirar do setor" },
   { porta: "message-template-groups", metodo: "POST", descricao: "criar grupo de respostas rápidas" },
   { porta: "message-template-groups/:id", metodo: "PATCH", descricao: "renomear grupo de respostas rápidas" },
   { porta: "message-template-groups/:id/ordem", metodo: "PUT", descricao: "reordenar os grupos de respostas rápidas" },

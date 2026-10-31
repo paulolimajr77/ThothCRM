@@ -126,7 +126,7 @@ export const RESUMOS_ESCRITOS: Readonly<Record<string, string>> = {
   "message-templates/:id/ordem": "PUT reordena as respostas rápidas: põe esta logo depois de outra (depois_de) ou na primeira posição.",
   "attendants/sectors": "GET lista os setores de atendimento; POST cria um setor. Corpo do POST: { name (até o limite do nome), description (opcional) }. Gerente ou administrador.",
   "attendants/sectors/:id": "PATCH renomeia/redescreve o setor. Corpo: { name, description } (os dois campos; description pode ser null). Gerente ou administrador.",
-  "attendants/sector/:user_id": "PUT põe o atendente (user_id) num setor, troca ou tira. Corpo: { sector_id } com o id do setor, ou null para tirar do setor. Muda para onde vão as conversas dele (cartão de alerta).",
+  "attendants/sector/:user_id": "PUT põe o atendente (user_id) num setor, troca ou tira. Corpo: { sector_id } com o id do setor, ou null para tirar do setor. Muda para onde vão as conversas dele.",
   "message-template-groups": "GET lista os grupos de respostas rápidas; POST cria um. Corpo do POST: { name } (até 60 letras).",
   "message-template-groups/:id": "PATCH renomeia o grupo. Corpo: { name } (até 60 letras).",
   "message-template-groups/:id/ordem": "PUT reordena os grupos: põe este logo depois de outro. Corpo: { depois_de } com o id do grupo da esquerda, ou null para a primeira posição.",
