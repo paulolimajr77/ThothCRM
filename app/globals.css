@@ -1522,24 +1522,51 @@
   }
 }
 
-/* Robô digitando do assistente (components/assistente/RoboDigitando.tsx): mãos batem
-   nas teclas em vez de deslizar; passos secos para manter o jeito de pixel art. */
-@keyframes robo-digita {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(1px); }
+/* Robô do assistente (components/assistente/RoboDigitando.tsx): ciclo de 9 s com três
+   fases (digita, pensa, escreve) e cores por token, claro e escuro. Passos secos para
+   manter o jeito de pixel art. */
+.robo-svg {
+  --robo-o: #2f3566; --robo-b: #7c9cff; --robo-l: #b9c9ff; --robo-v: #2a2f5c;
+  --robo-e: #8ff3ff; --robo-r: #ff9db8; --robo-t: #c9cfe6; --robo-m: #ffc857;
+  --robo-p: #fffdf4; --robo-glow: #ffd75e;
 }
-@keyframes robo-pisca {
-  0%, 90%, 100% { opacity: 1; }
-  95% { opacity: 0; }
+[data-theme="dark"] .robo-svg {
+  --robo-o: #0b0d26; --robo-b: #8fb0ff; --robo-l: #c9d6ff; --robo-v: #151a3d;
+  --robo-t: #4a5180; --robo-p: #e9ecff;
 }
-@keyframes robo-antena-pisca {
-  0%, 49% { opacity: 1; }
-  50%, 100% { opacity: 0.25; }
-}
-.robo-mao { animation: robo-digita 0.36s steps(1, end) infinite; }
-.robo-mao-b { animation-delay: 0.18s; }
-.robo-olho { animation: robo-pisca 3s steps(1, end) infinite; }
-.robo-antena { animation: robo-antena-pisca 0.8s steps(1, end) infinite; }
+.robo-c-o { fill: var(--robo-o); }
+.robo-c-b { fill: var(--robo-b); }
+.robo-c-l { fill: var(--robo-l); }
+.robo-c-v { fill: var(--robo-v); }
+.robo-c-e { fill: var(--robo-e); }
+.robo-c-r { fill: var(--robo-r); }
+.robo-c-t { fill: var(--robo-t); }
+.robo-c-m { fill: var(--robo-m); }
+.robo-c-p { fill: var(--robo-p); }
+.robo-brilho { fill: var(--robo-glow); animation: robo-antena-pisca 0.8s steps(1, end) infinite; }
+.robo-f { opacity: 0; }
+.robo-f1 { animation: robo-fase-1 9s steps(1, end) infinite; }
+.robo-f2 { animation: robo-fase-2 9s steps(1, end) infinite; }
+.robo-f3 { animation: robo-fase-3 9s steps(1, end) infinite; }
+@keyframes robo-fase-1 { 0% { opacity: 1; } 33.3% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes robo-fase-2 { 0% { opacity: 0; } 33.3% { opacity: 1; } 66.6% { opacity: 0; } 100% { opacity: 0; } }
+@keyframes robo-fase-3 { 0% { opacity: 0; } 66.6% { opacity: 1; } 100% { opacity: 1; } }
+@keyframes robo-digita { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1px); } }
+@keyframes robo-antena-pisca { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.3; } }
+@keyframes robo-ponto { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+@keyframes robo-risca { 0% { width: 0; } 100% { width: 4px; } }
+@keyframes robo-caneta { 0% { transform: translateX(0); } 100% { transform: translateX(4px); } }
+.robo-mao-a { animation: robo-digita 0.3s steps(1, end) infinite; }
+.robo-mao-b { animation: robo-digita 0.3s steps(1, end) infinite 0.15s; }
+.robo-faisca { animation: robo-ponto 0.3s steps(1, end) infinite; }
+.robo-faisca-b { animation-delay: 0.15s; }
+.robo-ponto { animation: robo-ponto 1s steps(1, end) infinite; }
+.robo-ponto-2 { animation-delay: 0.33s; }
+.robo-ponto-3 { animation-delay: 0.66s; }
+.robo-risco { animation: robo-risca 1.5s steps(4, end) infinite; }
+.robo-caneta { animation: robo-caneta 1.5s steps(4, end) infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .robo-mao, .robo-olho, .robo-antena { animation: none; }
+  .robo-f { animation: none; }
+  .robo-f1 { opacity: 1; }
+  .robo-brilho, .robo-mao-a, .robo-mao-b, .robo-faisca, .robo-ponto, .robo-risco, .robo-caneta { animation: none; }
 }
