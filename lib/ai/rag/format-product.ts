@@ -54,7 +54,7 @@ function resolveName(texto: TextoPorIdioma | null | undefined): string {
  */
 export function formatProductForRag(product: NuvemshopProduct): string {
   const name = resolveName(product.name);
-  const description = stripHtml(resolveName(product.description));
+  const description = product.description ? stripHtml(product.description as string) : "";
   const price = product.price ? `R$ ${product.price}` : "N/A";
   const sku = product.sku ?? "N/A";
   const permalink = product.permalink ?? "";

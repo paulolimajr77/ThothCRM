@@ -196,7 +196,7 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<NextRespons
     resourceType: "nuvemshop_webhook",
     // `resource_id` é uuid; o id externo (`product/created:<loja>:<produto>`)
     // ali fazia o INSERT falhar em todo aviso e a entrada nunca existia.
-    resourceId: null,
+    resourceId: externalId,
     metadata: { event, store_id: storeId, external_id: externalId },
   });
 
