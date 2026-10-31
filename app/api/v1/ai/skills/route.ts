@@ -22,6 +22,7 @@ import { temPonteiroCanonico } from "@/lib/ai/skills/ponteiro-canonico";
 import { temVersaoNovaNoCatalogo } from "@/lib/ai/skills/versao-nova-catalogo";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { PREFIXO_DOS_GUIAS_DO_ASSISTENTE } from "@/lib/agent-engine/agent/skills";
 import { traduzir } from "@/lib/i18n/dicionario";
 
 export const dynamic = "force-dynamic";
@@ -73,10 +74,10 @@ export async function GET(_req: NextRequest): Promise<Response> {
         version_id: string | null;
       }
     >
-  ).filter(temPonteiroCanonico);
+  ).filter(temPonteiroCanonico).filter((p) => !p.name.startsWith(PREFIXO_DOS_GUIAS_DO_ASSISTENTE));
   const platformRows = (
     (platformPointers ?? []) as Array<{ name: string | null; version_id: string | null }>
-  ).filter(temPonteiroCanonico) as PointerRow[];
+  ).filter(temPonteiroCanonico).filter((p) => !p.name?.startsWith(PREFIXO_DOS_GUIAS_DO_ASSISTENTE)) as PointerRow[];
 
   const versionIds = [...new Set([...orgRows, ...platformRows].map((p) => p.version_id))];
   let versions: VersionRow[] = [];

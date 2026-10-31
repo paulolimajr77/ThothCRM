@@ -7,6 +7,7 @@ import { temPonteiroCanonico } from "@/lib/ai/skills/ponteiro-canonico";
 import { temVersaoNovaNoCatalogo } from "@/lib/ai/skills/versao-nova-catalogo";
 import { compararSkill, type ComparativoEntrada } from "@/lib/ai/skills/comparativo";
 import type { SkillsState } from "@/hooks/ai/useSkills";
+import { PREFIXO_DOS_GUIAS_DO_ASSISTENTE } from "@/lib/agent-engine/agent/skills";
 import { traduzir } from "@/lib/i18n/dicionario";
 import { SkillsClient } from "./_client";
 
@@ -28,8 +29,10 @@ export default async function SkillsPage() {
     admin.from("skill_pointers").select("name, version_id").is("organization_id", null),
   ]);
 
-  const orgRows = (orgPointers ?? []).filter(temPonteiroCanonico);
-  const platformRows = (platformPointers ?? []).filter(temPonteiroCanonico);
+  // Os guias `assistente-*` são da equipe do sistema, não do agente de atendimento: ficam fora desta tela.
+  const doAgente = (p: { name: string | null }) => !p.name?.startsWith(PREFIXO_DOS_GUIAS_DO_ASSISTENTE);
+  const orgRows = (orgPointers ?? []).filter(temPonteiroCanonico).filter(doAgente);
+  const platformRows = (platformPointers ?? []).filter(temPonteiroCanonico).filter(doAgente);
   const versionIds = [...new Set([...orgRows, ...platformRows].map((p) => p.version_id))];
 
   const { data: versionsRaw } =
