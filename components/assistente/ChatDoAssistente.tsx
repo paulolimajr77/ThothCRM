@@ -1202,6 +1202,18 @@ export function ChatDoAssistente({
             {enviando ? t("Pensando…") : t("Seu pedido continua em andamento. Deixe esta janela aberta: a resposta aparece aqui.")}
           </p>
         ) : null}
+        {!enviando && !retomando && mensagens.length > 0 && mensagens[mensagens.length - 1]!.author_kind === "ai" && /(^|\n)\s*\**Falta:/.test(mensagens[mensagens.length - 1]!.body) ? (
+          <div className="flex self-start">
+            <button
+              type="button"
+              onClick={() => void perguntar(t("Continue de onde parou: termine tudo o que ainda falta do meu pedido, sem me perguntar mais nada."))}
+              data-testid="assistente-continuar"
+              className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+            >
+              {t("Continuar de onde parou")}
+            </button>
+          </div>
+        ) : null}
         {enviando && andamento.length > 0 ? (
           <ul data-testid="assistente-andamento" className="flex flex-col gap-1 self-start text-sm">
             {andamento.map((a) => (
