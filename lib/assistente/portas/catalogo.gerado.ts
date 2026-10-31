@@ -163,7 +163,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["GET", "POST"],
     parametros: [],
     area: "agenda",
-    resumo: "GET lista serviços e recursos da agenda e seus bloqueios; POST configura serviço, bloqueia/desbloqueia horário ou cadastra recurso.",
+    resumo: "GET lista serviços e recursos da agenda e seus bloqueios; POST com corpo {action, ...}: action 'configure' + config {(antes, faça GET em agenda/servicos para pegar expected_revision e o id de cada tipo) event_type_id, expected_revision (leia antes pelo GET), service_enabled, booking_mode individual|collective_limited|collective_unlimited, service_timezone (ex.: Europe/Lisbon), service_publication_mode 'none', professionals [ids de usuários], resources [], calendar_sources [], schedule [{weekday 0-6 (0=domingo), timing_kind 'window', start_minute, end_minute (minutos desde 00:00, ex.: 9h=540)}]} liga o tipo como serviço com horários; action 'resource' + input {name, capacity} cadastra sala/recurso; action 'block' bloqueia horário.",
   },
   {
     id: "agenda/servicos/atualizar",
@@ -179,7 +179,7 @@ export const CATALOGO_DE_PORTAS: readonly PortaDoCatalogo[] = [
     metodos: ["GET", "POST", "PATCH", "DELETE"],
     parametros: [],
     area: "agenda",
-    resumo: "GET lista os tipos de agendamento; POST cria um tipo (nome, categoria, duração); PATCH altera um tipo (duração, intervalos, antecedência).",
+    resumo: "GET lista os tipos de agendamento; POST cria um tipo (OBRIGATÓRIOS: name, category, duration_minutes e location_kind; category: consulta|procedimento|retorno|visita|vistoria|reuniao|call|orcamento|demonstracao|outro; location_kind: in_person|phone|whatsapp|video_link|google_meet; consulta online = video_link, presencial = in_person); PATCH altera um tipo (NUNCA com is_active: o assistente não desativa tipo, quem desativa é a pessoa pelo botão Desativar da tela Agendamentos) (o id do tipo vai DENTRO do corpo, junto com os campos: duração, intervalos, antecedência, default_price_cents = preço em CENTAVOS, ex.: 90 € = 9000).",
   },
   {
     id: "agenda/tipos/reativar",
