@@ -35,7 +35,7 @@ export const RESUMOS_ESCRITOS: Readonly<Record<string, string>> = {
   "ai/agents/:id/versions/:vid": "GET mostra uma versão do agente; PATCH edita a versão em rascunho (texto/prompt, ferramentas, limites). Versão já publicada não muda. Horário do follow-up: followup.send_window = { start: \"HH:MM\", end: \"HH:MM\", weekdays: [0 a 6, onde 0 é domingo e 1 segunda] } (o campo é weekdays, não days; uma janela só por agente).",
   "ai/agents/assignable": "GET lista os agentes de IA que podem receber uma conversa ou negócio (para atribuir). Atendente ou acima.",
   "ai/followup-flows": "GET lista os fluxos de follow-up da empresa; POST cria um follow-up novo em rascunho, ainda sem enviar nada (gerente ou acima).",
-  "ai/followup-flows/:id": "GET mostra o follow-up (rascunho, gatilho, regra de passar ao humano); PATCH altera o rascunho do follow-up. Gerente ou acima.",
+  "ai/followup-flows/:id": "GET mostra o follow-up (rascunho, gatilho, regra de passar ao humano); PATCH altera o rascunho do follow-up. Para MOVER O CARD de etapa no fim do fluxo (ex.: 'Não marcou'), o grafo tem o nó type 'move_lead' com config {stage_id: id da etapa lido do funil, lost_reason: motivo curto se a etapa for de perda}, ligado antes do nó final: isso existe, não diga que não dá. Gerente ou acima.",
   "ai/followup-flows/:id/disable": "POST desativa o fluxo de follow-up: ele deixa de rodar. Gerente ou acima.",
   "ai/followup-flows/:id/duplicate": "POST duplica um follow-up: a cópia nasce em rascunho, sem publicar e sem enviar mensagem. Gerente ou acima.",
   "ai/followup-flows/:id/publish": "POST valida o rascunho do follow-up e, se estiver certo, publica e coloca o fluxo no ar. Gerente ou acima.",
