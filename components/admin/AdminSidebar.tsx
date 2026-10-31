@@ -113,6 +113,8 @@ const NAV_ITEMS: NavItem[] = [
   // para Extensões, só que `tests/unit/navegacao-completude.test.ts` não cobre
   // `/admin/**`, então nada acusava.
   { href: "/admin/modulos", label: "Módulos", icon: Stack },
+  // Os guias que o assistente interno lê (`assistente-*`): da plataforma, não do agente de atendimento.
+  { href: "/admin/guias-do-assistente", label: "Guias do assistente", icon: ClipboardText },
   // Modelos tirados de cliente real (item 2 da #1995): a estrutura de uma
   // empresa vira modelo de outra. É da INSTALAÇÃO — só quem enxerga mais de
   // uma empresa pode tirar e revisar.

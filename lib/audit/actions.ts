@@ -551,6 +551,7 @@ export const AUDIT_ACTIONS = [
   "platform.client_template_reviewed",
   "platform.client_template_deleted",
   "platform.tenant_assistant_toggled",
+  "platform.assistant_guide_saved",
   "platform_google_oauth.updated",
   "platform_smtp_settings.updated",
   // A credencial do APP da Meta da INSTALAÇÃO (migration 0257): o App Secret que
