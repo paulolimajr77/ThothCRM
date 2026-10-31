@@ -24,6 +24,7 @@ import type { ToolSet } from "ai";
 import { criarAuditarEmpresa } from "./auditar-empresa";
 import { criarConsultarDados, criarDicionarioDeDados } from "./consultar-dados";
 import { criarConsultarMetrica } from "./consultar-metrica";
+import { criarLerFormatoDaPorta } from "./ler-formato-da-porta";
 import { criarLerGuia } from "./ler-guia";
 import { criarListarMetricas } from "./listar-metricas";
 import { criarLerPorta } from "./ler-porta";
@@ -58,6 +59,7 @@ export function montarFerramentasDoAssistente(entrada: EntradaDasFerramentas): T
     abrir_tela: criarAbrirTela(entrada),
     ler_guia: criarLerGuia(entrada),
     ler_porta: criarLerPorta(entrada),
+    ler_formato_da_porta: criarLerFormatoDaPorta(entrada),
     procurar_porta: criarProcurarPorta(entrada),
     auditar_empresa: criarAuditarEmpresa(entrada),
   };

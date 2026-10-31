@@ -43,6 +43,11 @@ const ESQUEMAS: Record<string, ZodType> = {
   "agenda/servicos|POST": servicoDaAgendaPost,
 };
 
+/** O esquema que a rota usa para o corpo desta porta e método, se a porta tem um registrado aqui. */
+export function esquemaDoCorpo(porta: string, metodo: string): ZodType | undefined {
+  return ESQUEMAS[`${porta}|${metodo}`];
+}
+
 const MAXIMO_DE_PROBLEMAS = 5;
 
 /** `null` = nada a recusar; texto = o que está errado, no formato "campo: motivo". */
