@@ -4,6 +4,7 @@ import { setExecutionAgentOperation } from '@/lib/atendimento/fronteira-server';
 import { TIPOS_DE_CASO, TIPOS_DE_CASO_PARA_A_IA } from "@/lib/ai/case-copy";
 import { DEFAULT_CHANNEL_PROVIDER } from '@/lib/channels/capabilities';
 import { applyPreviewPolicy, previewGateContext, type TurnPreview } from './preview';
+import { etiquetarProdutoAposEnvio } from './etiqueta-apos-envio';
 import { claimOfJob } from '../queue/claim';
 import { currentExecutionBoundary, guardServiceEffect } from '@/lib/atendimento/fronteira-server';
 /**
@@ -68,7 +69,7 @@ import { WahaChannelAdapter } from '../edge/channel/waha-adapter';
 // applySendOutcome é disposição de FILA (cancel/reschedule + cache de opt-out), não
 // egress de canal — o envio em si vai pelo adapter (ChannelAdapter). Ver F2-25.
 import { applySendOutcome } from '../edge/crm/send-message';
-import { resolverVozDoTurno } from './voz-do-turno';
+import { blocoDaRespostaFalada, resolverVozDoTurno } from './voz-do-turno';
 import { textoParaFalar } from '@/lib/ai/voz/texto-falavel';
 import {
   LlmBudgetExceededError,
@@ -80,6 +81,7 @@ import {
 } from '../edge/llm/run-model-call';
 import type { ProviderRegistry } from '../edge/llm/providers';
 import { HANDOFF_REASON_ORCAMENTO } from '../edge/llm/orcamento';
+import { bindingOuNulo } from '../edge/llm/binding-do-ponto';
 import { abreAvisoDoEspelhoRecusado, mirrorLeadStageToCrm } from '../edge/crm/move-lead-stage';
 import { insertInboxItem } from '../db/repository';
 import { criarConferidorDeAfirmacoes } from '@/lib/ai/decisao/afirmacao-de-fato';
@@ -94,7 +96,14 @@ import {
   PASTA_DE_TESTE_DE_MIDIA,
   type FotoParaEnvio,
 } from './fotos-do-produto';
+import { descreverSemQuery } from './imagem-por-url';
+import { baixarImagemSegura, guardarImagemNaConversa } from './baixar-imagem-segura';
 import { enqueueJob, rescheduleJob, type JobRow, type Queryable } from '../queue/queue';
+import {
+  intervaloEfetivo,
+  runAfterComIntervalo,
+  ultimaRespostaDaIa,
+} from '../edge/crm/intervalo-entre-respostas';
 import {
   applyLeadStateUpdate,
   getLeadState,
@@ -117,6 +126,7 @@ import {
   type LeadCheckpointRow,
 } from "./abertura/checkpoint";
 import { buildOpeningMessage, ritualBlocks } from "./abertura/ritual";
+import { snapshotDoCaso } from "./conversa-do-caso/contexto";
 import { lerRemetenteDeGrupo, type RemetenteDeGrupo } from "@/lib/messaging/remetente-de-grupo";
 import { applySaveLeadNote, buildNotesIndexBlock, getLeadNoteBody } from './lead-notes';
 import { buildCompromissosBlock } from './compromissos-do-contato';
@@ -221,7 +231,7 @@ import { isStatusSendable } from '../../channels/meta/template-binding';
 import { capabilitiesOf } from '@/lib/channels/capabilities';
 import { renderTemplateBody } from '@/lib/channels/meta/render-template';
 import { esperarComoHumano, manterDigitando } from './atraso-humano';
-import { instrucaoDeBolhas, sendInBubbles, splitForSend } from './split-message';
+import { instrucaoDeBolhas, OK_KINDS, sendInBubbles, splitForSend } from './split-message';
 import { semConteudoVisivel } from './conteudo-visivel';
 import { formatarParaWhatsApp } from './formato-whatsapp';
 import type { DisclosureMode } from '../guardrails/disclosure/template';
@@ -273,6 +283,7 @@ import {
 import type { DependenciasDoPonto } from '@/lib/ai/decisao/ponto';
 import { perguntarUrgenciaAoJev, registrarUrgenciaDoJev } from '@/lib/ai/decisao/urgencia';
 import { fusoDaOrganizacao } from './fuso-da-org';
+import { blocoDoFeriado, lerFeriadoDoTurno } from './feriado-nacional';
 import { renderAgora } from '@/lib/tempo/agora';
 import { decidirElegibilidadeDaConversa } from '@/lib/ai/elegibilidade/consulta-pg';
 import {
@@ -374,6 +385,15 @@ export const AGENT_TOOL_DEFS = {
         .describe(
           'código de um produto do catálogo (o `codigo` de crm_search_products) que tem `fotos`: ' +
             'as fotos dele vão junto, e o texto vira a legenda da primeira',
+        ),
+      imagem_url: z
+        .string()
+        .url()
+        .optional()
+        .describe(
+          'URL https de UMA imagem (jpg, png ou webp) que veio de um resultado de ferramenta (ex.: uma ' +
+            'receita do banco externo). Vai como foto, e o texto vira a legenda. Nunca invente URL. ' +
+            'Não use junto com produto_codigo.',
         ),
     }),
   },
@@ -778,7 +798,10 @@ export async function uploadDeVoz(input: {
   audio: Buffer;
   mimeType: string;
 }): Promise<string> {
-  const path = `${input.tenantId}/${input.conversationId}/voz-agente-${input.jobId}-${input.seq}.mp3`;
+  // A extensão acompanha o formato: `.ogg` é a nota de voz em opus do canal
+  // oficial, e é ela que diz o formato a um retry (`mimeDoCaminhoDeVoz`).
+  const extensao = input.mimeType.toLowerCase().startsWith('audio/ogg') ? 'ogg' : 'mp3';
+  const path = `${input.tenantId}/${input.conversationId}/voz-agente-${input.jobId}-${input.seq}.${extensao}`;
   const admin = createAdminClient();
   // `upsert: true`, e não `false`: este caminho só é chamado quando
   // `resolverCaminhoDeVoz` JÁ decidiu que precisa sintetizar de novo — ou é a
@@ -1292,6 +1315,51 @@ export function blocosDeAgendaResidentes(toolIds: readonly string[]): string[] {
 }
 
 /**
+ * O INTERESSE DO CLIENTE NUM ITEM DO BANCO EXTERNO, residente (Spec 25, R5c).
+ *
+ * ─── O que faltava, medido ──────────────────────────────────────────────────
+ *
+ * Numa imobiliária montada do zero no espelho (22/10/2026), o agente mostrou o
+ * imóvel e, no turno seguinte ("tenho interesse nesse"), escreveu "seu interesse
+ * está registrado" SEM chamar nada — três vezes, em três configurações. A
+ * orientação que `crm_consultar_receita` devolve ("abra o negócio com
+ * crm_create_lead…") vive no RESULTADO daquele turno, e resultado de ferramenta
+ * não acompanha a conversa: no turno em que o cliente escolhe, o agente só tem o
+ * prompt, as `description` das ferramentas e o que está escrito nas mensagens.
+ *
+ * Por isso o ensino mora aqui, no mesmo lugar do da agenda: residente, a cada
+ * turno. E é CONDICIONAL: nomear ferramenta que o agente não tem faz o modelo
+ * tentar chamá-la, então o bloco só entra com as DUAS pontas (consultar o banco
+ * externo e abrir o negócio).
+ *
+ * Ensino, não garantia: o funil e a etapa saem da receita
+ * (`completarDestinoDoNegocio`), e o escopo de funil do agente segue julgando.
+ */
+const INTERESSE_EXTERNO_SYSTEM_BLOCK =
+  '## Banco de dados externo — o cliente escolheu um item\n' +
+  'Quando você mostrar itens vindos de `crm_consultar_receita`, escreva ao lado de cada um o código ' +
+  'dele (cód. = o campo `id` da linha): é por ele que você acha o item no turno seguinte.\n' +
+  'Quando o cliente disser que tem interesse em UM item que você mostrou, chame `crm_create_lead` ' +
+  'NESTE turno, ANTES de responder, com o `contact_id` desta conversa, um `title` com o nome do item e ' +
+  '`referencia_externa` = `<receita>:<código>` (a receita é o campo `receita` da instância que a ' +
+  'consulta devolveu, por exemplo `wordpress-conteudo`; se não estiver à mão, chame `crm_consultar_receita` ' +
+  'com `acao: "listar"` para ver). NÃO informe `pipeline_id` nem `stage_id`: o sistema usa o funil e a ' +
+  'etapa que a empresa configurou para essa receita.\n' +
+  'Só diga ao cliente que o interesse foi registrado DEPOIS de `crm_create_lead` responder com sucesso. ' +
+  'Escrever "registrei" sem ter chamado a ferramenta é o defeito. Se ela responder que a receita não ' +
+  'tem funil configurado, passe a conversa para a equipe e diga ao cliente que a equipe dará continuidade.';
+
+/**
+ * O bloco do interesse num item do banco externo — a decisão num lugar só, testável.
+ * A régua é o que o agente TEM: as duas ferramentas que o texto nomeia.
+ */
+export function blocosDeInteresseExternoResidentes(toolIds: readonly string[]): string[] {
+  return toolIds.includes('crm_consultar_receita') && toolIds.includes('crm_create_lead')
+    ? [INTERESSE_EXTERNO_SYSTEM_BLOCK]
+    : [];
+}
+
+/**
  * Tools de agenda cuja EXECUÇÃO neste turno arma o `agendaStallGate` (before-send.ts) —
  * ver o wrap no loop de montagem das tools MCP, mais abaixo.
  */
@@ -1733,7 +1801,9 @@ export interface AgentTurnInput {
  * Núcleo do run do agente, compartilhado por inbound_turn (F2-09) e followup_turn
  * (F3-03): ritual de abertura, loop de tools, fechamento com checkpoint e veto. Não
  * guarda NADA entre invocações — sessão fresca por job (todo estado no closure). O
- * que varia entre os dois tipos de turno vem em `input` (AgentTurnInput).
+ * que varia entre os dois tipos de turno vem em `input` (AgentTurnInput) — menos o
+ * ponto de IA da chamada principal, que sai do `kind` do job: `followup_turn` no
+ * follow-up (modelo escolhível no painel), `agent_turn` no resto.
  */
 /**
  * O aviso de que o agente atendeu SEM as capacidades configuradas.
@@ -2965,7 +3035,7 @@ async function executarTurnoDoAgente(
   // rascunho saía em terceira pessoa — "vou avisar o atendente e ele responde".
   // Vive em função de módulo (`blocoDoModoDePrevia`) para poder ser testada.
   if (preview) blocosResidentes.push(blocoDoModoDePrevia(preview.kind));
-  const system = blocosResidentes.join('\n\n');
+  if (agentConfig !== null) blocosResidentes.push(...blocosDeInteresseExternoResidentes(agentConfig.toolIds));
   const openingContext = preview
     ? preview.context
     : await lerContextoDaConversa();
@@ -3005,6 +3075,15 @@ async function executarTurnoDoAgente(
                 }),
         })
       : null;
+
+  // A resposta que vai virar ÁUDIO é escrita PARA SER OUVIDA. Sem este bloco o
+  // modelo escrevia como sempre — três bolhas, lista e sigla — e a síntese lia
+  // tudo numa nota de 35 segundos (medido numa instalação real em 03/11/2026, número
+  // oficial). Por isso o `system` só é montado DEPOIS de a voz ser resolvida, e
+  // o bloco vai NO FIM: o prefixo dos turnos em texto continua o mesmo.
+  const blocoDaVoz = blocoDaRespostaFalada(vozParaEsteTurno);
+  if (blocoDaVoz) blocosResidentes.push(blocoDaVoz);
+  const system = blocosResidentes.join('\n\n');
 
   // Seam de canal (F2-25): o envio vai SÓ pela interface ChannelAdapter — o
   // default WAHA-via-CRM envolve o sink F2-06. Instanciado por job (o pool é
@@ -3386,6 +3465,44 @@ async function executarTurnoDoAgente(
       throw new JobSettledError(
         'fora do horário de funcionamento — job reagendado para a abertura da janela',
       );
+    }
+  }
+
+  // INTERVALO MÍNIMO ENTRE RESPOSTAS (#3940). O drain já adia o job pela pausa,
+  // mas mede contra a resposta que existia QUANDO a mensagem chegou: a que chega
+  // durante um turno em curso não pega carona (só há carona em job pending) e
+  // nasce medida contra a resposta ANTERIOR. Aqui a régua é a mesma do drain
+  // (`ultimaRespostaDaIa` + `runAfterComIntervalo`), medida de novo no turno,
+  // depois das detecções determinísticas — um opt-out na pausa é tratado agora.
+  // Adia como a janela acima: `rescheduleJob`, sem gastar tentativa, e o job
+  // segue pending para as próximas mensagens entrarem de carona. Campo vazio ou
+  // 0: nenhuma consulta. Falha da consulta degrada para "sem espera", como no drain.
+  const intervaloMs = intervaloEfetivo(agentConfig?.replyMinIntervalMs ?? null);
+  if (!preview && liveJob().kind === 'inbound_turn' && intervaloMs > 0) {
+    let liberaEm: Date | undefined;
+    try {
+      const ultima = await ultimaRespostaDaIa(pool, {
+        organizationId: tenantId,
+        conversationId: input.conversationId,
+      });
+      liberaEm = runAfterComIntervalo(undefined, ultima, intervaloMs, clock().getTime());
+    } catch (err) {
+      runLog.warn('não consegui medir o intervalo entre respostas — turno sem espera extra', {
+        error: (err instanceof Error ? err.message : String(err)).slice(0, 160),
+      });
+    }
+    if (liberaEm !== undefined) {
+      const esperaMs = liberaEm.getTime() - clock().getTime();
+      await rescheduleJob(pool, liveJob().id, ctx.workerId, {
+        acquiredAt: claimOfJob(liveJob())?.acquired_at,
+        delayMs: esperaMs,
+        reason: 'intervalo mínimo entre respostas do agente — turno adiado',
+      });
+      runLog.info('turno adiado — intervalo mínimo entre respostas da versão publicada', {
+        agent_id: agentConfig?.agentId,
+        espera_ms: esperaMs,
+      });
+      throw new JobSettledError('intervalo mínimo entre respostas — job reagendado');
     }
   }
 
@@ -4122,7 +4239,7 @@ async function executarTurnoDoAgente(
     }),
     send_message: tool({
       ...AGENT_TOOL_DEFS.send_message,
-      execute: async ({ body: corpoDoModelo, produto_codigo }) => {
+      execute: async ({ body: corpoDoModelo, produto_codigo, imagem_url }) => {
         tentativasDeEnvio += 1;
         // O texto sai no formato do WhatsApp — sem `\n` literal nem
         // `**negrito**` de Markdown na tela do cliente. Antes de qualquer gate,
@@ -4273,6 +4390,21 @@ async function executarTurnoDoAgente(
         // ele segue inteiramente síncrono do `checar` até a reserva.
         let fotosDoProduto: FotoParaEnvio[] = [];
         let fotosQueFaltaram = 0;
+        // Foto por URL (`imagem_url`, Spec 25 R4): só uma das duas formas de foto vale
+        // por mensagem — `produto_codigo` e `imagem_url` juntos são recusados abaixo.
+        const temImagemPorUrl = imagem_url !== undefined && imagem_url.trim() !== '';
+        let motivoFotoRecusada: string | null = null;
+        let fotoUrlEnviada = false;
+        // Rastro `foto_enviada`: marca quando a foto por URL (já guardada na conversa) de fato saiu.
+        // `fotosDoProduto` leva UMA das duas fontes (exclusivas, ver o bloco abaixo): a foto do
+        // catálogo ou a foto por URL; o teto de envios e a legenda valem para as duas.
+        const marcarFoto = <R extends { kind: string }>(resultado: R): R => {
+          if (temImagemPorUrl && OK_KINDS.has(resultado.kind)) fotoUrlEnviada = true;
+          return resultado;
+        };
+        // O código que resolveu um produto ATIVO do catálogo — só com ele a
+        // mensagem, se sair, etiqueta o negócio (ver o bloco depois do envio).
+        let produtoApresentado: string | null = null;
         try {
           dupTrava.reservar(body);
           // RESPOSTA OBSOLETA: o cliente escreveu de novo enquanto este turno pensava.
@@ -4309,6 +4441,51 @@ async function executarTurnoDoAgente(
               },
             };
           }
+          // Duas fotos na mesma mensagem não existem: `produto_codigo` (catálogo, copiado
+          // para a conversa) e `imagem_url` (resultado de ferramenta, sem cópia). Erro de
+          // ENSINO — nada sai; a reserva é liberada como nos outros retornos antes da cadeia.
+          const temFotoDoCatalogo = produto_codigo !== undefined && produto_codigo.trim() !== '';
+          if (temFotoDoCatalogo && temImagemPorUrl) {
+            dupTrava.liberar(body);
+            return {
+              ok: false,
+              error: {
+                code: 'imagem_e_produto_juntos',
+                message:
+                  'Use imagem_url OU produto_codigo, não os dois na mesma mensagem. Mande de novo só com um deles.',
+              },
+            };
+          }
+          // Foto por URL (Spec 25 R4, opção A): mesma regra de fora do lock, só fora da
+          // prévia. O CRM baixa a imagem com a própria rede (IP validado, sem redirect,
+          // teto de 5 MB, conteúdo conferido), guarda no Storage da conversa e manda ao
+          // canal só o storagePath. Qualquer falha: a mensagem segue só com texto (D7) e o
+          // motivo volta ao modelo; o log leva host + caminho, nunca a query.
+          if (temImagemPorUrl && !preview) {
+            const url = (imagem_url ?? '').trim();
+            let motivo: string | null = null;
+            const baixada = await baixarImagemSegura(url);
+            if (!baixada.ok) {
+              motivo = baixada.motivo;
+            } else {
+              const guardada = await guardarImagemNaConversa(createAdminClient(), {
+                tenantId,
+                conversationId: input.conversationId,
+                bytes: baixada.bytes,
+                mime: baixada.mime,
+              });
+              if (guardada.ok) fotosDoProduto = [{ storagePath: guardada.storagePath, mime: guardada.mime }];
+              else motivo = guardada.motivo;
+            }
+            if (motivo !== null) {
+              motivoFotoRecusada = motivo;
+              runLog.warn('imagem_url recusada — a mensagem sai só com texto', {
+                job_id: job?.id ?? null,
+                imagem: descreverSemQuery(url),
+                motivo,
+              });
+            }
+          }
           // A foto do produto (ideia de @vgamkt, #1130): preparada ANTES da cadeia e
           // fora do lock do número — a cópia no Storage é rede. Código errado volta
           // ao modelo sem enviar nada; foto que não copiou sai do envio e o texto
@@ -4326,6 +4503,7 @@ async function executarTurnoDoAgente(
             }
             fotosDoProduto = preparadas.fotos;
             fotosQueFaltaram = preparadas.tinha - preparadas.fotos.length;
+            produtoApresentado = produto_codigo.trim();
           }
           // F4-04: sinaliza (independente do gate F4-01/F4-08) se ESTA candidata é uma
           // promessa fora de tabela — usado só para correlacionar com o jailbreak no fim do
@@ -4389,6 +4567,7 @@ async function executarTurnoDoAgente(
                 apiKey: voz.apiKey,
                 voiceId: voz.voiceId,
                 ...(voz.modelId ? { modelId: voz.modelId } : {}),
+                formato: voz.formato,
                 upload: (audio, mimeType) =>
                   uploadDeVoz({ tenantId, conversationId: input.conversationId, jobId: liveJob().id, seq: seqDesteEnvio, audio, mimeType }),
               },
@@ -4565,7 +4744,7 @@ async function executarTurnoDoAgente(
                     sleep,
                     jitter,
                     restantes: () => maxSendsPerTurn - seq,
-                    enviarFoto: (foto, legenda) => enviar(legenda, foto),
+                    enviarFoto: (foto, legenda) => enviar(legenda, foto).then(marcarFoto),
                     enviarTexto: (texto) => enviarVoz(texto) ?? sendInBubbles(texto, {
                         enabled: agentConfig?.splitMessages ?? false,
                         maxChars: agentConfig?.splitMaxChars ?? 600,
@@ -4763,6 +4942,20 @@ async function executarTurnoDoAgente(
             }
             pendingCitations = [];
           }
+          // O PRODUTO APRESENTADO VIRA ETIQUETA DO NEGÓCIO. O fluxo de
+          // acompanhamento escolhe o modelo pela etiqueta do negócio, e pedir ao
+          // modelo que a ponha não é confiável; o envio com `produto_codigo` é o
+          // fato determinístico. Depois do envio, só quando o canal disse
+          // "enviada", nunca em prévia — e nunca lança: a mensagem já saiu.
+          // Ver `etiqueta-apos-envio.ts`.
+          await etiquetarProdutoAposEnvio(pool, runLog, {
+            preview: Boolean(preview),
+            produtoApresentado,
+            outcome,
+            tenantId,
+            contactId: leadId,
+            agentId: agentConfig?.agentId ?? null,
+          });
           switch (outcome.kind) {
             case 'sent':
             case 'already_sent':
@@ -4771,6 +4964,10 @@ async function executarTurnoDoAgente(
                 status: 'enviada',
                 message_id: outcome.messageId,
                 ...(produto_codigo !== undefined ? { fotos_enviadas: fotosDoProduto.length } : {}),
+                // Rastro da foto por URL (Spec 25 R4): `foto_enviada` diz se a foto saiu;
+                // `foto_recusada` diz por que não foi buscada (formato ou guarda de rede).
+                ...(temImagemPorUrl ? { foto_enviada: fotoUrlEnviada } : {}),
+                ...(motivoFotoRecusada !== null ? { foto_recusada: motivoFotoRecusada } : {}),
                 ...(fotosQueFaltaram > 0
                   ? {
                       aviso: `${fotosQueFaltaram} foto(s) do produto não puderam ser enviadas; o texto foi. Não diga ao cliente que mandou essas fotos.`,
@@ -5154,12 +5351,13 @@ async function executarTurnoDoAgente(
   // Spec 15: snapshot mínimo do contexto disponível pro humano que for atender o
   // caso — campo de CONVENIÊNCIA pra UI, não load-bearing (nada aqui é relido pelo
   // agente). ponytail: snapshot mínimo; enriquecer se a UI precisar de mais.
-  const buildCaseContextSnapshot = (): Record<string, unknown> => ({
-    contact_name: effectiveContext.contact.name,
-    last_messages: effectiveContext.messages
-      .slice(-5)
-      .map((m) => ({ direction: m.direction, body: m.body })),
-  });
+  //
+  // `sent_at` entra junto porque sem ele TODA fala herdava a hora de abertura do
+  // caso (`falasDoSnapshot` cai no `abertoEm`): a tela e o prompt mostravam cinco
+  // mensagens de horas diferentes com o mesmo carimbo. É string ali — vem do
+  // histórico já normalizado (`get-lead-context.ts`, `isoLocalComOffset`).
+  const buildCaseContextSnapshot = (): Record<string, unknown> =>
+    snapshotDoCaso(effectiveContext.contact.name, effectiveContext.messages);
 
   // Spec 15 (Wave 3a): tools de caso humano (open_human_case/provide_case_update) só
   // entram quando a tela habilita (cases_enabled) — mesmo padrão do handoff acima.
@@ -5693,8 +5891,23 @@ async function executarTurnoDoAgente(
     // ponto só cobre os três — e alcança de carona a chamada de fechamento, que
     // reusa `openingTextOnly` e é onde nasce o `prazo` ISO da declaração.
     const agoraBlock = renderAgora(clock(), fusoDaOrg);
+    // ── O FERIADO NACIONAL DO TURNO (#3877) ───────────────────────────────────
+    //
+    // Em 02/11/2026 (Finados) o agente disse "atendemos hoje até as 18h" e
+    // convidou a pessoa à loja, com a empresa fechada: sabia o dia da semana
+    // (`## Agora`) e o horário semanal, e não sabia que aquele dia é feriado.
+    //
+    // Entra logo DEPOIS do relógio porque é a mesma família de fato — "que dia
+    // é hoje" — e porque é dele que o modelo precisa ao decidir se promete
+    // atendimento. No sufixo por-lead, junto do relógio, pelo mesmo motivo: o
+    // país não muda entre leads, mas o dia sim (virada de meia-noite), e o
+    // prefixo estável (`stable-prefix.ts`) não pode carregar fato do dia.
+    const feriadoBlock = blocoDoFeriado(
+      await lerFeriadoDoTurno(pool, tenantId, clock(), fusoDaOrg, runLog),
+    );
     const openingSuffixes = [
       agoraBlock,
+      feriadoBlock,
       matchedSkillsBlock,
       stageHintBlock,
       splitHint,
@@ -5706,6 +5919,20 @@ async function executarTurnoDoAgente(
       openingSuffixes.length === 0
         ? openingBase
         : `${openingBase}\n\n${openingSuffixes.join('\n\n')}`;
+    // O agente escrevendo SOZINHO para quem parou de responder. É o mesmo turno,
+    // com outro ponto de IA (`followup_turn`): o modelo pode ser o do painel, e o
+    // custo fica registrado à parte em `llm_calls`. Ver o cabeçalho do ponto em
+    // `lib/ai/pontos/registro.ts`. `inbound_turn` e `case_reply_turn` seguem em
+    // `agent_turn`; a prévia, em `agent_preview`.
+    const escreveFollowup = !preview && job !== null && job.kind === 'followup_turn';
+    // QUEM vai receber a mídia nativa. No follow-up com escolha no painel, é o
+    // modelo do painel — montar a parte para o do agente mandaria a foto a um
+    // modelo que talvez não a enxergue, e o provedor recusaria o follow-up
+    // inteiro. Sem escolha (ou sem mídia ligada), é o agente, como sempre foi.
+    const escolhaDoFollowup =
+      escreveFollowup && agentConfig?.multimodalInput === true
+        ? await bindingOuNulo(pool, tenantId, 'followup_turn', runLog)
+        : null;
     // Onda 3 (aprimoramento): mídia inbound recente vira part nativa (image/file) SÓ para
     // provider+modelo capazes (T2 modelCapabilities) — modelo incapaz/desconhecido → [] e o
     // derivado textual (já embutido em openingText via LeadContextMessage) cobre sozinho.
@@ -5714,8 +5941,8 @@ async function executarTurnoDoAgente(
         ? []
         : await buildNativeMediaParts({
             messages: effectiveContext.messages,
-            provider: agentConfig?.provider ?? 'anthropic',
-            model: agentConfig?.model ?? '',
+            provider: escolhaDoFollowup?.provider ?? agentConfig?.provider ?? 'anthropic',
+            model: escolhaDoFollowup?.model_id ?? agentConfig?.model ?? '',
             multimodalInput: agentConfig?.multimodalInput ?? false,
             admin: deps.crmCfg.supabase,
           });
@@ -5776,7 +6003,11 @@ async function executarTurnoDoAgente(
         // lia `ai_agent_runs`, tabela que motor nenhum vivo escreve, e dizia
         // "Nenhuma execução ainda" com o agente respondendo no WhatsApp.
         agentId: agentConfig?.agentId ?? null,
-        purpose: preview ? 'agent_preview' : 'agent_turn',
+        // O follow-up é o mesmo turno com o próprio ponto — e por isso com o
+        // próprio binding (o seam o lê por `purpose`) e a própria linha de custo.
+        // Literais no próprio `purpose:`, de propósito: é aqui que a cerca de
+        // completude do registro procura quem emite cada ponto.
+        purpose: preview ? 'agent_preview' : escreveFollowup ? 'followup_turn' : 'agent_turn',
         system,
         messages: openingMessages,
         tools,
