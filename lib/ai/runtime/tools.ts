@@ -20,9 +20,14 @@ import { McpAuthError, ensureRole, ensureScope } from "@/lib/mcp/auth";
 import type { McpAuthResult } from "@/lib/mcp/auth";
 import { logger } from "@/lib/logger";
 import { allTools, getToolByName } from "@/lib/mcp/tools";
-import { escolhasRemotas } from "@/lib/mcp/servidor-externo/ids";
-import { definirFerramentasRemotas } from "@/lib/mcp/tools/externo";
+import {
+  definirFerramentasDoServidorDoAgente,
+  definirFerramentasRemotas,
+  ferramentaDeSolicitarAcesso,
+} from "@/lib/mcp/tools/externo";
 import type { ServidorMcpExternoMontado } from "@/lib/mcp/servidor-externo/carregar";
+import type { ServidorDoAgenteNoTurno } from "@/lib/mcp/servidor-externo/do-agente/carregar";
+import { escolhasDoServidor, escolhasRemotas } from "@/lib/mcp/servidor-externo/ids";
 import { catalogEntry, deCapacidadeDesligada, deModuloDesligado } from "@/lib/mcp/tools/catalog";
 import type { CapacidadeDaOrganizacao } from "@/lib/organizacao/capacidades";
 import type { ModuloOpcional } from "@/lib/instalacao/modulos";
@@ -31,6 +36,7 @@ import { recusaDeCapacidadeParaOModelo } from "@/lib/mcp/recusa-para-o-modelo";
 import { tamanhoDoResultado } from "@/lib/mcp/resultado-bytes";
 import type { McpContext, McpToolDefinition } from "@/lib/mcp/types";
 import { resolveActiveLeadForContact, type LeadCandidate } from "@/lib/leads/active-lead";
+import { completarDestinoDoNegocio } from "@/lib/external-db/receitas/destino-pela-referencia";
 import { podeChamarFerramenta, recusaParaOModelo } from "@/lib/leads/escopo-de-funil";
 import { escritaCabeNoTurno } from "./escopo-das-escritas";
 import type { DesfechoDaEscrita, EfeitoDasEscrituras } from "./efeito-das-escritas";
@@ -98,6 +104,11 @@ export interface PickToolsInput {
    * é síncrono.
    */
   servidorMcpExterno?: ServidorMcpExternoMontado;
+  /**
+   * Servidores MCP DO AGENTE já carregados para este turno (migration 9095),
+   * por `carregarServidoresDoAgenteNoTurno`. Ausente/vazio = nenhum.
+   */
+  servidoresDoAgente?: readonly ServidorDoAgenteNoTurno[];
   /**
    * O PREDICADO ÚNICO do efeito deste turno (#3333) — ver
    * `lib/ai/runtime/efeito-das-escritas.ts`.
@@ -297,12 +308,36 @@ function wrapMcpTool(
         ensureScope(input.auth.scopes, def.requiresScope);
         ensureRole(input.auth.role, def.requiresRole);
 
+        // Spec 25 (R5c): o agente pode abrir o negócio de um item do banco externo
+        // passando só a referência — o funil e a etapa saem da receita (sem referência
+        // nada muda: o handler recusa a ausência). Completado
+        // AQUI, antes do escopo de funil logo abaixo: a guarda julga o funil que vai
+        // ser escrito, e com o argumento ausente ela recusaria sempre.
+        if (def.name === "crm_create_lead" && typeof argsRecord.referencia_externa === "string") {
+          const completo = await completarDestinoDoNegocio(
+            input.supabase,
+            input.ctx.organizationId,
+            argsRecord,
+          );
+          if (!completo.ok) {
+            void auditMcpToolCall({
+              ctx: input.ctx,
+              toolName: def.name,
+              args: argsAudit,
+              durationMs: Date.now() - startedAt,
+              success: false,
+              errorMessage: `destino_do_interesse:${String(completo.resposta.erro)}`,
+            });
+            return completo.resposta;
+          }
+        }
+
         // ── DE QUEM É O REGISTRO QUE ESTA ESCRITA ALCANÇA — do contato do turno
         //
         // `write` E `handoff`: a passagem também age sobre uma conversa. A regra
         // e o mapa campo → dono moram em `escopo-das-escritas.ts`; o `lead_id`
         // segue com a guarda logo abaixo. Sem contato do turno, nada muda.
-        if (input.contatoDoTurno && def.category !== "read") {
+        if (input.contatoDoTurno && def.category !== "read" && def.escritaDelegadaAoContato !== true) {
           const escopo = await escritaCabeNoTurno(
             input.supabase,
             input.ctx.organizationId,
@@ -385,7 +420,10 @@ function wrapMcpTool(
           ferramenta: def.name,
           argumentos: argsRecord,
           escopo: input.pipelineIds,
-          ehEscrita: def.category === "write",
+          // A escrita delegada ao contato age na conta DELE no terceiro, não em
+          // negócio do CRM: não há funil a escopar (e ela nunca é classificada
+          // em `ALVO_DE_FUNIL`, que a recusaria por vacuidade).
+          ehEscrita: def.category === "write" && def.escritaDelegadaAoContato !== true,
           resolvePipelineDoLead: async (leadId) => {
             const { data, error } = await input.supabase
               .from("crm_leads")
@@ -726,6 +764,38 @@ export function pickToolsFromMcp(input: PickToolsInput): Record<string, Tool> {
         if (input.contatoDoTurno && def.category === "read" && !identificado) continue;
         result[def.name] = wrapMcpTool(def, entradaDaRemota, executarEscrita);
       }
+    }
+  }
+
+  // ── Servidores MCP DO AGENTE (migration 9095) ────────────────────────────
+  //
+  // Mesma porta das remotas acima — `wrapMcpTool`, auditoria, papel, escopo —,
+  // com nomes namespaced (`<slug>__<nome>`). Servidor `oauth_por_contato` só
+  // chega aqui em turno com contato (a carga não o monta sem contato), e
+  // sempre ganha a ferramenta `solicitar_acesso_<slug>`: sem token, ela é a
+  // ÚNICA desse servidor; com token, serve ao step-up de escopo.
+  for (const montado of input.servidoresDoAgente ?? []) {
+    const ocupados = new Set([...allTools.map((t) => t.name), ...Object.keys(result)]);
+    const entradaDaRemota = input.contatoDoTurno
+      ? { ...input, ctx: { ...input.ctx, contatoDoTurno: input.contatoDoTurno } }
+      : input;
+    if (montado.estado === "pronto") {
+      // Defesa em profundidade, a mesma do servidor compartilhado: em turno com
+      // contato, só monta o que está amarrado A ESTE contato.
+      if (input.contatoDoTurno && montado.contato !== input.contatoDoTurno) continue;
+      const defs = definirFerramentasDoServidorDoAgente(
+        montado,
+        ocupados,
+        escolhasDoServidor(input.toolIds, montado.servidor.id),
+        input.contatoDoTurno,
+      );
+      for (const def of defs) result[def.name] = wrapMcpTool(def, entradaDaRemota, executarEscrita);
+    } else if (!input.contatoDoTurno || montado.contato !== input.contatoDoTurno) {
+      continue;
+    }
+    const acesso = montado.servidor.modo === "oauth_por_contato" ? ferramentaDeSolicitarAcesso(montado) : null;
+    if (acesso && !ocupados.has(acesso.name)) {
+      result[acesso.name] = wrapMcpTool(acesso, entradaDaRemota, executarEscrita);
     }
   }
 
