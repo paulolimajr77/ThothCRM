@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/server";
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 vi.mock("@/lib/audit", () => ({ audit: vi.fn(async () => undefined) }));
+vi.mock("@/lib/ai/dispatcher/rate-limit", () => ({ checkRateLimit: vi.fn() }));
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const ORG_ID = "22222222-2222-4222-8222-222222222222";
@@ -23,6 +24,8 @@ const ORG_ID = "22222222-2222-4222-8222-222222222222";
 let upserts: Array<Array<Record<string, unknown>>> = [];
 /** Só as que foram por `insert` — o grupo do produto novo que traz foto. */
 let insercoes: Array<Array<Record<string, unknown>>> = [];
+/** Cada `.update()` em `catalog_products` — o passo à parte da descrição — com os filtros. */
+let atualizacoes: Array<{ valores: Record<string, unknown>; filtros: Array<[string, unknown]> }> = [];
 
 /**
  * ⚠️ POR QUE DOIS LOTES SEPARADOS, E NÃO UM SÓ COM SHAPES DIFERENTES.
@@ -100,6 +103,19 @@ function supabaseCom(
           upserts.push(linhas);
           return Promise.resolve({ error: null });
         },
+        update: (valores: Record<string, unknown>) => {
+          const registro = { valores, filtros: [] as Array<[string, unknown]> };
+          atualizacoes.push(registro);
+          const q: Record<string, unknown> = {};
+          Object.assign(q, {
+            eq: (coluna: string, valor: unknown) => {
+              registro.filtros.push([coluna, valor]);
+              return q;
+            },
+            then: (ok: (v: unknown) => unknown) => ok({ error: null }),
+          });
+          return q;
+        },
       };
     },
   };
@@ -121,6 +137,7 @@ beforeEach(() => {
   vi.unstubAllGlobals();
   upserts = [];
   insercoes = [];
+  atualizacoes = [];
   idsFixos.clear();
   sonda.uploads.length = 0;
   sonda.removidos.length = 0;
@@ -526,9 +543,9 @@ describe("POST /api/v1/products/import — foto por URL", () => {
   it("GET devolve o modelo com a coluna de foto, e o modelo é planilha que o importador lê", async () => {
     const { GET } = await import("./route");
 
-    const texto = (await (await GET()).text()).replace("\ufeff", "");
+    const texto = (await (await GET(new NextRequest("http://localhost/api/v1/products/import"))).text()).replace("\ufeff", "");
 
-    expect(texto.split("\n")[0]).toBe("codigo,nome,marca,categoria,preco,custo,estoque,foto");
+    expect(texto.split("\n")[0]).toBe("codigo,nome,marca,categoria,preco,custo,estoque,descricao,foto");
     const lido = lerPlanilha(texto);
     if ("erro" in lido) throw new Error(`o modelo devolvido não é lido pelo importador: ${lido.erro}`);
     // As linhas do modelo trazem a coluna VAZIA: importado como vem, o modelo
@@ -536,6 +553,57 @@ describe("POST /api/v1/products/import — foto por URL", () => {
     expect(lido.produtos).toHaveLength(2);
     for (const produto of lido.produtos) expect(produto).not.toHaveProperty("fotos");
     expect(texto).not.toMatch(/https?:\/\//);
+    // A coluna de descrição do modelo é DESCRIÇÃO, não um segundo nome.
+    expect(lido.produtos.map((p) => [p.nome, p.descricao])).toEqual([
+      ["iPhone 15 128GB", "Tela de 6,1 polegadas, 128 GB"],
+      ["212 VIP Men 100ml", undefined],
+    ]);
+  });
+});
+
+/**
+ * A DESCRIÇÃO PELA PLANILHA — o texto que o atendente de IA conta ao cliente.
+ *
+ * Antes a coluna de descrição ao lado da de nome não entrava em lugar nenhum
+ * (no máximo disputava o posto de nome). Agora entra num passo À PARTE, depois
+ * do upsert, e só onde a célula traz texto: a descrição escrita pela tela não
+ * pode sumir porque alguém reimportou a lista de preços sem a coluna.
+ */
+describe("POST /api/v1/products/import — a descrição da planilha", () => {
+  function planilha(conteudo: string): File {
+    return new File([conteudo], "catalogo.csv", { type: "text/csv" });
+  }
+
+  it("célula com texto escreve a descrição à parte, filtrando a organização; o upsert não a carrega", async () => {
+    vi.mocked(createClient).mockResolvedValue(supabaseCom("BRL", ["AND-01"]) as never);
+    const { POST } = await import("./route");
+
+    const res = await POST(
+      pedido(planilha("codigo,nome,descricao,preco\nIP15,iPhone 15,Tela de 6 polegadas,5499\nAND-01,Galaxy S24,,3999\n")),
+    );
+    const corpo = (await res.json()) as { data: { descricoes: number } };
+
+    expect(upserts.flat().every((l) => !("descricao" in l))).toBe(true);
+    expect(atualizacoes).toEqual([
+      {
+        valores: { descricao: "Tela de 6 polegadas" },
+        filtros: [
+          ["organization_id", ORG_ID],
+          ["codigo", "IP15"],
+        ],
+      },
+    ]);
+    expect(corpo.data.descricoes).toBe(1);
+  });
+
+  it("planilha sem a coluna de descrição não toca a descrição de ninguém", async () => {
+    vi.mocked(createClient).mockResolvedValue(supabaseCom("BRL", ["AND-01"]) as never);
+    const { POST } = await import("./route");
+
+    await POST(pedido(csv("AND-01,Galaxy S24,3999")));
+
+    expect(upserts.flat()).toHaveLength(1);
+    expect(atualizacoes).toEqual([]);
   });
 });
 vi.mock("@/lib/impersonate/support", async (importOriginal) => ({

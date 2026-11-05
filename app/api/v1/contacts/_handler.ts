@@ -9,6 +9,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { revogarAcessosDoContato } from "@/lib/mcp/servidor-externo/do-agente/revogacao";
+import { logger } from "@/lib/logger";
 import { observeServiceOrigin } from "@/lib/atendimento/origem";
 import { ApiError } from "@/lib/api/types";
 import type { Actor, HandlerCtx } from "@/lib/api/handlers/types";
@@ -77,13 +79,19 @@ function decodeCursor(raw: string): CursorPayload | null {
 
 function actorAuditPayload(actor: Actor): {
   actorUserId: string | null;
+  /** O token de integração por trás da ação, quando houver (`api_tokens.id`). */
+  actorApiTokenId: string | null;
   metadataActor: Record<string, unknown>;
 } {
   if (actor.type === "user") {
-    return { actorUserId: actor.id, metadataActor: { actor_type: "user" } };
+    return { actorUserId: actor.id, actorApiTokenId: null, metadataActor: { actor_type: "user" } };
   }
   return {
     actorUserId: null,
+    // Token de servidor sem escopo de agente (`api_token`): o `id` do ator É o
+    // id da linha do token. No agente de IA, o token vem em `api_token_id`.
+    actorApiTokenId:
+      actor.type === "api_token" ? actor.id : actor.type === "ai_agent" ? (actor.api_token_id ?? null) : null,
     metadataActor: {
       actor_type: actor.type,
       actor_id: actor.id,
@@ -1009,6 +1017,8 @@ export async function patchContactHandler(
   await audit({
     action: "contact.updated",
     actorUserId: a.actorUserId,
+    // Só quando há token: a sessão segue com o objeto de sempre.
+    ...(a.actorApiTokenId ? { actorApiTokenId: a.actorApiTokenId } : {}),
     organizationId: contact.organization_id,
     resourceType: "contact",
     resourceId: contact.id,
@@ -1202,6 +1212,18 @@ export async function deleteContactHandler(
   // tudo, ou não sai nada. É `security invoker` — a RLS de quem chama continua
   // valendo, e o filtro de `organization_id` é do banco (argumento + where), não
   // do chamador. Nenhum service role entra aqui.
+  //
+  // A exceção, antes da transação: os acessos OAuth do contato a servidores
+  // MCP externos (9095). A cascata apaga o token, e sem ele não há revogação no
+  // terceiro (RFC 7009) — então revoga primeiro. A tabela é server-side only
+  // (service role), filtrada pela organização do ctx. Melhor esforço: falha
+  // do terceiro não barra a exclusão.
+  await revogarAcessosDoContato(createAdminClient(), ctx.organization_id, contactId).catch((err: unknown) => {
+    logger.warn("revogacao dos acessos MCP do contato falhou antes da exclusao", {
+      organization_id: ctx.organization_id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  });
   let apagou = false;
   try {
     const { data, error: rpcErr } = await supabase.rpc("fn_apagar_contato_com_historico", {

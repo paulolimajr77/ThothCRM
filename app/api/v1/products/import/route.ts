@@ -17,6 +17,11 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * `imagem_url` e `ativo` ficam de fora de propósito — quem escreveu a descrição
  * pela tela não pode perdê-la porque alguém reimportou a lista de preços.
  *
+ * A descrição que a planilha TRAZ (uma coluna de descrição ao lado da de nome,
+ * ver `lerPlanilha`) entra num passo à parte, depois do upsert, e só onde a
+ * célula tem texto: planilha sem a coluna, ou com a célula vazia, não apaga o
+ * que a tela escreveu.
+ *
  * ─── A foto por URL (#3587) segue a mesma regra, e por isso é uma coluna ────
  *
  * A planilha pode trazer a coluna de foto, com um link ou até 5 separados por
@@ -36,8 +41,8 @@ import { randomUUID } from "node:crypto";
 import { type NextRequest } from "next/server";
 
 import { audit } from "@/lib/audit";
+import { resolveAuthDual, tetoDeEscritaDoToken } from "@/lib/api/auth-dual";
 import { fail, ok } from "@/lib/api/wrappers";
-import { requireRole } from "@/lib/auth/require-role";
 import { moedaDaOrganizacao } from "@/lib/catalogo/moeda-da-org";
 import { chaveDoCodigo, lerPlanilha, type ErroDaLinha } from "@/lib/catalogo/planilha";
 import { guardarFotosPorUrl } from "@/lib/catalogo/fotos-por-url";
@@ -45,7 +50,7 @@ import { apagarDoBucket } from "@/lib/catalogo/fotos-no-bucket";
 import { traduzir } from "@/lib/i18n/dicionario";
 import { CSV_MAX_BYTES, CSV_MAX_DATA_ROWS, decodificarCsv } from "@/lib/contacts/csv";
 import { COLUNAS_DO_PRODUTO } from "@/lib/schemas/produtos";
-import { createClient } from "@/lib/supabase/server";
+import { IDIOMA_PADRAO } from "@/lib/i18n/idiomas";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +72,8 @@ interface ResumoDaImportacao {
   total_linhas: number;
   criados: number;
   atualizados: number;
+  /** Quantos produtos tiveram a descrição escrita pela planilha. */
+  descricoes: number;
   erros: ErroDaLinha[];
   colunas_ignoradas: string[];
 }
@@ -77,10 +84,18 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const requestId = randomUUID();
   // Preço de venda é escrita de gestão: o mesmo papel do POST unitário.
-  const authz = await requireRole("manager", { requestId, resource: "catalog_products" });
+  const authz = await resolveAuthDual(req, {
+    requestId,
+    resource: "catalog_products",
+    role: "manager",
+    scope: "config:write",
+    tokenRole: "admin",
+  });
   if (!authz.ok) return authz.response;
-  const orgId = authz.org.orgId;
-  const t = (texto: string) => traduzir(texto, authz.user.idioma);
+  const teto = await tetoDeEscritaDoToken(authz, "products.import", requestId);
+  if (teto) return teto;
+  const orgId = authz.organizationId;
+  const t = (texto: string) => traduzir(texto, authz.idioma ?? IDIOMA_PADRAO);
 
   let arquivo: File;
   try {
@@ -141,6 +156,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         total_linhas: totalLinhas,
         criados: 0,
         atualizados: 0,
+        descricoes: 0,
         erros: lido.erros,
         colunas_ignoradas: lido.colunasIgnoradas,
       } satisfies ResumoDaImportacao,
@@ -148,7 +164,24 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
-  const supabase = await createClient();
+  // Foto por URL só na sessão. Um token pode disparar 500 linhas × 5 links, e cada
+  // link é um download feito pelo servidor: essa conta não entra por token. Recusa
+  // antes de ler o catálogo e antes de baixar qualquer coisa.
+  if (authz.via === "token") {
+    const linhasComFoto = lido.produtos.filter((p) => p.fotos && p.fotos.length > 0).map((p) => p.linha);
+    if (linhasComFoto.length > 0) {
+      return fail(
+        "foto_por_url_so_na_sessao",
+        t(
+          "Foto por link não é aceita pela API. Tire a coluna de foto da planilha ou importe as fotos pela tela de Produtos.",
+        ),
+        422,
+        { requestId, details: { linhas: linhasComFoto } },
+      );
+    }
+  }
+
+  const supabase = authz.supabase;
 
   // Os códigos já cadastrados na organização servem a duas coisas. Quem já
   // existia com o código IGUAL é atualizado, para o resumo dizer "3 novos, 12
@@ -352,22 +385,39 @@ export async function POST(req: NextRequest): Promise<Response> {
     await apagarDoBucket(orgId, id, antigas, requestId);
   }
 
+  // A descrição, num passo À PARTE e só onde a célula trouxe texto (ver o topo
+  // do arquivo): nunca no upsert, que a apagaria de quem reimporta sem ela. Só
+  // de quem REALMENTE entrou — e a organização vai junto, como no resto.
+  let descricoes = 0;
+  for (const p of preparadas) {
+    if (!p.descricao || !gravadosPorCodigo.has(p.codigo)) continue;
+    const { error } = await supabase
+      .from("catalog_products")
+      .update({ descricao: p.descricao })
+      .eq("organization_id", orgId)
+      .eq("codigo", p.codigo);
+    if (error) erros.push({ linha: p.linha, motivo: `"${p.nome}": ${error.message}` });
+    else descricoes += 1;
+  }
+
   const existentes = paraGravar.filter((p) => antigos.has(p.codigo));
   const atualizados = existentes.length;
   const criados = Math.max(0, gravados - atualizados);
 
   await audit({
     organizationId: orgId,
-    actorUserId: authz.user.id,
+    actorUserId: authz.actor.type === "user" ? authz.actor.id : null,
+    actorApiTokenId: authz.apiTokenId ?? null,
     action: "catalog_product.imported",
     resourceType: "catalog_products",
     resourceId: null,
     requestId,
     metadata: {
-      actor_type: "user",
+      actor_type: authz.actor.type,
       total_linhas: totalLinhas,
       criados,
       atualizados,
+      descricoes,
       erros: erros.length,
     },
   });
@@ -377,6 +427,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       total_linhas: totalLinhas,
       criados,
       atualizados,
+      descricoes,
       erros,
       colunas_ignoradas: lido.colunasIgnoradas,
     } satisfies ResumoDaImportacao,
@@ -387,21 +438,32 @@ export async function POST(req: NextRequest): Promise<Response> {
 /**
  * GET devolve o modelo de planilha, para a pessoa não ter de adivinhar as colunas.
  *
+ * A coluna `descricao` vem ao lado da de nome, com um exemplo na primeira linha:
+ * é ela que diz ao atendente de IA o que é o produto.
+ *
  * A coluna `foto` vem no cabeçalho e VAZIA nas duas linhas: o modelo tem de
  * importar limpo como vem, que é o primeiro gesto de quem testa a importação.
  * Um link de exemplo ali seria baixado de verdade — de um domínio de terceiros —
  * e a linha voltaria recusada. O formato `link1|link2` é explicado na tela de
  * Produtos, ao lado do link do modelo.
  */
-export async function GET(): Promise<Response> {
+export async function GET(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
-  const authz = await requireRole("manager", { requestId, resource: "catalog_products" });
+  const authz = await resolveAuthDual(req, {
+    requestId,
+    resource: "catalog_products",
+    role: "manager",
+    scope: "config:read",
+    tokenRole: "admin",
+  });
   if (!authz.ok) return authz.response;
+  const teto = await tetoDeEscritaDoToken(authz, "products.import", requestId);
+  if (teto) return teto;
 
   const modelo = [
-    "codigo,nome,marca,categoria,preco,custo,estoque,foto",
-    "IP15-128,iPhone 15 128GB,Apple,Celular,5499.00,4100.00,3,",
-    "PERF-212,212 VIP Men 100ml,Carolina Herrera,Perfume,449.90,280.00,7,",
+    "codigo,nome,marca,categoria,preco,custo,estoque,descricao,foto",
+    'IP15-128,iPhone 15 128GB,Apple,Celular,5499.00,4100.00,3,"Tela de 6,1 polegadas, 128 GB",',
+    "PERF-212,212 VIP Men 100ml,Carolina Herrera,Perfume,449.90,280.00,7,,",
   ].join("\n");
 
   return new Response(`﻿${modelo}\n`, {
