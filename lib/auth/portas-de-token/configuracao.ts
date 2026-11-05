@@ -33,6 +33,7 @@ export const MODELOS_DA_CONFIGURACAO: readonly ModeloDePorta[] = [
   // e `reply` seguem só de sessão.
   "/api/v1/ai/cases",
   "/api/v1/ai/cases/[id]",
+  "/api/v1/ai/routing-results",
   "/api/v1/ai/routing-results/[id]",
 
   // ai/followup-flows. Quem autentica é a própria rota, por `resolveAuthDual`:
@@ -83,9 +84,9 @@ export const MODELOS_DA_CONFIGURACAO: readonly ModeloDePorta[] = [
   // com `config:read` (GET) ou `config:write` (escrita) e papel admin
   // (`tokenRole`). `[name]` é o nome da skill (kebab-case `[a-z0-9][a-z0-9-]{0,119}`
   // — os nomes do catálogo seguem `objecao-preco`/`agendamento` no baseline) — não é
-  // UUID, então declara classe e amostra. `import`, `install`, `restore` e o
-  // PUT de `[name]` seguem só de sessão (usam `getSkillsPool`, pg Pool cru) e
-  // não entram de carona.
+  // UUID, então declara classe e amostra. `import`, `[name]/install`,
+  // `[name]/restore` e o PUT de `[name]` aceitam token também (usam `getSkillsPool`,
+  // pg Pool cru, mas a organização entra como parâmetro, vinda da linha do token).
   //
   // DECISAO: a classe do segmento e o Zod da rota (`nameSchema`) são apertados para
   // `[a-z0-9][a-z0-9-]{0,119}` porque todos os nomes de skill no baseline e na
@@ -93,15 +94,17 @@ export const MODELOS_DA_CONFIGURACAO: readonly ModeloDePorta[] = [
   // irmãos literais como `import`, `install`, `restore` e `upload` não caem de
   // carona na porta do `[name]` por engano.
   "/api/v1/ai/skills",
+  "/api/v1/ai/skills/import",
   { caminho: "/api/v1/ai/skills/[name]", segmentos: { name: "[a-z0-9][a-z0-9-]{0,119}" }, amostras: { name: "minha-skill" } },
+  { caminho: "/api/v1/ai/skills/[name]/install", segmentos: { name: "[a-z0-9][a-z0-9-]{0,119}" }, amostras: { name: "minha-skill" } },
+  { caminho: "/api/v1/ai/skills/[name]/restore", segmentos: { name: "[a-z0-9][a-z0-9-]{0,119}" }, amostras: { name: "minha-skill" } },
   { caminho: "/api/v1/ai/skills/[name]/versions", segmentos: { name: "[a-z0-9][a-z0-9-]{0,119}" }, amostras: { name: "minha-skill" } },
 
   // ai (demais). Quem autentica é a própria rota, por `resolveAuthDual`: token com
   // `config:read` (GET) ou `config:write` (escrita) e papel admin (`tokenRole`),
   // com o papel de sempre da tabela (manager/agent/admin) como mínimo. Caminhos
   // literais, sem `[nome]`. Métodos que seguem só de sessão na mesma rota (`pacing`
-  // PUT, `style-adjustments` GET, `guardrail-layers` GET) recusam o token com 401 no
-  // `requireRole`. `jev` e `voz/preview` seguem só de sessão e não entram de carona.
+  // PUT) recusam o token com 401 no `requireRole`. `jev` e `voz/preview` seguem só de sessão e não entram de carona.
   "/api/v1/ai/automatico-ativo",
   "/api/v1/ai/budget",
   "/api/v1/ai/evolution",
@@ -118,17 +121,20 @@ export const MODELOS_DA_CONFIGURACAO: readonly ModeloDePorta[] = [
 
   // pipelines. Quem autentica é a própria rota, por `resolveAuthDual`: token com
   // `config:read` (GET) ou `config:write` (escrita) e papel admin (`tokenRole`).
-  // `[id]` é forma de UUID. `pipelines/[id]/forecast` (previsão, que é por
-  // usuário) e `pipelines/[id]/stages/[stageId]` (etapa, que ainda recebe o papel
-  // da sessão) seguem só de sessão e não entram de carona; o POST de `stages`
-  // também segue só de sessão.
+  // `[id]` é forma de UUID. `forecast` aceita token também (no token a previsão
+  // é da organização inteira, sem o recorte por pessoa da sessão). O POST de
+  // `stages` também (GET e POST dividem a mesma porta). `stages/[stageId]` (PATCH
+  // e DELETE da etapa) também; `[stageId]` é forma de UUID, então o irmão literal
+  // `win-rates` não cai de carona.
   "/api/v1/pipelines",
   "/api/v1/pipelines/default",
   "/api/v1/pipelines/[id]",
   "/api/v1/pipelines/[id]/agent-mapping",
   "/api/v1/pipelines/[id]/board",
+  "/api/v1/pipelines/[id]/forecast",
   "/api/v1/pipelines/[id]/leads",
   "/api/v1/pipelines/[id]/stages",
+  "/api/v1/pipelines/[id]/stages/[stageId]",
   "/api/v1/pipelines/[id]/stages/win-rates",
 
   // products e tags. Quem autentica é a própria rota, por `resolveAuthDual`: token
@@ -145,11 +151,11 @@ export const MODELOS_DA_CONFIGURACAO: readonly ModeloDePorta[] = [
 
   // settings. Quem autentica é a própria rota, por `resolveAuthDual`: token com
   // `config:read` (GET) ou `config:write` (escrita) e papel admin (`tokenRole`).
-  // `routing/channels` (GET e PATCH) e `proposal-templates/importar` (POST)
-  // seguem só de sessão e não entram de carona: o GET de `routing/channels` usa
-  // `allowPlatformAdmin` e `mfaEmDivida` (sessão), o PATCH chama
-  // `fn_set_channel_routing` (exige `auth.uid()`), e `importar` usa `getSkillsPool`
-  // (pg Pool cru). `[slug]` é a classe do regex da rota (`[a-z0-9_]{1,100}`): o
+  // `routing/channels` aceita token só no GET (a sessão mantém `allowPlatformAdmin`
+  // e `mfaEmDivida`; o ramo do token é à parte). O PATCH segue só de sessão
+  // (`fn_set_channel_routing` exige `auth.uid()`) e recusa o token com 401 no
+  // `requireRole`. `proposal-templates/importar` (POST) segue só de sessão
+  // (`getSkillsPool`, pg Pool cru). `[slug]` é a classe do regex da rota (`[a-z0-9_]{1,100}`): o
   // irmão literal `importar` cai nessa classe, e a rota responde 401 pelo
   // `requireRole` de sessão.
   "/api/v1/settings/agenda-apresentacao",
@@ -159,17 +165,22 @@ export const MODELOS_DA_CONFIGURACAO: readonly ModeloDePorta[] = [
   "/api/v1/settings/proposals",
   "/api/v1/settings/prospeccao",
   "/api/v1/settings/routing",
+  "/api/v1/settings/routing/channels",
   "/api/v1/settings/sons",
   "/api/v1/settings/task-plans",
 
   // message-templates e message-template-groups. Quem autentica é a própria
   // rota, por `resolveAuthDual`: token com `config:read` (GET) ou `config:write`
   // (escrita) e papel admin (`tokenRole`). `[id]` é forma de UUID. `[indice]` da
-  // mídia é número inteiro não negativo (a rota recusa o resto com 404). O PATCH
-  // de `[id]`, o POST de criação, `[id]/midias` e `[id]/ordem` seguem só de
-  // sessão e não entram de carona: o papel deles vem de `org.role`.
+  // mídia é número inteiro não negativo (a rota recusa o resto com 404). O token
+  // só alcança a resposta COMPARTILHADA (`owner_user_id` nulo): o POST de criação
+  // recusa `shared: false`, e o PATCH e o DELETE de `[id]` e o POST de `[id]/midias`
+  // e o PUT de `[id]/ordem` (renumeração só entre as compartilhadas) filtram o
+  // compartilhado.
   "/api/v1/message-templates",
   "/api/v1/message-templates/[id]",
+  "/api/v1/message-templates/[id]/midias",
+  "/api/v1/message-templates/[id]/ordem",
   { caminho: "/api/v1/message-templates/[id]/midias/[indice]", segmentos: { indice: "[0-9]+" }, amostras: { indice: "0" } },
   "/api/v1/message-template-groups",
   "/api/v1/message-template-groups/[id]",
@@ -194,8 +205,23 @@ export const MODELOS_DA_CONFIGURACAO: readonly ModeloDePorta[] = [
   // attendants/availability e team/assignable (só GET, leitura). Quem autentica é a
   // própria rota, por `resolveAuthDual`: token com `config:read` e papel admin
   // (`tokenRole`). Caminhos literais, sem segmento dinâmico, então nenhum irmão entra
-  // de carona: `availability/[user_id]` (PATCH de pessoa), `sector`, `sectors` e
-  // `presence` seguem só de sessão, e `team` (lista com e-mail de login) também.
+  // de carona: `availability/[user_id]` (PATCH de pessoa) e `presence` seguem só de
+  // sessão, e `team` (lista com e-mail de login) também.
   "/api/v1/attendants/availability",
   "/api/v1/team/assignable",
+
+  // attendants/sector (R1). Quem autentica é a própria rota, por `resolveAuthDual`:
+  // token com `config:write` e papel admin (`tokenRole`). `[user_id]` é forma de
+  // UUID (a rota recusa o resto com 404).
+  "/api/v1/attendants/sector/[user_id]",
+
+  // attendants/sectors/[id] (R1). Quem autentica é a própria rota, por
+  // `resolveAuthDual`: token com `config:write` e papel admin (`tokenRole`)
+  // no PATCH e no DELETE. `[id]` é forma de UUID (a rota recusa o resto com 404).
+  "/api/v1/attendants/sectors/[id]",
+
+  // attendants/sectors (R1). Quem autentica é a própria rota, por `resolveAuthDual`:
+  // token com `config:read` (GET) ou `config:write` (POST) e papel admin
+  // (`tokenRole`). Caminho literal, sem segmento dinâmico.
+  "/api/v1/attendants/sectors",
 ];

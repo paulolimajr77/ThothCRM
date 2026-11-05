@@ -21,7 +21,7 @@
  * de uso, ao funil da evolução, ao agente pedido em `operator-metrics` e à chave
  * de mapas de A (com e sem `api_key` no corpo).
  *
- * Os 6 métodos que FICAM DE FORA (só sessão) recusam o token com 401 e não
+ * Os 4 métodos que FICAM DE FORA (só sessão) recusam o token com 401 e não
  * chegam ao `createAdminClient`.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -215,8 +215,6 @@ const CASOS: Caso[] = [
 
 /** Métodos que FICAM DE FORA (só sessão): o token recebe 401 e o cliente admin não é criado. */
 const SO_DE_SESSAO: Caso[] = [
-  { caminho: "/api/v1/ai/guardrail-layers", metodo: "GET", papel: "manager", escopo: "config:read", rota: () => import("@/app/api/v1/ai/guardrail-layers/route") },
-  { caminho: "/api/v1/ai/style-adjustments", metodo: "GET", papel: "manager", escopo: "config:read", rota: () => import("@/app/api/v1/ai/style-adjustments/route") },
   { caminho: "/api/v1/ai/pacing", metodo: "PUT", papel: "manager", escopo: "config:write", rota: () => import("@/app/api/v1/ai/pacing/route") },
   { caminho: "/api/v1/ai/voz/preview", metodo: "POST", papel: "manager", escopo: "config:write", rota: () => import("@/app/api/v1/ai/voz/preview/route") },
   { caminho: "/api/v1/ai/jev", metodo: "GET", papel: "manager", escopo: "config:read", rota: () => import("@/app/api/v1/ai/jev/route") },
