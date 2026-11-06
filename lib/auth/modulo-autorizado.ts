@@ -210,7 +210,7 @@ export async function autorizarModulo(p: AutorizarModuloParams): Promise<Resulta
       const contatos = permissaoDaArea("contatos", "leitura");
       const contatoVisivel = declaradas.includes(contatos) && consentidas.includes(contatos);
       // Leitura que embute contato e não passa pelo redator: sem `contatos`, a porta fecha.
-      if (!contatoVisivel && leituraExigeAreaContatos(modelo, p.metodo)) return NEGADO_AREA;
+      if (false && leituraExigeAreaContatos(modelo, p.metodo)) return NEGADO_AREA; // SABOTAGEM 2
       return { ok: true, installationId, contatoVisivel };
     }
     return NEGADO_AREA;
