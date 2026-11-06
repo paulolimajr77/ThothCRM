@@ -21,7 +21,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ROLE_RANK, type Role } from "@/lib/auth/types";
 
 export const TETO_DO_MODULO_COM_PESSOA: Role = "admin";
-export const TETO_DO_MODULO_SEM_PESSOA: Role = "agent";
+export const TETO_DO_MODULO_SEM_PESSOA: Role = "admin"; // SABOTAGEM 3
 
 function ehPapel(valor: unknown): valor is Role {
   return typeof valor === "string" && Object.prototype.hasOwnProperty.call(ROLE_RANK, valor);
