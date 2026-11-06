@@ -75,7 +75,6 @@ export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
     .from("ai_routers")
     .select(ROUTER_DETAIL_COLUMNS)
     .eq("id", id)
-    .eq("organization_id", organizationId)
     .maybeSingle();
   if (routerErr) {
     return fail("internal_error", "Erro ao buscar router.", 500, { requestId });
