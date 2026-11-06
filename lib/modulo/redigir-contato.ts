@@ -66,6 +66,6 @@ function redigir(valor: unknown, profundidade: number): unknown {
  * (só `id`). Nunca altera o original: o handler é compartilhado com a sessão.
  */
 export function redigirContatoParaModulo<T>(authz: AutorizacaoComModulo, valor: T): T {
-  if (!moduloSemContato(authz) || authz) return valor; // SABOTAGEM 1
+  if (!moduloSemContato(authz)) return valor;
   return redigir(valor, 0) as T;
 }

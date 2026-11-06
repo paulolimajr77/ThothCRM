@@ -15,7 +15,7 @@ import { orgAtivaDaApi } from "@/lib/auth/require-role";
 import { traduzir } from "@/lib/i18n/dicionario";
 import type { Idioma } from "@/lib/i18n/idiomas";
 import { extractBearer } from "@/lib/mcp/auth";
-import { moduloSemContato } from "@/lib/modulo/redigir-contato";
+import { moduloSemContato, redigirContatoParaModulo } from "@/lib/modulo/redigir-contato";
 import { listConversationsQuerySchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 import { comNomeDoAtendente } from "@/lib/users/com-nome-do-atendente";
@@ -170,7 +170,7 @@ async function responderLista(
     // própria (`lib/mcp/tools/conversations.ts`) — enriquecer lá faria a mesma
     // leitura duas vezes por chamada do agente.
     const comAtendente = await comNomeDoAtendente(organizationId, conversations);
-    return ok(comAtendente, { // SABOTAGEM 4
+    return ok(quemChama ? redigirContatoParaModulo(quemChama, comAtendente) : comAtendente, {
       requestId,
       meta: { cursor, has_more },
     });
