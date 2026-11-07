@@ -33,6 +33,7 @@ import { ApiError } from "@/lib/api/types";
 import { decidirPreGoLiveDoCanalViaSupabase } from "@/lib/ai/elegibilidade/consulta-pre-go-live";
 import type { Actor, HandlerCtx } from "@/lib/api/handlers/types";
 import { audit, isServiceRoleConfigured } from "@/lib/audit";
+import { metadataDoModulo } from "@/lib/audit/ator-modulo";
 import { traduzir } from "@/lib/i18n/dicionario";
 import { assertOrgOperante } from "@/lib/organizacao/operante";
 import {
@@ -69,6 +70,8 @@ import {
 } from "@/lib/channels/numero-do-atendente";
 import { emitirFalhaDeEntrega } from "@/lib/messaging/falha-de-entrega";
 import { previaDaMensagem } from "@/lib/messaging/previa-da-mensagem";
+import { pedirReenvioDoDesacelerado, reenvioDesaceleradoAtende } from "@/lib/messaging/reenvio-desacelerado";
+import { esperaPedidaPeloCanal } from "@/lib/channels/erro-da-plataforma";
 import { aplicarAssinatura, configAssinatura, linhaDeAssinatura } from "@/lib/messaging/assinatura";
 import { nomeDoAgenteDeIA } from "@/lib/messaging/nome-do-agente-de-ia";
 import { nomeDoContato } from "@/lib/contacts/rotulo-do-contato";
@@ -99,8 +102,9 @@ type SB = SupabaseClient;
  * ATUALIZAÇÃO (issue #129): o cron `recover-stuck-messages` passou a existir
  * (`app/api/v1/cron/recover-stuck-messages/route.ts`), mas ele cobre `sending`,
  * não `queued` — e a diferença é deliberada. `queued` é estado de espera com
- * DONO: o agent-engine reagenda o job (`SEND_QUEUED_RETRY_MS`, 5 min por
- * padrão) enquanto a sessão do canal não está WORKING, e o watchdog redirige.
+ * DONO: o watchdog redirige (no transporte por QR), e a mensagem que o canal
+ * mandou desacelerar volta pelo reenvio desacelerado
+ * (`lib/messaging/reenvio-desacelerado.handler.ts`).
  * Um cron marcando `queued` como falha depois de 5 min brigaria com essa
  * retentativa e perderia mensagem que ia sair. `sending` não tem dono nenhum —
  * é ali que a linha morre em silêncio.
@@ -204,6 +208,8 @@ export function origemDaMensagem(actor: Actor): "user" | "ai" | "automation" | "
   // rótulo errado no balão. Um mecanismo só decide os quatro valores — quando
   // eram dois (uma função e um mapa), o mesmo contrato tinha duas verdades.
   if (actor.type === "api_token") return "system";
+  // Módulo conectado também não é IA: é um sistema de fora (spec 33).
+  if (actor.type === "module") return "system";
   // A regra dispara, mas nem sempre ESCREVE. A ação "Mensagem escrita pela IA"
   // manda texto de um agente publicado com este mesmo ator, e a decisão da #652
   // é por AUTORIA: ali a linha é da IA. Decidir só pelo tipo do ator carimbaria
@@ -261,6 +267,7 @@ function actorAuditPayload(actor: Actor): {
       ...(actor.type === "ai_agent" && actor.api_token_id
         ? { actor_api_token_id: actor.api_token_id }
         : {}),
+      ...metadataDoModulo(actor),
     },
   };
 }
@@ -272,7 +279,7 @@ function actorAuditPayload(actor: Actor): {
  * auditoria já espera.
  */
 function apiTokenIdDoActor(actor: Actor): string | undefined {
-  if (actor.type === "api_token") return actor.id;
+  if (actor.type === "api_token" || actor.type === "module") return actor.id;
   if (actor.type === "ai_agent") return actor.api_token_id;
   return undefined;
 }
@@ -1501,6 +1508,45 @@ export async function sendMessageHandler(
       // responder "não configurado" travaria em `queued` um canal que funciona.
       // Quem sabe é `send()`, que pode consultar o banco — então ele lança, e a
       // tradução do desfecho acontece aqui.
+      // O canal pediu para DESACELERAR (~10 msg/min por destinatário, erro
+      // 131056 da plataforma; ou a conta limitada, 429 com `Retry-After`). A
+      // mensagem não tem nada de errado; falhá-la seria perder uma venda por
+      // pressa. Fica `queued` com o motivo carimbado, e o PEDIDO de nova
+      // tentativa sai junto, com a espera que o canal pediu. Quem tenta de novo
+      // é `lib/messaging/reenvio-desacelerado.handler.ts`, na MESMA linha; a
+      // espera esquecida (recover-stuck) segue como rede se ele não conseguir.
+      //
+      // SÓ para a mensagem sem outro dono de nova tentativa — a da pessoa e a
+      // do agente (`reenvioDesaceleradoAtende`). Campanha, automação e
+      // integração têm o próprio laço, e ele lê `failed`: a campanha devolve a
+      // pessoa à fila pelo `ehLimiteDeVelocidade` (`lib/campanhas/rodada.ts`).
+      // Gravar `queued` para elas deixaria a linha parada sem ninguém para
+      // mandá-la, e o destinatário da campanha contado como enviado. Para elas o
+      // desfecho segue o de antes: `failed`, com o texto do canal.
+      if (
+        adapter.codes.throttled &&
+        msg.startsWith(adapter.codes.throttled) &&
+        reenvioDesaceleradoAtende(message.sent_via ?? origemDaMensagem(ctx.actor))
+      ) {
+        const { data: emFila } = await supabase
+          .from("messages")
+          .update({
+            status: "queued",
+            metadata: { ...(message.metadata ?? {}), queued_reason: adapter.codes.throttled },
+          })
+          .eq("id", message.id)
+          .select(MSG_COLS)
+          .maybeSingle();
+        if (emFila) message = emFila as unknown as Message;
+        await pedirReenvioDoDesacelerado(supabase, {
+          organizationId: ctx.organization_id,
+          messageId: message.id,
+          queuedReason: adapter.codes.throttled,
+          esperaMs: esperaPedidaPeloCanal(msg),
+        });
+        return message;
+      }
+
       if (msg.startsWith(adapter.codes.notConfigured)) {
         const { data: emFila } = await supabase
           .from("messages")

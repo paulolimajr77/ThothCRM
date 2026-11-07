@@ -15,6 +15,7 @@ import { observeServiceOrigin } from "@/lib/atendimento/origem";
 import { ApiError } from "@/lib/api/types";
 import type { Actor, HandlerCtx } from "@/lib/api/handlers/types";
 import { audit } from "@/lib/audit";
+import { metadataDoModulo } from "@/lib/audit/ator-modulo";
 import { traduzir } from "@/lib/i18n/dicionario";
 import type { Idioma } from "@/lib/i18n/idiomas";
 import { roleAtLeast } from "@/lib/auth/types";
@@ -30,6 +31,7 @@ import {
 import { camposCpfParaGravar, hashCpf } from "@/lib/contacts/cpf";
 import type { Contact } from "@/lib/types/contacts";
 import { abrirConversaDoContatoNovo } from "@/lib/contacts/conversa-ao-criar";
+import { atribuirConversaDoCadastroAoCriador } from "@/lib/contacts/conversa-do-criador";
 import type {
   ContactCreate,
   ContactPatch,
@@ -79,19 +81,26 @@ function decodeCursor(raw: string): CursorPayload | null {
 
 function actorAuditPayload(actor: Actor): {
   actorUserId: string | null;
+  /** O token de integração por trás da ação, quando houver (`api_tokens.id`). */
+  actorApiTokenId: string | null;
   metadataActor: Record<string, unknown>;
 } {
   if (actor.type === "user") {
-    return { actorUserId: actor.id, metadataActor: { actor_type: "user" } };
+    return { actorUserId: actor.id, actorApiTokenId: null, metadataActor: { actor_type: "user" } };
   }
   return {
     actorUserId: null,
+    // Token de servidor sem escopo de agente (`api_token`): o `id` do ator É o
+    // id da linha do token. No agente de IA, o token vem em `api_token_id`.
+    actorApiTokenId:
+      actor.type === "api_token" ? actor.id : actor.type === "ai_agent" ? (actor.api_token_id ?? null) : null,
     metadataActor: {
       actor_type: actor.type,
       actor_id: actor.id,
       ...(actor.type === "ai_agent" && actor.api_token_id
         ? { actor_api_token_id: actor.api_token_id }
         : {}),
+      ...metadataDoModulo(actor),
     },
   };
 }
@@ -698,13 +707,29 @@ export async function createContactHandler(
   // uma sessão torta não pode derrubar o cadastro. O que ela NÃO faz mais é
   // falhar calada — o erro sai em `logger.warn` lá dentro, com org, contato e
   // porta.
-  await abrirConversaDoContatoNovo(supabase, {
+  const conversa = await abrirConversaDoContatoNovo(supabase, {
     porta: "manual",
     organizationId: ctx.organization_id,
     contactId: contact.id,
     phoneNumber: contact.phone_number,
     requestId: ctx.requestId,
   });
+
+  // ── QUEM CRIOU O CONTATO ATENDE O CONTATO (#3479) ─────────────────────────
+  //
+  // No "Só os seus" a conversa sem dono é invisível ao Atendente (0035), e a
+  // que o cadastro acabou de abrir nascia de ninguém. Aqui ela nasce dele —
+  // pelo MESMO claim do botão Assumir, com CAS de "só se estiver livre". A
+  // decisão e o efeito moram em `lib/contacts/conversa-do-criador.ts`; esta
+  // chamada é best-effort e não lança (o contato já está gravado).
+  if (conversa.aberta) {
+    await atribuirConversaDoCadastroAoCriador(supabase, {
+      organizationId: ctx.organization_id,
+      conversationId: conversa.conversationId,
+      actor: ctx.actor,
+      requestId: ctx.requestId,
+    });
+  }
 
   await supabase
     .rpc("emit_event", {
@@ -727,6 +752,8 @@ export async function createContactHandler(
   await audit({
     action: "contact.created",
     actorUserId: a.actorUserId,
+    // Só quando há token: a sessão segue com o objeto de sempre.
+    ...(a.actorApiTokenId ? { actorApiTokenId: a.actorApiTokenId } : {}),
     organizationId: contact.organization_id,
     resourceType: "contact",
     resourceId: contact.id,
@@ -1011,6 +1038,8 @@ export async function patchContactHandler(
   await audit({
     action: "contact.updated",
     actorUserId: a.actorUserId,
+    // Só quando há token: a sessão segue com o objeto de sempre.
+    ...(a.actorApiTokenId ? { actorApiTokenId: a.actorApiTokenId } : {}),
     organizationId: contact.organization_id,
     resourceType: "contact",
     resourceId: contact.id,

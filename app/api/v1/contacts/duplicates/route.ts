@@ -3,12 +3,14 @@
  *
  * A detecção é PURA (`lib/contacts/duplicados.ts`) e roda aqui, no servidor,
  * sobre a página de contatos vivos que a RLS deixa o usuário ver. Não é um
- * `select` esperto: os três índices únicos parciais de `contacts` já impedem
- * duas linhas ativas com a MESMA string, então o que sobra para o produto é a
- * grafia diferente do mesmo número (o nono dígito) e o telefone que a ingestão
- * do WhatsApp parkou em `source_metadata.telefone_em_conflito`. Nenhum dos dois
- * é comparação de igualdade, e é por isso que a regra vive em TypeScript
- * testável em vez de virar SQL que ninguém relê.
+ * `select` esperto: os índices únicos parciais de `contacts` — telefone, e-mail
+ * normalizado e hash de CPF — já impedem duas linhas ativas com a MESMA string,
+ * então o que sobra para o produto é a grafia diferente do mesmo número (o nono
+ * dígito), o telefone que a ingestão do WhatsApp parkou em
+ * `source_metadata.telefone_em_conflito` e a duplicata exata de CPF no clone em
+ * que o índice não nasceu (`if not exists` num `update.sh` sem `ON_ERROR_STOP`).
+ * Nenhuma dessas é comparação que o índice garante, e é por isso que a regra vive
+ * em TypeScript testável em vez de virar SQL que ninguém relê.
  *
  * Há um segundo motivo, que NÃO é igualdade: `nome_parecido` (Spec 31). Ele vem
  * DEPOIS dos fortes, com o mesmo formato, e é sugestão para conferir — o nome
@@ -16,14 +18,23 @@
  * empresa") saem da lista para todo papel, porque a leitura da dispensa usa o
  * cliente administrador, filtrado pela organização da sessão.
  *
+ * ─── O que sai daqui e o que não sai ─────────────────────────────────────────
+ * `cpf_hash` é LIDO (a comparação precisa dele) e NÃO é devolvido: é PII derivada,
+ * e a tela de conferência mostra pessoa, telefone e e-mail — não hash de
+ * documento. O mapeamento do `ok(...)` abaixo é a lista fechada do que o cliente
+ * recebe; campo novo em `contacts` não vaza por acidente.
+ *
  * `viewer` pode LISTAR (é leitura de contato, que ele já enxerga na tabela);
  * quem funde é `manager`, e esse gate está na rota de POST /contacts/merge.
  */
 import { randomUUID } from "node:crypto";
+import type { NextRequest } from "next/server";
 
+import { resolveAuthDual, tetoDeEscritaDoToken } from "@/lib/api/auth-dual";
 import { ok, fail } from "@/lib/api/wrappers";
 import { loadAuthUser } from "@/lib/auth/server";
 import { orgAtivaDaApi } from "@/lib/auth/require-role";
+import { extractBearer } from "@/lib/mcp/auth";
 import {
   encontrarContatosDuplicados,
   encontrarParecidosPorNome,
@@ -32,8 +43,11 @@ import {
 } from "@/lib/contacts/duplicados";
 import { lerParesDispensados } from "@/lib/contacts/dispensar-par";
 import { traduzir } from "@/lib/i18n/dicionario";
+import { IDIOMA_PADRAO } from "@/lib/i18n/idiomas";
+import type { Idioma } from "@/lib/i18n/idiomas";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
@@ -62,10 +76,23 @@ const TETO_DE_VARREDURA = 2000;
 const TAMANHO_DA_PAGINA = 1000;
 
 const COLUNAS_DO_CONTATO =
-  "id, name, display_name, address_book_name, email, email_normalized, phone_number, is_merged_into, is_anonymized, source_metadata, created_at, last_activity_at";
+  "id, name, display_name, address_book_name, email, email_normalized, phone_number, cpf_hash, is_merged_into, is_anonymized, source_metadata, created_at, last_activity_at";
 
-export async function GET(): Promise<Response> {
+export async function GET(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
+
+  if (extractBearer(req.headers.get("authorization"))) {
+    const authz = await resolveAuthDual(req, {
+      requestId,
+      resource: "contacts",
+      role: "viewer",
+      scope: "mcp:read",
+    });
+    if (!authz.ok) return authz.response;
+    const teto = await tetoDeEscritaDoToken(authz, "contacts", requestId);
+    if (teto) return teto;
+    return responderDuplicates(authz.supabase, authz.organizationId, authz.idioma, requestId);
+  }
 
   const user = await loadAuthUser();
   if (!user) {
@@ -79,7 +106,18 @@ export async function GET(): Promise<Response> {
     return fail("forbidden_tenant", t("Organização ativa não resolvida."), 403, { requestId });
   }
 
-  const supabase = await createClient();
+  return responderDuplicates(await createClient(), org.orgId, user.idioma, requestId);
+}
+
+async function responderDuplicates(
+  supabase: SupabaseClient,
+  organizationId: string,
+  idioma: Idioma | undefined,
+  requestId: string,
+): Promise<Response> {
+  const t = (texto: string) => traduzir(texto, idioma ?? IDIOMA_PADRAO);
+
+  const supabaseAdmin = createAdminClient();
 
   // Varredura PAGINADA por `range`, com ordem estável (`created_at`, `id`): o
   // fim é provado pelo `count` exato ou por página VAZIA. Página curta não é
@@ -95,7 +133,7 @@ export async function GET(): Promise<Response> {
     const { data, error, count } = await supabase
       .from("contacts")
       .select(COLUNAS_DO_CONTATO, pagina === 0 ? { count: "exact" } : undefined)
-      .eq("organization_id", org.orgId)
+      .eq("organization_id", organizationId)
       .is("is_merged_into", null)
       .eq("is_anonymized", false)
       .order("created_at", { ascending: true })
@@ -120,7 +158,7 @@ export async function GET(): Promise<Response> {
   // a rota falha — mostrar a lista sem as dispensas faria um par tirado voltar calado.
   let dispensados: Set<string>;
   try {
-    dispensados = await lerParesDispensados(createAdminClient(), org.orgId);
+    dispensados = await lerParesDispensados(supabaseAdmin, organizationId);
   } catch {
     // Sem o detalhe do erro na resposta: a mensagem do banco não é para quem opera a tela.
     return fail("internal_error", "Não foi possível ler as dispensas de duplicados.", 500, {

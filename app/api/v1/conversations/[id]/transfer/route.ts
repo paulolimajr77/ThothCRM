@@ -10,12 +10,15 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  * com `unread_count_for_assignee` re-zerado pro novo dono.
  */
 import { randomUUID } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { resolveAuthDual, tetoDeEscritaDoToken } from "@/lib/api/auth-dual";
 import { audit, isServiceRoleConfigured } from "@/lib/audit";
+import type { Idioma } from "@/lib/i18n/idiomas";
+import { extractBearer } from "@/lib/mcp/auth";
 import { registrarTrocaDeComando } from "@/lib/inbox/atividade-de-comando";
-import { sincronizarNegocioAbertoDoContato } from "@/lib/inbox/negocio-aberto-do-contato";
 import { ApiError } from "@/lib/api/types";
 import { ok, fail } from "@/lib/api/wrappers";
 import { requireRole } from "@/lib/auth/require-role";
@@ -112,20 +115,10 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<Response> {
 
   const conv = row as unknown as Conversation;
 
-  // #3177: o negócio ABERTO do contato segue o mesmo responsável. A conversa já
-  // é do destino neste ponto; o card do funil não era, e ficava para trás (o
-  // responsável antigo, ou nenhum). Cliente da SESSÃO de propósito: quem
-  // transfere a conversa não ganha aqui nenhuma permissão que a rota de
-  // negócios já não dê — quando o banco recusa, a transferência segue de pé e o
-  // motivo fica no `metadata` da auditoria. Ver
-  // `lib/inbox/negocio-aberto-do-contato.ts` para a régua (um aberto leva; zero
-  // ou mais de um, nada é tocado).
-  const sincronia = await sincronizarNegocioAbertoDoContato(supabase, {
-    organizationId: conv.organization_id,
-    contactId: conv.contact_id,
-    toUserId: input.to_user_id,
-  });
-
+  // #4019: o negócio ABERTO do contato já acompanhou o dono novo DENTRO da
+  // `fn_conversation_assign`, na mesma transação da troca da conversa (migration
+  // 9208), dentro da permissão de quem clicou. A régua não mora mais nesta rota:
+  // se ela vivesse aqui, o MCP e a chamada direta da RPC não a teriam.
   await audit({
     action: "conversation.transferred",
     actorUserId: user.id,
@@ -136,8 +129,6 @@ export async function POST(req: NextRequest, ctx: RouteCtx): Promise<Response> {
     metadata: {
       to_user_id: input.to_user_id,
       ...(input.reason ? { note: input.reason } : {}),
-      negocio_aberto: sincronia.motivo,
-      ...(sincronia.leadId ? { negocio_id: sincronia.leadId } : {}),
       // O número segue o vendedor (#3642): o antigo e o novo, iguais quando a
       // conversa ficou onde estava.
       ...(numeroAnterior !== undefined
@@ -221,19 +212,46 @@ export async function GET(req: NextRequest, ctx: RouteCtx): Promise<Response> {
   const requestId = randomUUID();
   const { id } = await ctx.params;
 
+  // Token de integração (Spec 33, R2): é só leitura, e a regra do número vem de
+  // `fn_numero_da_transferencia`, que filtra a organização e é só do service
+  // role. A transferência em si (POST) segue só de sessão.
+  if (extractBearer(req.headers.get("authorization"))) {
+    const authz = await resolveAuthDual(req, {
+      requestId,
+      resource: "conversations",
+      role: "agent",
+      scope: "mcp:read",
+    });
+    if (!authz.ok) return authz.response;
+    const teto = await tetoDeEscritaDoToken(authz, "conversations", requestId);
+    if (teto) return teto;
+    return responderPreviaDoNumero(req, authz.supabase, authz.organizationId, authz.idioma, id, requestId);
+  }
+
   const authz = await requireRole("agent", { requestId, resource: "conversations" });
   if (!authz.ok) return authz.response;
-  const t = (texto: string) => traduzir(texto, authz.user.idioma);
-  const orgId = authz.org.orgId; // fonte confiável (cookie validado), nunca a query
+  // fonte confiável (cookie validado), nunca a query
+  return responderPreviaDoNumero(req, await createClient(), authz.org.orgId, authz.user.idioma, id, requestId);
+}
+
+async function responderPreviaDoNumero(
+  req: NextRequest,
+  supabase: SupabaseClient,
+  orgId: string,
+  idioma: Idioma | undefined,
+  id: string,
+  requestId: string,
+): Promise<Response> {
+  const t = (texto: string) => traduzir(texto, idioma ?? "pt-BR");
 
   const parsed = previaSchema.safeParse({ to_user_id: req.nextUrl.searchParams.get("to_user_id") });
   if (!parsed.success) {
     return fail("invalid_request", t("Destino inválido."), 400, { requestId });
   }
 
-  // Quem pergunta precisa enxergar a conversa: a leitura é pelo cliente da
-  // SESSÃO, com a RLS de sempre. Só depois o admin responde a regra.
-  const supabase = await createClient();
+  // Quem pergunta precisa enxergar a conversa: na sessão a leitura é pelo
+  // cliente da SESSÃO, com a RLS de sempre; no token, o filtro de organização
+  // abaixo isola. Só depois o admin responde a regra.
   const { data: conversa, error: erroConversa } = await supabase
     .from("conversations")
     .select("id")

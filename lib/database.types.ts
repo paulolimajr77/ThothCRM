@@ -8289,6 +8289,8 @@ export type Database = {
         Row: {
           artifact_id: string;
           catalog_id: string;
+          disabled_at: string | null;
+          disabled_by: string | null;
           id: string;
           installed_at: string;
           installed_by: string | null;
@@ -8304,6 +8306,8 @@ export type Database = {
         Insert: {
           artifact_id: string;
           catalog_id: string;
+          disabled_at?: string | null;
+          disabled_by?: string | null;
           id?: string;
           installed_at?: string;
           installed_by?: string | null;
@@ -8318,6 +8322,8 @@ export type Database = {
         Update: {
           artifact_id?: string;
           catalog_id?: string;
+          disabled_at?: string | null;
+          disabled_by?: string | null;
           id?: string;
           installed_at?: string;
           installed_by?: string | null;
@@ -12696,6 +12702,7 @@ export type Database = {
           agent_setup: NonNullable<Json>;
           agent_setup_revision: number;
           channel_down_since: string | null;
+          channel_session_id: string | null;
           config: Json | null;
           cost_usd: number | null;
           created_at: string;
@@ -12719,6 +12726,7 @@ export type Database = {
           agent_setup?: NonNullable<Json>;
           agent_setup_revision?: number;
           channel_down_since?: string | null;
+          channel_session_id?: string | null;
           config?: Json | null;
           cost_usd?: number | null;
           created_at?: string;
@@ -12741,6 +12749,7 @@ export type Database = {
           agent_setup?: NonNullable<Json>;
           agent_setup_revision?: number;
           channel_down_since?: string | null;
+          channel_session_id?: string | null;
           config?: Json | null;
           cost_usd?: number | null;
           created_at?: string;
@@ -15294,6 +15303,7 @@ export type Database = {
           p_conversation_id: string;
           p_enforce_expected?: boolean;
           p_expected_assignee?: string;
+          p_negocio_so_sem_dono?: boolean;
           p_organization_id: string;
           p_reason: string;
           p_source_job_id?: string | null;
@@ -15639,6 +15649,16 @@ export type Database = {
       fn_extensions_revert_install: {
         Args: {
           p_actor: string;
+          p_expected_installation_revision: number;
+          p_installation: string;
+          p_operation: string;
+        };
+        Returns: Json;
+      };
+      fn_extensions_set_switch: {
+        Args: {
+          p_actor: string;
+          p_disabled: boolean;
           p_expected_installation_revision: number;
           p_installation: string;
           p_operation: string;

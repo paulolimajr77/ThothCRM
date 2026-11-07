@@ -47,6 +47,12 @@ interface LinhaDeContato {
   phone_number: string | null;
   email: string | null;
   email_normalized: string | null;
+  /**
+   * Lido porque `ligadosPorMotivoForte` compara CPF (#4081). Sem esta coluna os
+   * dois lados chegam `undefined` e a régua não vê par forte nenhum — a dispensa
+   * passaria a aceitar o par que é a mesma pessoa.
+   */
+  cpf_hash: string | null;
   source_metadata: Record<string, unknown> | null;
 }
 
@@ -59,7 +65,7 @@ interface LinhaDeContato {
  */
 export async function dispensarParDeContatos(
   pool: pg.Pool,
-  args: { organizationId: string; contactIds: [string, string]; userId: string },
+  args: { organizationId: string; contactIds: [string, string]; userId: string | null },
 ): Promise<ResultadoDaDispensa> {
   const org = args.organizationId;
   const [a, b] = args.contactIds.map((id) => id.toLowerCase()).sort() as [string, string];
@@ -76,7 +82,7 @@ export async function dispensarParDeContatos(
     ]);
 
     const { rows } = await db.query<LinhaDeContato>(
-      `select id, phone_number, email, email_normalized, source_metadata
+      `select id, phone_number, email, email_normalized, cpf_hash, source_metadata
          from public.contacts
         where organization_id = $1
           and id = any($2::uuid[])
