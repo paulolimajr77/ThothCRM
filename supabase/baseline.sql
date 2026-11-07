@@ -28097,7 +28097,7 @@ alter table public.extension_installations add constraint extension_installation
 alter table public.organization_extensions add column if not exists deactivated_by_removal_at timestamptz;
 alter table public.extension_operations drop constraint if exists extension_operations_kind_check;
 alter table public.extension_operations add constraint extension_operations_kind_check
-  check (kind in ('catalog_admission','install','update','revert','removal','configure','module_install'));
+  check (kind in ('catalog_admission','install','update','revert','removal','configure','module_install','switch'));
 alter table public.extension_operations drop constraint if exists extension_operations_status_check;
 alter table public.extension_operations add constraint extension_operations_status_check
   check (status in ('preparing','completed','failed','cancelled'));
@@ -68999,6 +68999,1039 @@ begin
 end;
 $fn$;
 
+-- ---- modulo conectado: perfil (migration 9115) ----
+-- Espelho idempotente da 9115 (racional completo no arquivo da migration): o banco aceita o perfil
+-- `connected` e a chave `service_origin` na entrada do catálogo. Só `create or replace` das três
+-- funções que já existiam, com o corpo da ÚLTIMA definição vigente mais a alteração; a ACL das três
+-- (revoke de public/anon/authenticated, grant a service_role) é a de antes e não muda.
+
+create or replace function public.fn_extensions_permissoes_validas(p_permissions jsonb)
+returns boolean language sql immutable set search_path = public, pg_temp as $$
+  select p_permissions is not null
+    and jsonb_typeof(p_permissions) = 'array'
+    and jsonb_array_length(p_permissions) between 1 and 26
+    and not exists (
+      select 1 from jsonb_array_elements(p_permissions) e
+      where jsonb_typeof(e.value) <> 'string'
+         or e.value #>> '{}' not in (
+              'navigation.tasks', 'navigation.inbox', 'navigation.kanban',
+              'navigation.contacts', 'navigation.agenda', 'navigation.radar',
+              'theme.apply', 'dados.proprios',
+              'area.contatos.leitura', 'area.contatos.escrita',
+              'area.negocios.leitura', 'area.negocios.escrita',
+              'area.conversas.leitura', 'area.conversas.escrita',
+              'area.agenda.leitura', 'area.agenda.escrita',
+              'area.funis.leitura', 'area.funis.escrita',
+              'area.agentes_ia.leitura', 'area.agentes_ia.escrita',
+              'area.catalogo.leitura', 'area.catalogo.escrita',
+              'area.configuracao.leitura', 'area.configuracao.escrita',
+              'area.analise.leitura', 'area.analise.escrita')
+    )
+    and (select count(distinct e.value) from jsonb_array_elements(p_permissions) e)
+        = jsonb_array_length(p_permissions);
+$$;
+
+create or replace function public.fn_extensions_admit_catalog(p_actor uuid, p_operation uuid, p_snapshot jsonb, p_digest text)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_request jsonb := jsonb_build_object('kind','catalog_admission','actor',p_actor,'snapshot',p_snapshot,'digest',p_digest);
+  v_op public.extension_operations; v_catalog public.extension_catalogs; v_entry jsonb; v_revision integer;
+begin
+  perform public.fn_extensions_assert_actor(p_actor);
+  if p_operation is null then raise exception using errcode='P0001', message='extension_invalid_input'; end if;
+  perform pg_advisory_xact_lock(255,1);
+  perform public.fn_extensions_assert_actor(p_actor);
+  perform pg_advisory_xact_lock(hashtextextended(p_operation::text,255));
+  perform public.fn_extensions_assert_actor(p_actor);
+  select * into v_op from public.extension_operations where id=p_operation;
+  if found then
+    if v_op.request_fingerprint <> public.fn_extensions_fingerprint(v_request) then
+      raise exception using errcode='P0001', message='extension_idempotency_conflict';
+    end if;
+    return to_jsonb(v_op) || jsonb_build_object('applied_now', false);
+  end if;
+  if p_snapshot is null or jsonb_typeof(p_snapshot) <> 'object'
+    or not (p_snapshot ?& array['format_version','origin','revision','entries'])
+    or p_snapshot - array['format_version','origin','revision','entries'] <> '{}'::jsonb
+    or p_snapshot->'format_version' is distinct from '1'::jsonb
+    or jsonb_typeof(p_snapshot->'origin') is distinct from 'string'
+    or p_snapshot->>'origin' !~ '^https?://[^/@?#[:space:]]+$'
+    or jsonb_typeof(p_snapshot->'revision') is distinct from 'number'
+    or p_snapshot->>'revision' !~ '^[1-9][0-9]{0,8}$'
+    or jsonb_typeof(p_snapshot->'entries') is distinct from 'array'
+    or p_digest is null or p_digest !~ '^[a-f0-9]{64}$' then
+    raise exception using errcode='P0001', message='extension_invalid_input';
+  end if;
+  if jsonb_array_length(p_snapshot->'entries') > 128 then
+    raise exception using errcode='P0001', message='extension_invalid_input';
+  end if;
+  for v_entry in select value from jsonb_array_elements(p_snapshot->'entries') loop
+    if jsonb_typeof(v_entry) <> 'object' or not (v_entry ?& array['publisher','name','version','license','host_api','display','permissions','sha256','byte_length'])
+      or v_entry - array['publisher','name','version','license','host_api','display','permissions','sha256','byte_length','publisher_label','homepage','repository','tags','published_at','service_origin'] <> '{}'::jsonb
+      or exists (select 1 from jsonb_each(v_entry) e where e.value='null'::jsonb)
+      -- 9115: a origem do serviço de um módulo `connected`, mesma forma da origem do catálogo.
+      or (v_entry ? 'service_origin' and (jsonb_typeof(v_entry->'service_origin') is distinct from 'string'
+        or v_entry->>'service_origin' !~ '^https?://[^/@?#[:space:]]+$'))
+      or jsonb_typeof(v_entry->'byte_length') is distinct from 'number'
+      or jsonb_typeof(v_entry->'host_api') is distinct from 'object'
+      or jsonb_typeof(v_entry->'display') is distinct from 'object'
+      or v_entry->>'publisher' !~ '^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$'
+      or v_entry->>'name' !~ '^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$'
+      or v_entry->>'version' !~ '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+      or v_entry->>'sha256' !~ '^[a-f0-9]{64}$'
+      or v_entry->>'byte_length' !~ '^[1-9][0-9]{0,4}$'
+      or v_entry->>'license' <> 'MIT' or not public.fn_extensions_permissoes_validas(v_entry->'permissions') then
+      raise exception using errcode='P0001', message='extension_invalid_input';
+    end if;
+    if (v_entry->>'byte_length')::integer > 65536 then
+      raise exception using errcode='P0001', message='extension_invalid_input';
+    end if;
+  end loop;
+  if exists (select 1 from jsonb_array_elements(p_snapshot->'entries') e
+    group by e->>'publisher', e->>'name', e->>'version' having count(*) > 1) then
+    raise exception using errcode='P0001', message='extension_invalid_input';
+  end if;
+  v_revision := (p_snapshot->>'revision')::integer;
+  select * into v_catalog from public.extension_catalogs where origin=p_snapshot->>'origin';
+  if found and (v_revision < v_catalog.revision or (v_revision = v_catalog.revision
+      and (p_digest <> v_catalog.digest or p_snapshot <> v_catalog.snapshot))) then
+    raise exception using errcode='P0001', message='extension_catalog_revision_conflict';
+  end if;
+  if v_catalog.id is null then
+    if (select count(*) from public.extension_catalogs) >= 8 then
+      raise exception using errcode='P0001',message='extension_catalog_limit';
+    end if;
+    insert into public.extension_catalogs(origin,revision,digest,snapshot,admitted_by)
+      values(p_snapshot->>'origin',v_revision,p_digest,p_snapshot,p_actor) returning * into v_catalog;
+  elsif v_revision > v_catalog.revision then
+    update public.extension_catalogs set revision=v_revision,digest=p_digest,snapshot=p_snapshot,
+      admitted_by=p_actor,admitted_at=now() where id=v_catalog.id returning * into v_catalog;
+    update public.extension_operations set status='cancelled',error_code='extension_catalog_stale',updated_at=now()
+      where catalog_id=v_catalog.id and kind in ('install','update') and status='preparing';
+  end if;
+  insert into public.extension_operations(id,kind,status,actor_id,catalog_id,request,request_fingerprint,result)
+    values(p_operation,'catalog_admission','completed',p_actor,v_catalog.id,v_request,
+      public.fn_extensions_fingerprint(v_request),jsonb_build_object('catalog',to_jsonb(v_catalog))) returning * into v_op;
+  return to_jsonb(v_op) || jsonb_build_object('applied_now', true);
+end $$;
+
+create or replace function public.fn_extensions_finish_install(p_actor uuid, p_operation uuid, p_manifest jsonb, p_sha256 text, p_byte_length integer, p_document text)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_op public.extension_operations; v_catalog public.extension_catalogs;
+  v_artifact public.extension_artifacts; v_install public.extension_installations; v_current public.extension_artifacts;
+  v_previous public.extension_artifacts; v_document_json jsonb; v_active integer := 0;
+begin
+  perform public.fn_extensions_assert_actor(p_actor);
+  perform pg_advisory_xact_lock(255,1);
+  perform public.fn_extensions_assert_actor(p_actor);
+  select * into v_op from public.extension_operations where id=p_operation for update;
+  if not found then raise exception using errcode='P0001',message='extension_operation_not_found'; end if;
+  if v_op.kind not in ('install','update') or v_op.actor_id is distinct from p_actor then
+    raise exception using errcode='P0001',message='extension_operation_conflict';
+  end if;
+  -- Sem autoridade após cancel/fail. Resposta perdida de completed segue verificando payload.
+  if v_op.status in ('cancelled','failed') then return to_jsonb(v_op) || jsonb_build_object('applied_now', false); end if;
+  if p_document is null or octet_length(p_document) not between 1 and 65536
+    or octet_length(p_document) is distinct from p_byte_length
+    or encode(sha256(convert_to(p_document,'UTF8')),'hex') is distinct from p_sha256 then
+    raise exception using errcode='P0001',message='extension_artifact_mismatch';
+  end if;
+  begin
+    v_document_json := p_document::jsonb;
+  exception when invalid_text_representation or untranslatable_character or program_limit_exceeded then
+    raise exception using errcode='P0001',message='extension_artifact_mismatch';
+  end;
+  if v_document_json is distinct from p_manifest then
+    raise exception using errcode='P0001',message='extension_artifact_mismatch';
+  end if;
+  if p_sha256 is distinct from v_op.entry->>'sha256' or p_byte_length is distinct from (v_op.entry->>'byte_length')::integer
+    or p_manifest is null or jsonb_typeof(p_manifest) <> 'object'
+    or not (p_manifest ?& array['format_version','profile','publisher','name','version','license','host_api','permissions','dependencies','data','display','configuration','contributions'])
+    or p_manifest - array['format_version','profile','publisher','name','version','license','host_api','permissions','dependencies','data','display','configuration','contributions'] <> '{}'::jsonb
+    or exists (select 1 from jsonb_each(p_manifest) e where e.value='null'::jsonb)
+    or p_manifest->'format_version' is distinct from '1'::jsonb -- 0611: dois perfis. `declarative` segue igual; `data` declara objetos na chave `data`.
+    or p_manifest->>'profile' not in ('declarative','data','connected')
+    or jsonb_typeof(p_manifest->'configuration') is distinct from 'object'
+    or jsonb_typeof(p_manifest->'contributions') is distinct from 'object'
+    or p_manifest->>'publisher' is distinct from v_op.publisher or p_manifest->>'name' is distinct from v_op.name
+    or p_manifest->>'version' is distinct from v_op.version
+    or p_manifest->'dependencies' <> '[]'::jsonb
+    or (p_manifest->>'profile' = 'declarative' and p_manifest->'data' <> '{"mode":"none"}'::jsonb)
+    or (p_manifest->>'profile' = 'data' and (
+         p_manifest->'data'->>'mode' is distinct from 'declarado'
+         or jsonb_typeof(p_manifest->'data'->'objetos') is distinct from 'array'
+         or jsonb_array_length(p_manifest->'data'->'objetos') < 1))
+    -- 0511: projeta os dois lados sobre as chaves que a ENTRADA do catálogo anuncia. Comparar os
+    -- complementos fazia todo campo de vitrine da 0282 (publisher_label, homepage, repository,
+    -- tags, published_at) divergir, e nenhuma entrada do catálogo oficial instalava.
+    or exists (
+      select 1 from unnest(array['publisher','name','version','license','host_api','display','permissions']) k
+      where p_manifest->k is distinct from v_op.entry->k
+    ) then
+    raise exception using errcode='P0001',message='extension_artifact_mismatch';
+  end if;
+  -- 9115 — perfil `connected` (spec 33). Segundo `if` e não mais uma linha do primeiro: aqui a forma do
+  -- manifesto já foi provada (`permissions` é igual ao da entrada, que a admissão validou como array),
+  -- então `jsonb_array_elements_text` não corre o risco de errar por tipo antes da recusa.
+  -- As mesmas regras de `lib/extensions/manifest.ts`: `connected` só declara permissão de área, não
+  -- declara dados, não tem configuração de card nem contribui card ou tema; permissão de área nos
+  -- outros perfis é recusada; e a entrada do catálogo tem `service_origin` se, e somente se, o
+  -- pacote é `connected` (o endereço do serviço não pode pegar carona em pacote que não é conectado).
+  if (p_manifest->>'profile' = 'connected') is distinct from (v_op.entry ? 'service_origin')
+    or (p_manifest->>'profile' = 'connected' and (
+         exists (select 1 from jsonb_array_elements_text(p_manifest->'permissions') perm where perm not like 'area.%')
+         or p_manifest->'data' is distinct from '{"mode":"none"}'::jsonb
+         or p_manifest->'configuration' ? 'density'
+         or p_manifest->'contributions' ? 'crm_cards'
+         or p_manifest->'contributions' ? 'theme'))
+    or (p_manifest->>'profile' <> 'connected'
+         and exists (select 1 from jsonb_array_elements_text(p_manifest->'permissions') perm where perm like 'area.%')) then
+    raise exception using errcode='P0001',message='extension_artifact_mismatch';
+  end if;
+  if v_op.status='completed' then
+    -- Compara com o artefato que ESTA conclusão publicou, não com o ponteiro de agora: um
+    -- "desfazer" posterior não pode fazer a repetição acusar pacote adulterado.
+    select * into v_artifact from public.extension_artifacts
+      where id=coalesce(v_op.result->>'to_artifact_id', v_op.result->'installation'->>'artifact_id')::uuid;
+    if not found or v_artifact.manifest is distinct from p_manifest or v_artifact.document is distinct from p_document then
+      raise exception using errcode='P0001',message='extension_artifact_mismatch';
+    end if;
+    return to_jsonb(v_op) || jsonb_build_object('applied_now', false);
+  end if;
+  if public.fn_extensions_core_update_in_progress() then
+    raise exception using errcode='P0001',message='extension_core_update_in_progress';
+  end if;
+  select * into v_catalog from public.extension_catalogs where id=v_op.catalog_id;
+  if v_catalog.revision is distinct from v_op.admission_revision or v_catalog.digest is distinct from v_op.admission_digest then
+    raise exception using errcode='P0001',message='extension_catalog_stale';
+  end if;
+  select * into v_install from public.extension_installations
+    where catalog_id=v_op.catalog_id and publisher=v_op.publisher and name=v_op.name for update;
+  -- Defesa estrutural: a linha tem de estar na revisão que a preparação viu.
+  if v_install.revision is distinct from (v_op.result->>'from_revision')::integer
+    or (v_op.kind='update' and v_install.removed_at is not null)
+    or (v_op.kind='install' and v_install.id is not null and v_install.removed_at is null) then
+    raise exception using errcode='P0001',message='extension_version_changed';
+  end if;
+  if v_install.id is not null then
+    select * into v_current from public.extension_artifacts where id=v_install.artifact_id;
+    -- A recusa que a spec v1 prometeu para "quando o contrato admitir outra permissão".
+    -- Sem ela, 1.0 -> 1.1 acrescentaria uma porta sem ninguém na organização rever a lista
+    -- que a tela existe para mostrar: o furo entra pela porta lateral da própria propriedade
+    -- que a lista de permissões garante. Mudar o conjunto de portas é outra extensão.
+    if v_op.kind='update' and v_current.id is not null
+      and v_current.manifest->'permissions' is distinct from p_manifest->'permissions' then
+      raise exception using errcode='P0001',message='extension_permissions_changed';
+    end if;
+    select * into v_previous from public.extension_artifacts where id=v_install.previous_artifact_id;
+    if (v_install.version = v_op.version and v_current.sha256 <> p_sha256)
+      or (v_previous.id is not null and v_previous.manifest->>'version' = v_op.version and v_previous.sha256 <> p_sha256) then
+      raise exception using errcode='P0001',message='extension_version_conflict';
+    end if;
+  end if;
+  select * into v_artifact from public.extension_artifacts where sha256=p_sha256;
+  if found then
+    if v_artifact.manifest is distinct from p_manifest or v_artifact.document is distinct from p_document or v_artifact.byte_length <> p_byte_length then
+      raise exception using errcode='P0001',message='extension_artifact_mismatch';
+    end if;
+  else
+    insert into public.extension_artifacts(sha256,byte_length,manifest,document) values(p_sha256,p_byte_length,p_manifest,p_document) returning * into v_artifact;
+  end if;
+  if v_install.id is null then
+    insert into public.extension_installations(catalog_id,artifact_id,publisher,name,version,installed_by)
+      values(v_op.catalog_id,v_artifact.id,v_op.publisher,v_op.name,v_op.version,p_actor) returning * into v_install;
+  elsif v_op.kind='install' then
+    -- Reinstalação de uma linha removida: os vínculos NÃO voltam ativos; cada organização decide.
+    update public.extension_installations set artifact_id=v_artifact.id, version=v_op.version, previous_artifact_id=null,
+      removed_at=null, removed_by=null, installed_by=p_actor, installed_at=now(), revision=revision+1
+      where id=v_install.id returning * into v_install;
+  else
+    update public.extension_installations set previous_artifact_id=artifact_id, artifact_id=v_artifact.id,
+      version=v_op.version, revision=revision+1 where id=v_install.id returning * into v_install;
+    select count(*)::integer into v_active from public.organization_extensions where installation_id=v_install.id and enabled;
+  end if;
+  -- 0611 — O EFEITO do perfil `data`, na MESMA transação do recibo.
+  if p_manifest->>'profile' = 'data' then
+    perform public.fn_modulo_dados_compilar(v_artifact.id);
+  end if;
+  update public.extension_operations set status='completed',installation_id=v_install.id,
+    result=coalesce(v_op.result,'{}'::jsonb) || jsonb_build_object('installation',to_jsonb(v_install),
+      'to_artifact_id',v_artifact.id,'to_version',v_op.version,'organizations_active',v_active),
+    updated_at=now() where id=p_operation returning * into v_op;
+  return to_jsonb(v_op) || jsonb_build_object('applied_now', true);
+end $$;
+
+notify pgrst, 'reload schema';
+
+-- ---- modulo conectado: interruptor (migration 9116) ----
+-- Espelho idempotente da 9116 (racional completo no arquivo da migration): `disabled_at` e
+-- `disabled_by` na instalação e `fn_extensions_set_switch`, que liga e desliga um módulo `connected`
+-- sem desinstalar. O valor `'switch'` da CHECK de `kind` de `extension_operations` NÃO é recriado
+-- aqui: ele vive no bloco único da constraint, no apêndice da migration 0271 (uma constraint, um
+-- bloco — tests/unit/baseline-constraint-reconstruida.test.ts). A migration 9116 faz o drop + add.
+
+alter table public.extension_installations
+  add column if not exists disabled_at timestamptz,
+  add column if not exists disabled_by uuid references auth.users(id) on delete set null;
+alter table public.extension_installations drop constraint if exists extension_installations_disabled_by_requires_disabled_at;
+alter table public.extension_installations add constraint extension_installations_disabled_by_requires_disabled_at
+  check (disabled_by is null or disabled_at is not null);
+
+create or replace function public.fn_extensions_set_switch(p_actor uuid, p_operation uuid, p_installation uuid,
+  p_disabled boolean, p_expected_installation_revision integer)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_request jsonb := jsonb_build_object('kind','switch','actor',p_actor,'installation',p_installation,
+    'disabled',p_disabled,'expected_installation_revision',p_expected_installation_revision);
+  v_op public.extension_operations; v_install public.extension_installations; v_from public.extension_installations;
+  v_profile text;
+begin
+  perform public.fn_extensions_assert_actor(p_actor);
+  if p_operation is null or p_installation is null or p_disabled is null or p_expected_installation_revision is null
+    or p_expected_installation_revision < 1 then
+    raise exception using errcode='P0001',message='extension_invalid_input';
+  end if;
+  perform pg_advisory_xact_lock(255,1);
+  perform public.fn_extensions_assert_actor(p_actor);
+  perform pg_advisory_xact_lock(hashtextextended(p_operation::text,255));
+  perform public.fn_extensions_assert_actor(p_actor);
+  select * into v_op from public.extension_operations where id=p_operation;
+  if found then
+    if v_op.request_fingerprint <> public.fn_extensions_fingerprint(v_request) then
+      raise exception using errcode='P0001',message='extension_idempotency_conflict';
+    end if;
+    return to_jsonb(v_op) || jsonb_build_object('applied_now', false);
+  end if;
+  select * into v_install from public.extension_installations where id=p_installation for update;
+  if not found then raise exception using errcode='P0001',message='extension_installation_not_found'; end if;
+  if v_install.removed_at is not null then raise exception using errcode='P0001',message='extension_removed'; end if;
+  if exists (select 1 from public.extension_operations where kind in ('install','update') and status='preparing'
+    and catalog_id=v_install.catalog_id and publisher=v_install.publisher and name=v_install.name) then
+    raise exception using errcode='P0001',message='extension_preparation_in_progress';
+  end if;
+  if v_install.revision <> p_expected_installation_revision then
+    raise exception using errcode='P0001',message='extension_version_changed';
+  end if;
+  -- O perfil vem do ARTEFATO admitido (o manifesto já passou por `fn_extensions_finish_install`).
+  select a.manifest->>'profile' into v_profile from public.extension_artifacts a where a.id=v_install.artifact_id;
+  if v_profile is distinct from 'connected' then
+    raise exception using errcode='P0001',message='extension_switch_not_applicable';
+  end if;
+  v_from := v_install;
+  update public.extension_installations
+    set disabled_at = case when p_disabled then coalesce(v_from.disabled_at, now()) else null end,
+        disabled_by = case when p_disabled then coalesce(v_from.disabled_by, p_actor) else null end,
+        revision = revision+1
+    where id=p_installation returning * into v_install;
+  insert into public.extension_operations(id,kind,status,actor_id,catalog_id,installation_id,publisher,name,version,
+    request,request_fingerprint,result)
+    values(p_operation,'switch','completed',p_actor,v_install.catalog_id,v_install.id,v_install.publisher,v_install.name,
+      v_install.version,v_request,public.fn_extensions_fingerprint(v_request),
+      jsonb_build_object('installation',to_jsonb(v_install),'from_revision',v_from.revision,'from_version',v_from.version,
+        'disabled',p_disabled))
+    returning * into v_op;
+  return to_jsonb(v_op) || jsonb_build_object('applied_now', true);
+end $$;
+
+revoke execute on function public.fn_extensions_set_switch(uuid,uuid,uuid,boolean,integer) from public, anon, authenticated;
+grant execute on function public.fn_extensions_set_switch(uuid,uuid,uuid,boolean,integer) to service_role;
+
+notify pgrst, 'reload schema';
+
+-- ---- modulo conectado: schema do token do módulo (migration 9117) ----
+-- Espelho idempotente da 9117 (racional completo no arquivo da migration): `api_tokens` ganha
+-- `extension_installation_id` e `module_slug`, `created_by` aceita nulo (CHECK de dono + índice único
+-- parcial: um token vivo de módulo por organização e instalação), e duas tabelas só de servidor, sem
+-- policy: `extension_installation_secrets` (segredo cifrado) e `extension_token_nonces` (anti-repetição).
+
+alter table public.api_tokens
+  add column if not exists extension_installation_id uuid references public.extension_installations(id),
+  add column if not exists module_slug text;
+
+alter table public.api_tokens alter column created_by drop not null;
+
+alter table public.api_tokens drop constraint if exists api_tokens_dono_check;
+alter table public.api_tokens add constraint api_tokens_dono_check
+  check (created_by is not null or extension_installation_id is not null);
+
+create unique index if not exists api_tokens_modulo_vivo_idx
+  on public.api_tokens (organization_id, extension_installation_id)
+  where revoked_at is null and extension_installation_id is not null;
+
+create table if not exists public.extension_installation_secrets (
+  installation_id uuid primary key references public.extension_installations(id) on delete cascade,
+  ciphertext text not null,
+  rotated_at timestamptz not null default now(),
+  rotated_by uuid references auth.users(id) on delete set null
+);
+
+create table if not exists public.extension_token_nonces (
+  installation_id uuid not null references public.extension_installations(id) on delete cascade,
+  nonce text not null,
+  seen_at timestamptz not null default now(),
+  primary key (installation_id, nonce)
+);
+create index if not exists extension_token_nonces_seen_at on public.extension_token_nonces(seen_at);
+
+alter table public.extension_installation_secrets enable row level security;
+alter table public.extension_token_nonces enable row level security;
+revoke all on public.extension_installation_secrets, public.extension_token_nonces
+  from public, anon, authenticated, service_role;
+grant select, insert, update, delete on public.extension_installation_secrets, public.extension_token_nonces
+  to service_role;
+
+notify pgrst, 'reload schema';
+
+-- ---- modulo conectado: funções do token do módulo (migration 9118) ----
+-- Espelho idempotente da 9118 (racional completo no arquivo da migration): `fn_extensions_module_token_reserve`,
+-- `_rotate` e `_revoke`, e a redefinição de `fn_extensions_configure`, `fn_extensions_remove_installation` e
+-- `fn_extensions_set_switch` (a última definição de cada uma neste arquivo é a base; só o trecho de token é novo).
+-- Fica DEPOIS do apêndice da 9117 (usa as colunas dela) e ANTES da VARREDURA anon.
+
+-- A vaga do token: a ATIVAÇÃO do módulo `connected` numa organização cria uma linha viva em `api_tokens`
+-- (dono: a instalação, `created_by` nulo) cujo hash é a sha256 de um texto aleatório descartado, ou seja,
+-- ninguém conhece a preimagem e nenhum bearer a abre. A vaga existe para o teto de 50 e para a revogação
+-- transacional valerem NA ATIVAÇÃO. `expires_at` de 100 anos porque o gatilho do teto só conta token sem
+-- `revoked_at` E não expirado: uma vaga "vencida" não contaria. Idempotente (índice único do par).
+create or replace function public.fn_extensions_module_token_reserve(p_organization uuid, p_installation uuid)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare
+  v_publisher text; v_name text; v_slug text; v_id uuid; v_prefix text; v_tentativa integer := 0;
+begin
+  if p_organization is null or p_installation is null then
+    raise exception using errcode='P0001', message='extension_invalid_input';
+  end if;
+  select i.publisher, i.name into v_publisher, v_name from public.extension_installations i where i.id = p_installation;
+  if not found then raise exception using errcode='P0001', message='extension_installation_not_found'; end if;
+  v_slug := v_publisher || '/' || v_name;
+  loop
+    select t.id into v_id from public.api_tokens t
+      where t.organization_id = p_organization and t.extension_installation_id = p_installation and t.revoked_at is null;
+    if found then return v_id; end if;
+    v_tentativa := v_tentativa + 1;
+    v_prefix := 'dsk_' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 8);
+    begin
+      insert into public.api_tokens(organization_id, created_by, extension_installation_id, module_slug, name, prefix,
+        token_hash, scopes, expires_at)
+        values (p_organization, null, p_installation, v_slug, 'Módulo ' || v_slug, v_prefix,
+          sha256(convert_to(gen_random_uuid()::text || clock_timestamp()::text, 'utf8')),
+          jsonb_build_array('mcp:read', 'role:viewer', 'actor:module:' || v_slug),
+          now() + interval '100 years')
+        returning id into v_id;
+      return v_id;
+    exception when unique_violation then
+      -- Prefixo colidido com outro token da organização, ou corrida com outra vaga do mesmo par: o laço
+      -- relê o par e, se não houver vaga viva, tenta outro prefixo. O teto (PT409) NÃO é capturado aqui.
+      if v_tentativa >= 8 then raise; end if;
+    end;
+  end loop;
+end $$;
+
+-- A busca troca o hash da vaga viva do par pelo hash do token novo (o texto nunca chega ao banco). Recusa
+-- (PT409) se a ativação não existe ou está desativada, ou se a instalação foi desligada/removida. Trava a
+-- instalação e o vínculo `for share` (serializa com desligar, remover e desativar, que escrevem neles).
+-- O `update` não passa pelo gatilho do teto (que é só de INSERT): quando a linha do par já estava expirada,
+-- a função reconfere o teto, para o token expirado de um módulo não deixar a organização passar de 50.
+-- Sem vaga viva (ativação anterior a esta migration), a função INSERE a linha, e o gatilho aplica o teto.
+create or replace function public.fn_extensions_module_token_rotate(p_organization uuid, p_installation uuid,
+  p_prefix text, p_hash bytea, p_expires_at timestamptz)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare
+  v_publisher text; v_name text; v_slug text; v_removed timestamptz; v_disabled timestamptz;
+  v_enabled boolean; v_id uuid; v_expira timestamptz; v_ativos integer;
+begin
+  if p_organization is null or p_installation is null or p_prefix is null or p_hash is null or p_expires_at is null
+    or p_prefix !~ '^dsk_[0-9a-f]{8}$' or octet_length(p_hash) <> 32 or p_expires_at <= now() then
+    raise exception using errcode='P0001', message='extension_invalid_input';
+  end if;
+  select i.publisher, i.name, i.removed_at, i.disabled_at into v_publisher, v_name, v_removed, v_disabled
+    from public.extension_installations i where i.id = p_installation for share;
+  if not found or v_removed is not null or v_disabled is not null then
+    raise exception using errcode='PT409', message='O módulo está desligado, removido ou não existe.';
+  end if;
+  select e.enabled into v_enabled from public.organization_extensions e
+    where e.organization_id = p_organization and e.installation_id = p_installation for share;
+  if not found or v_enabled is not true then
+    raise exception using errcode='PT409', message='O módulo não está ativado nesta organização.';
+  end if;
+  v_slug := v_publisher || '/' || v_name;
+  select t.id, t.expires_at into v_id, v_expira from public.api_tokens t
+    where t.organization_id = p_organization and t.extension_installation_id = p_installation and t.revoked_at is null
+    for update;
+  if not found then
+    insert into public.api_tokens(organization_id, created_by, extension_installation_id, module_slug, name, prefix,
+      token_hash, scopes, expires_at)
+      values (p_organization, null, p_installation, v_slug, 'Módulo ' || v_slug, p_prefix, p_hash,
+        jsonb_build_array('mcp:read', 'role:viewer', 'actor:module:' || v_slug), p_expires_at)
+      returning id into v_id;
+    return v_id;
+  end if;
+  if v_expira is not null and v_expira <= now() then
+    perform pg_advisory_xact_lock(hashtextextended('api_tokens_teto:' || p_organization::text, 255));
+    select count(*)::integer into v_ativos from public.api_tokens t
+      where t.organization_id = p_organization and t.revoked_at is null and (t.expires_at is null or t.expires_at > now())
+        and t.id <> v_id;
+    if v_ativos >= 50 then
+      raise exception using errcode='PT409',
+        message='Teto de tokens ativos por organização atingido: ' || v_ativos || ' de 50. Revogue um token que não esteja mais em uso (Configurações → Tokens de API → Revogar) para liberar espaço.';
+    end if;
+  end if;
+  update public.api_tokens set prefix = p_prefix, token_hash = p_hash, expires_at = p_expires_at, revoked_at = null,
+      revoked_by = null
+    where id = v_id;
+  return v_id;
+end $$;
+
+-- Revoga o token vivo do par. Sem erro se já estiver revogado (ou se nunca existiu).
+create or replace function public.fn_extensions_module_token_revoke(p_organization uuid, p_installation uuid, p_by uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  update public.api_tokens set revoked_at = now(), revoked_by = p_by
+    where organization_id = p_organization and extension_installation_id = p_installation and revoked_at is null;
+end $$;
+
+create or replace function public.fn_extensions_configure(p_actor uuid, p_organization uuid, p_installation uuid, p_operation uuid,
+  p_expected_revision integer, p_enabled boolean, p_configuration jsonb)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_request jsonb := jsonb_build_object('kind','configure','actor',p_actor,'organization',p_organization,
+    'installation',p_installation,'expected_revision',p_expected_revision,'enabled',p_enabled,'configuration',p_configuration);
+  v_op public.extension_operations; v_link public.organization_extensions; v_config jsonb; v_manifest jsonb;
+  v_removed_at timestamptz;
+begin
+  if p_organization is null or p_operation is null or p_installation is null or p_expected_revision is null
+    or p_expected_revision < 0 or p_enabled is null then
+    raise exception using errcode='P0001',message='extension_invalid_input';
+  end if;
+  perform public.fn_extensions_assert_actor(p_actor,p_organization);
+  perform pg_advisory_xact_lock(hashtextextended(p_operation::text,255));
+  perform public.fn_extensions_assert_actor(p_actor,p_organization);
+  select * into v_op from public.extension_operations where id=p_operation;
+  if found then
+    if v_op.request_fingerprint <> public.fn_extensions_fingerprint(v_request) then
+      raise exception using errcode='P0001',message='extension_idempotency_conflict';
+    end if;
+    return to_jsonb(v_op) || jsonb_build_object('applied_now', false);
+  end if;
+  perform 1 from public.organizations where id=p_organization for update;
+  perform public.fn_extensions_assert_actor(p_actor,p_organization);
+  -- FOR SHARE na instalação serializa a ativação com toda troca de ponteiro e com a remoção
+  -- (que faz UPDATE na instalação antes dos vínculos). Sem isso, configurar e remover ao mesmo
+  -- tempo deixava um vínculo ativo numa extensão removida, que nenhuma tela desativava.
+  select i.removed_at, a.manifest into v_removed_at, v_manifest
+    from public.extension_installations i join public.extension_artifacts a on a.id=i.artifact_id
+    where i.id=p_installation for share of i;
+  if not found then raise exception using errcode='P0001',message='extension_installation_not_found'; end if;
+  if v_removed_at is not null then raise exception using errcode='P0001',message='extension_removed'; end if;
+  select * into v_link from public.organization_extensions where organization_id=p_organization and installation_id=p_installation;
+  if coalesce(v_link.revision,0) <> p_expected_revision then
+    raise exception using errcode='P0001',message='extension_revision_conflict';
+  end if;
+  v_config := coalesce(p_configuration,v_link.configuration,v_manifest->'configuration');
+  if v_config is null or jsonb_typeof(v_config) <> 'object'
+    or not (v_config ?& array['density','show_description']) or v_config - array['density','show_description','theme'] <> '{}'::jsonb
+    or v_config->>'density' is null or v_config->>'density' not in ('comfortable','compact')
+    or jsonb_typeof(v_config->'show_description') is distinct from 'boolean'
+    or (v_config ? 'theme' and (v_config->>'theme' is null or v_config->>'theme' not in ('sage','clay','mist','plum','olive'))) then
+    raise exception using errcode='P0001',message='extension_invalid_input';
+  end if;
+  if p_enabled and not coalesce(v_link.enabled,false) and
+    (select count(*) from public.organization_extensions where organization_id=p_organization and enabled) >= 8 then
+    raise exception using errcode='P0001',message='extension_active_limit';
+  end if;
+  insert into public.organization_extensions(organization_id,installation_id,enabled,configuration,revision,updated_by)
+    values(p_organization,p_installation,p_enabled,v_config,p_expected_revision+1,p_actor)
+    on conflict (organization_id,installation_id) do update set enabled=excluded.enabled,configuration=excluded.configuration,
+      revision=excluded.revision,updated_by=excluded.updated_by,updated_at=now(),
+      -- Ativar apaga a marca da remoção; desativar ou mudar a densidade a preserva.
+      deactivated_by_removal_at=case when excluded.enabled then null else organization_extensions.deactivated_by_removal_at end
+    returning * into v_link;
+  -- Módulo conectado (spec 33, F2): só o perfil `connected` tem token. Ativar reserva a vaga (dispara o teto de
+  -- 50 por organização: a exceção PT409 sobe e desfaz a ativação inteira); desativar revoga o token do par.
+  if v_manifest->>'profile' = 'connected' then
+    if p_enabled then
+      perform public.fn_extensions_module_token_reserve(p_organization, p_installation);
+    else
+      perform public.fn_extensions_module_token_revoke(p_organization, p_installation, p_actor);
+    end if;
+  end if;
+  insert into public.extension_operations(id,kind,status,actor_id,organization_id,installation_id,request,request_fingerprint,result)
+    values(p_operation,'configure','completed',p_actor,p_organization,p_installation,v_request,
+      public.fn_extensions_fingerprint(v_request),jsonb_build_object('organization_extension',to_jsonb(v_link))) returning * into v_op;
+  return to_jsonb(v_op) || jsonb_build_object('applied_now', true);
+end $$;
+
+create or replace function public.fn_extensions_remove_installation(p_actor uuid, p_operation uuid, p_installation uuid,
+  p_expected_installation_revision integer)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_request jsonb := jsonb_build_object('kind','removal','actor',p_actor,'installation',p_installation,
+    'expected_installation_revision',p_expected_installation_revision);
+  v_op public.extension_operations; v_install public.extension_installations; v_from public.extension_installations;
+  v_orgs uuid[];
+begin
+  perform public.fn_extensions_assert_actor(p_actor);
+  if p_operation is null or p_installation is null or p_expected_installation_revision is null
+    or p_expected_installation_revision < 1 then
+    raise exception using errcode='P0001',message='extension_invalid_input';
+  end if;
+  perform pg_advisory_xact_lock(255,1);
+  perform public.fn_extensions_assert_actor(p_actor);
+  perform pg_advisory_xact_lock(hashtextextended(p_operation::text,255));
+  perform public.fn_extensions_assert_actor(p_actor);
+  select * into v_op from public.extension_operations where id=p_operation;
+  if found then
+    if v_op.request_fingerprint <> public.fn_extensions_fingerprint(v_request) then
+      raise exception using errcode='P0001',message='extension_idempotency_conflict';
+    end if;
+    return to_jsonb(v_op) || jsonb_build_object('applied_now', false);
+  end if;
+  select * into v_install from public.extension_installations where id=p_installation for update;
+  if not found then raise exception using errcode='P0001',message='extension_installation_not_found'; end if;
+  if v_install.removed_at is not null then raise exception using errcode='P0001',message='extension_removed'; end if;
+  if exists (select 1 from public.extension_operations where kind in ('install','update') and status='preparing'
+    and catalog_id=v_install.catalog_id and publisher=v_install.publisher and name=v_install.name) then
+    raise exception using errcode='P0001',message='extension_preparation_in_progress';
+  end if;
+  if v_install.revision <> p_expected_installation_revision then
+    raise exception using errcode='P0001',message='extension_version_changed';
+  end if;
+  v_from := v_install;
+  -- A instalação ANTES dos vínculos: na ordem inversa, a corrida com a configuração dá impasse.
+  update public.extension_installations set removed_at=now(), removed_by=p_actor, revision=revision+1
+    where id=p_installation returning * into v_install;
+  with desligados as (
+    update public.organization_extensions set enabled=false, revision=revision+1, updated_by=p_actor, updated_at=now(),
+      deactivated_by_removal_at=now()
+    where installation_id=p_installation and enabled
+    returning organization_id)
+  select coalesce(array_agg(organization_id order by organization_id), array[]::uuid[]) into v_orgs from desligados;
+  -- Módulo conectado (spec 33, F2): remover revoga o token do módulo em TODAS as organizações. A linha da
+  -- instalação não é apagada (só marcada), então a FK de `api_tokens.extension_installation_id` não atrapalha.
+  update public.api_tokens set revoked_at = now(), revoked_by = p_actor
+    where extension_installation_id = p_installation and revoked_at is null;
+  insert into public.extension_operations(id,kind,status,actor_id,catalog_id,installation_id,publisher,name,version,
+    request,request_fingerprint,result)
+    values(p_operation,'removal','completed',p_actor,v_install.catalog_id,v_install.id,v_install.publisher,v_install.name,
+      v_from.version,v_request,public.fn_extensions_fingerprint(v_request),
+      jsonb_build_object('installation',to_jsonb(v_install),'from_revision',v_from.revision,'from_artifact_id',v_from.artifact_id,
+        'from_version',v_from.version,'organizations_disabled',to_jsonb(v_orgs),
+        'organizations_disabled_count',coalesce(array_length(v_orgs,1),0)))
+    returning * into v_op;
+  return to_jsonb(v_op) || jsonb_build_object('applied_now', true);
+end $$;
+
+create or replace function public.fn_extensions_set_switch(p_actor uuid, p_operation uuid, p_installation uuid,
+  p_disabled boolean, p_expected_installation_revision integer)
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_request jsonb := jsonb_build_object('kind','switch','actor',p_actor,'installation',p_installation,
+    'disabled',p_disabled,'expected_installation_revision',p_expected_installation_revision);
+  v_op public.extension_operations; v_install public.extension_installations; v_from public.extension_installations;
+  v_profile text;
+begin
+  perform public.fn_extensions_assert_actor(p_actor);
+  if p_operation is null or p_installation is null or p_disabled is null or p_expected_installation_revision is null
+    or p_expected_installation_revision < 1 then
+    raise exception using errcode='P0001',message='extension_invalid_input';
+  end if;
+  perform pg_advisory_xact_lock(255,1);
+  perform public.fn_extensions_assert_actor(p_actor);
+  perform pg_advisory_xact_lock(hashtextextended(p_operation::text,255));
+  perform public.fn_extensions_assert_actor(p_actor);
+  select * into v_op from public.extension_operations where id=p_operation;
+  if found then
+    if v_op.request_fingerprint <> public.fn_extensions_fingerprint(v_request) then
+      raise exception using errcode='P0001',message='extension_idempotency_conflict';
+    end if;
+    return to_jsonb(v_op) || jsonb_build_object('applied_now', false);
+  end if;
+  select * into v_install from public.extension_installations where id=p_installation for update;
+  if not found then raise exception using errcode='P0001',message='extension_installation_not_found'; end if;
+  if v_install.removed_at is not null then raise exception using errcode='P0001',message='extension_removed'; end if;
+  if exists (select 1 from public.extension_operations where kind in ('install','update') and status='preparing'
+    and catalog_id=v_install.catalog_id and publisher=v_install.publisher and name=v_install.name) then
+    raise exception using errcode='P0001',message='extension_preparation_in_progress';
+  end if;
+  if v_install.revision <> p_expected_installation_revision then
+    raise exception using errcode='P0001',message='extension_version_changed';
+  end if;
+  -- O perfil vem do ARTEFATO admitido (o manifesto já passou por `fn_extensions_finish_install`).
+  select a.manifest->>'profile' into v_profile from public.extension_artifacts a where a.id=v_install.artifact_id;
+  if v_profile is distinct from 'connected' then
+    raise exception using errcode='P0001',message='extension_switch_not_applicable';
+  end if;
+  v_from := v_install;
+  update public.extension_installations
+    set disabled_at = case when p_disabled then coalesce(v_from.disabled_at, now()) else null end,
+        disabled_by = case when p_disabled then coalesce(v_from.disabled_by, p_actor) else null end,
+        revision = revision+1
+    where id=p_installation returning * into v_install;
+  -- Módulo conectado (spec 33, F2): desligar revoga o token do módulo em TODAS as organizações (também quando
+  -- já estava desligado: é idempotente). Ligar não cria nada: a ativação e a busca do token cuidam disso.
+  if p_disabled then
+    update public.api_tokens set revoked_at = now(), revoked_by = p_actor
+      where extension_installation_id = p_installation and revoked_at is null;
+  end if;
+  insert into public.extension_operations(id,kind,status,actor_id,catalog_id,installation_id,publisher,name,version,
+    request,request_fingerprint,result)
+    values(p_operation,'switch','completed',p_actor,v_install.catalog_id,v_install.id,v_install.publisher,v_install.name,
+      v_install.version,v_request,public.fn_extensions_fingerprint(v_request),
+      jsonb_build_object('installation',to_jsonb(v_install),'from_revision',v_from.revision,'from_version',v_from.version,
+        'disabled',p_disabled))
+    returning * into v_op;
+  return to_jsonb(v_op) || jsonb_build_object('applied_now', true);
+end $$;
+
+revoke execute on function public.fn_extensions_module_token_reserve(uuid,uuid) from public, anon, authenticated;
+revoke execute on function public.fn_extensions_module_token_rotate(uuid,uuid,text,bytea,timestamptz) from public, anon, authenticated;
+revoke execute on function public.fn_extensions_module_token_revoke(uuid,uuid,uuid) from public, anon, authenticated;
+revoke execute on function public.fn_extensions_configure(uuid,uuid,uuid,uuid,integer,boolean,jsonb) from public, anon, authenticated;
+revoke execute on function public.fn_extensions_remove_installation(uuid,uuid,uuid,integer) from public, anon, authenticated;
+revoke execute on function public.fn_extensions_set_switch(uuid,uuid,uuid,boolean,integer) from public, anon, authenticated;
+grant execute on function public.fn_extensions_module_token_reserve(uuid,uuid) to service_role;
+grant execute on function public.fn_extensions_module_token_rotate(uuid,uuid,text,bytea,timestamptz) to service_role;
+grant execute on function public.fn_extensions_module_token_revoke(uuid,uuid,uuid) to service_role;
+grant execute on function public.fn_extensions_configure(uuid,uuid,uuid,uuid,integer,boolean,jsonb) to service_role;
+grant execute on function public.fn_extensions_remove_installation(uuid,uuid,uuid,integer) to service_role;
+grant execute on function public.fn_extensions_set_switch(uuid,uuid,uuid,boolean,integer) to service_role;
+
+notify pgrst, 'reload schema';
+
+
+-- ---- modulo conectado: consentimento por área (migration 9119) ----
+-- Espelho idempotente da 9119 (racional completo no arquivo da migration): `organization_extensions.consented_areas`
+-- (com CHECK nas 18 permissões `area.*`) e `fn_extensions_set_consent`. Fica DEPOIS do apêndice da 9118 e ANTES
+-- da VARREDURA anon.
+
+alter table public.organization_extensions
+  add column if not exists consented_areas text[] not null default '{}';
+alter table public.organization_extensions drop constraint if exists organization_extensions_consented_areas_check;
+alter table public.organization_extensions add constraint organization_extensions_consented_areas_check
+  check (consented_areas <@ array[
+    'area.contatos.leitura','area.contatos.escrita',
+    'area.negocios.leitura','area.negocios.escrita',
+    'area.conversas.leitura','area.conversas.escrita',
+    'area.agenda.leitura','area.agenda.escrita',
+    'area.funis.leitura','area.funis.escrita',
+    'area.agentes_ia.leitura','area.agentes_ia.escrita',
+    'area.catalogo.leitura','area.catalogo.escrita',
+    'area.configuracao.leitura','area.configuracao.escrita',
+    'area.analise.leitura','area.analise.escrita'
+  ]::text[]);
+
+create or replace function public.fn_extensions_set_consent(p_actor uuid, p_organization uuid, p_installation uuid,
+  p_expected_revision integer, p_areas text[])
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_manifest jsonb; v_removed_at timestamptz; v_declaradas text[]; v_link public.organization_extensions; v_role text;
+begin
+  if p_organization is null or p_installation is null or p_expected_revision is null or p_expected_revision < 0
+    or p_areas is null or array_position(p_areas, null) is not null
+    or cardinality(p_areas) <> (select count(distinct a) from unnest(p_areas) a) then
+    raise exception using errcode='P0001',message='extension_invalid_input';
+  end if;
+  perform public.fn_extensions_assert_actor(p_actor,p_organization);
+  -- A organização é travada como em `fn_extensions_configure`: consentir e ativar/desativar/remover não se cruzam.
+  perform 1 from public.organizations where id=p_organization for update;
+  perform public.fn_extensions_assert_actor(p_actor,p_organization);
+  select i.removed_at, a.manifest into v_removed_at, v_manifest
+    from public.extension_installations i join public.extension_artifacts a on a.id=i.artifact_id
+    where i.id=p_installation for share of i;
+  if not found then raise exception using errcode='P0001',message='extension_installation_not_found'; end if;
+  if v_removed_at is not null then raise exception using errcode='P0001',message='extension_removed'; end if;
+  -- O perfil vem do ARTEFATO admitido. Só o `connected` tem áreas.
+  if v_manifest->>'profile' is distinct from 'connected' then
+    raise exception using errcode='P0001',message='extension_consent_not_applicable';
+  end if;
+  select * into v_link from public.organization_extensions
+    where organization_id=p_organization and installation_id=p_installation for update;
+  if not found then raise exception using errcode='P0001',message='extension_not_activated'; end if;
+  if v_link.revision <> p_expected_revision then
+    raise exception using errcode='P0001',message='extension_revision_conflict';
+  end if;
+  -- "Declarado" = as permissões `area.*` do manifesto do artefato desta instalação.
+  select coalesce(array_agg(distinct p), array[]::text[]) into v_declaradas
+    from jsonb_array_elements_text(coalesce(v_manifest->'permissions','[]'::jsonb)) p where p like 'area.%';
+  if exists (select 1 from unnest(p_areas) a where a <> all (v_declaradas)) then
+    raise exception using errcode='PT409',message='extension_area_not_declared';
+  end if;
+  -- Decisão 5 da spec 33: configuração e agentes de IA só por quem administra a organização.
+  if exists (select 1 from unnest(p_areas) a where a ~ '^area\.(configuracao|agentes_ia)\.') then
+    select u.role into v_role from public.user_organizations u
+      where u.user_id=p_actor and u.organization_id=p_organization and u.revoked_at is null and u.accepted_at is not null;
+    if v_role is distinct from 'admin' and v_role is distinct from 'owner' then
+      raise exception using errcode='PT409',message='extension_area_requires_admin';
+    end if;
+  end if;
+  update public.organization_extensions
+    set consented_areas=(select coalesce(array_agg(a order by a), array[]::text[]) from unnest(p_areas) a),
+        revision=revision+1, updated_by=p_actor, updated_at=now()
+    where organization_id=p_organization and installation_id=p_installation
+    returning * into v_link;
+  return jsonb_build_object('organization_extension', to_jsonb(v_link));
+end $$;
+
+revoke execute on function public.fn_extensions_set_consent(uuid,uuid,uuid,integer,text[]) from public, anon, authenticated;
+grant execute on function public.fn_extensions_set_consent(uuid,uuid,uuid,integer,text[]) to service_role;
+
+notify pgrst, 'reload schema';
+
+-- ---- modulo conectado: eventos que o módulo busca (migration 9120) ----
+-- Espelho idempotente da 9120 (racional completo no arquivo da migration): `extension_module_events`,
+-- `extension_module_cursors`, os quatro gatilhos de evento e `fn_extensions_events_allowed|read|ack`. Fica DEPOIS do
+-- apêndice da 9119 e ANTES da VARREDURA anon (função nova não pode vir depois dela).
+
+create table if not exists public.extension_module_events (
+  id bigint generated always as identity primary key,
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  kind text not null check (kind in ('contact_anonymized', 'module_disabled', 'organization_suspended')),
+  -- Sem FK: o contato pode ser apagado depois e o fato (o id foi anonimizado) continua valendo para o módulo.
+  subject_id uuid,
+  installation_id uuid references public.extension_installations(id) on delete cascade,
+  occurred_at timestamptz not null default now(),
+  constraint extension_module_events_coerencia check (
+    (kind <> 'contact_anonymized' or subject_id is not null)
+    and (kind <> 'module_disabled' or installation_id is not null)
+  )
+);
+
+create index if not exists extension_module_events_org_id on public.extension_module_events(organization_id, id);
+-- O mesmo contato anonimizado duas vezes (ou por dois caminhos) gera um evento só.
+create unique index if not exists extension_module_events_contato_unico
+  on public.extension_module_events(organization_id, subject_id) where kind = 'contact_anonymized';
+
+create table if not exists public.extension_module_cursors (
+  installation_id uuid not null references public.extension_installations(id) on delete cascade,
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  last_event_id bigint not null default 0,
+  last_read_at timestamptz not null default now(),
+  primary key (installation_id, organization_id)
+);
+
+alter table public.extension_module_events enable row level security;
+alter table public.extension_module_cursors enable row level security;
+revoke all on public.extension_module_events, public.extension_module_cursors
+  from public, anon, authenticated, service_role;
+grant select on public.extension_module_events to service_role;
+grant select, insert, update on public.extension_module_cursors to service_role;
+
+-- (a) Contato anonimizado: a mesma virada `false → true` que `trg_lgpd_secoes_de_modulo` já usa, pelos DOIS
+-- caminhos de anonimização (a cascata e `fn_lgpd_anonymize_contact`).
+create or replace function public.fn_extensions_evento_contato_anonimizado()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.extension_module_events(organization_id, kind, subject_id)
+    values (new.organization_id, 'contact_anonymized', new.id)
+    on conflict (organization_id, subject_id) where kind = 'contact_anonymized' do nothing;
+  return null;
+end $$;
+
+-- (b) Vínculo organização × módulo que deixa de estar ligado: UPDATE de `enabled` (true → false) ou DELETE de
+-- linha ligada. Só módulo `connected` (o declarativo não tem quem busque). Se a instalação já está desligada ou
+-- removida, o evento já saiu pelo gatilho (c): não duplica. No DELETE em cascata da organização a linha da
+-- organização já não existe e o evento não nasce (a FK o recusaria; o módulo some com a organização).
+create or replace function public.fn_extensions_evento_vinculo_desligado()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  v_emite boolean;
+begin
+  if tg_op = 'DELETE' and not exists (select 1 from public.organizations o where o.id = old.organization_id) then
+    return null;
+  end if;
+  select (a.manifest->>'profile' = 'connected' and i.disabled_at is null and i.removed_at is null) into v_emite
+    from public.extension_installations i join public.extension_artifacts a on a.id = i.artifact_id
+    where i.id = old.installation_id;
+  if coalesce(v_emite, false) then
+    insert into public.extension_module_events(organization_id, kind, installation_id)
+      values (old.organization_id, 'module_disabled', old.installation_id);
+  end if;
+  return null;
+end $$;
+
+-- (c) Instalação `connected` que passa de ativa a desligada ou removida: um evento por vínculo ainda ligado.
+-- Só a PASSAGEM de ativa a inativa emite (desligar e depois remover é um fato só).
+create or replace function public.fn_extensions_evento_instalacao_desligada()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if exists (select 1 from public.extension_artifacts a where a.id = new.artifact_id and a.manifest->>'profile' = 'connected') then
+    insert into public.extension_module_events(organization_id, kind, installation_id)
+      select e.organization_id, 'module_disabled', new.id
+        from public.organization_extensions e
+        where e.installation_id = new.id and e.enabled;
+  end if;
+  return null;
+end $$;
+
+-- (d) Organização suspensa ou anonimizada (D4: `redacted` também; a LGPD apaga a organização e o módulo precisa saber).
+create or replace function public.fn_extensions_evento_organizacao_suspensa()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.extension_module_events(organization_id, kind) values (new.id, 'organization_suspended');
+  return null;
+end $$;
+
+revoke execute on function public.fn_extensions_evento_contato_anonimizado() from public, anon, authenticated;
+revoke execute on function public.fn_extensions_evento_vinculo_desligado() from public, anon, authenticated;
+revoke execute on function public.fn_extensions_evento_instalacao_desligada() from public, anon, authenticated;
+revoke execute on function public.fn_extensions_evento_organizacao_suspensa() from public, anon, authenticated;
+
+drop trigger if exists trg_extensions_evento_contato_anonimizado on public.contacts;
+create trigger trg_extensions_evento_contato_anonimizado
+  after update of is_anonymized on public.contacts
+  for each row
+  when (new.is_anonymized and not old.is_anonymized)
+  execute function public.fn_extensions_evento_contato_anonimizado();
+
+drop trigger if exists trg_extensions_evento_vinculo_desligado_upd on public.organization_extensions;
+create trigger trg_extensions_evento_vinculo_desligado_upd
+  after update of enabled on public.organization_extensions
+  for each row
+  when (old.enabled and not new.enabled)
+  execute function public.fn_extensions_evento_vinculo_desligado();
+
+drop trigger if exists trg_extensions_evento_vinculo_desligado_del on public.organization_extensions;
+create trigger trg_extensions_evento_vinculo_desligado_del
+  after delete on public.organization_extensions
+  for each row
+  when (old.enabled)
+  execute function public.fn_extensions_evento_vinculo_desligado();
+
+drop trigger if exists trg_extensions_evento_instalacao_desligada on public.extension_installations;
+create trigger trg_extensions_evento_instalacao_desligada
+  after update of disabled_at, removed_at on public.extension_installations
+  for each row
+  when (old.disabled_at is null and old.removed_at is null and (new.disabled_at is not null or new.removed_at is not null))
+  execute function public.fn_extensions_evento_instalacao_desligada();
+
+drop trigger if exists trg_extensions_evento_organizacao_suspensa on public.organizations;
+create trigger trg_extensions_evento_organizacao_suspensa
+  after update of status on public.organizations
+  for each row
+  when (new.status in ('suspended', 'redacted') and old.status is distinct from new.status)
+  execute function public.fn_extensions_evento_organizacao_suspensa();
+
+-- Quem pode LER os eventos da organização como este módulo (regra D2): o vínculo está ligado e a instalação
+-- está ativa, OU o par foi desativado há menos de 30 dias (a LGPD não fica presa: um módulo desligado ainda
+-- apaga os dados dos contatos anonimizados). Depois de 30 dias, recusa. Organização suspensa continua lendo.
+create or replace function public.fn_extensions_events_allowed(p_organization uuid, p_installation uuid)
+returns boolean language sql stable security invoker set search_path = '' as $$
+  select case when p_organization is null or p_installation is null then false else
+    exists (
+      select 1 from public.organization_extensions e
+        join public.extension_installations i on i.id = e.installation_id
+        where e.organization_id = p_organization and e.installation_id = p_installation
+          and e.enabled and i.disabled_at is null and i.removed_at is null
+    )
+    or exists (
+      select 1 from public.extension_module_events v
+        where v.organization_id = p_organization and v.installation_id = p_installation
+          and v.kind = 'module_disabled' and v.occurred_at > now() - interval '30 days'
+    )
+  end;
+$$;
+
+create or replace function public.fn_extensions_events_read(p_organization uuid, p_installation uuid, p_after bigint, p_limit integer)
+returns jsonb language plpgsql stable security invoker set search_path = '' as $$
+declare
+  v_limit integer; v_events jsonb; v_last bigint; v_more boolean;
+begin
+  if p_organization is null or p_installation is null or p_after is null or p_after < 0
+    or p_limit is null or p_limit < 1 then
+    raise exception using errcode='P0001', message='extension_invalid_input';
+  end if;
+  if not public.fn_extensions_events_allowed(p_organization, p_installation) then
+    raise exception using errcode='P0001', message='extension_events_forbidden';
+  end if;
+  v_limit := least(p_limit, 100);
+  with q as (
+    select v.id, v.kind, v.subject_id, v.installation_id, v.occurred_at
+      from public.extension_module_events v
+      where v.organization_id = p_organization and v.id > p_after
+        and (v.kind <> 'module_disabled' or v.installation_id = p_installation)
+      order by v.id
+      limit v_limit + 1
+  ), pagina as (
+    select * from q order by id limit v_limit
+  )
+  select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'kind', p.kind, 'subject_id', p.subject_id,
+           'installation_id', p.installation_id, 'occurred_at', p.occurred_at) order by p.id), '[]'::jsonb),
+         coalesce(max(p.id), p_after),
+         (select count(*) from q) > v_limit
+    into v_events, v_last, v_more
+    from pagina p;
+  return jsonb_build_object('events', v_events, 'last_id', v_last, 'has_more', v_more);
+end $$;
+
+-- O módulo reconhece o que leu. O cursor nunca regride e nunca passa do último evento que este par enxerga.
+create or replace function public.fn_extensions_events_ack(p_organization uuid, p_installation uuid, p_event_id bigint)
+returns jsonb language plpgsql security invoker set search_path = '' as $$
+declare
+  v_max bigint; v_cursor bigint;
+begin
+  if p_organization is null or p_installation is null or p_event_id is null or p_event_id < 0 then
+    raise exception using errcode='P0001', message='extension_invalid_input';
+  end if;
+  if not public.fn_extensions_events_allowed(p_organization, p_installation) then
+    raise exception using errcode='P0001', message='extension_events_forbidden';
+  end if;
+  select coalesce(max(v.id), 0) into v_max from public.extension_module_events v
+    where v.organization_id = p_organization and (v.kind <> 'module_disabled' or v.installation_id = p_installation);
+  insert into public.extension_module_cursors as c(installation_id, organization_id, last_event_id, last_read_at)
+    values (p_installation, p_organization, least(p_event_id, v_max), now())
+    on conflict (installation_id, organization_id) do update
+      set last_event_id = greatest(c.last_event_id, excluded.last_event_id),
+          last_read_at = now()
+    returning last_event_id into v_cursor;
+  return jsonb_build_object('last_event_id', v_cursor);
+end $$;
+
+revoke execute on function public.fn_extensions_events_allowed(uuid,uuid) from public, anon, authenticated;
+revoke execute on function public.fn_extensions_events_read(uuid,uuid,bigint,integer) from public, anon, authenticated;
+revoke execute on function public.fn_extensions_events_ack(uuid,uuid,bigint) from public, anon, authenticated;
+grant execute on function public.fn_extensions_events_allowed(uuid,uuid) to service_role;
+grant execute on function public.fn_extensions_events_read(uuid,uuid,bigint,integer) to service_role;
+grant execute on function public.fn_extensions_events_ack(uuid,uuid,bigint) to service_role;
+
+notify pgrst, 'reload schema';
+
+-- ---- modulo conectado: atraso do módulo (migration 9121) ----
+-- Espelho idempotente da 9121 (racional no arquivo da migration): `fn_extensions_events_lag`.
+
+create or replace function public.fn_extensions_events_lag(p_installation uuid)
+returns jsonb language sql stable security invoker set search_path = '' as $$
+  with orgs as (
+    select e.organization_id from public.organization_extensions e
+      where e.installation_id = p_installation and e.enabled
+    union
+    select c.organization_id from public.extension_module_cursors c
+      where c.installation_id = p_installation
+  ), linhas as (
+    select o.organization_id, c.last_event_id, c.last_read_at,
+           (select count(*) from public.extension_module_events v
+              where v.organization_id = o.organization_id and v.id > coalesce(c.last_event_id, 0)
+                and (v.kind <> 'module_disabled' or v.installation_id = p_installation)) as lag,
+           (select count(*) from public.extension_module_events v
+              where v.organization_id = o.organization_id and v.id > coalesce(c.last_event_id, 0)
+                and v.kind = 'contact_anonymized') as contacts_pending,
+           (select min(v.occurred_at) from public.extension_module_events v
+              where v.organization_id = o.organization_id and v.id > coalesce(c.last_event_id, 0)
+                and (v.kind <> 'module_disabled' or v.installation_id = p_installation)) as oldest_unread_at
+      from orgs o
+      left join public.extension_module_cursors c
+        on c.installation_id = p_installation and c.organization_id = o.organization_id
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'last_event_id', l.last_event_id, 'last_read_at', l.last_read_at, 'lag', l.lag,
+           'contacts_pending', l.contacts_pending, 'oldest_unread_at', l.oldest_unread_at
+         ) order by l.lag desc, l.last_read_at nulls first), '[]'::jsonb)
+    from linhas l;
+$$;
+
+revoke execute on function public.fn_extensions_events_lag(uuid) from public, anon, authenticated;
+grant execute on function public.fn_extensions_events_lag(uuid) to service_role;
+
 notify pgrst, 'reload schema';
 
 -- Integridade de organização, funil e etapa (9111)
@@ -70359,6 +71392,957 @@ drop trigger if exists trg_calendar_service_appointment_guard on public.calendar
 create trigger trg_calendar_service_appointment_guard before insert or update on public.calendar_appointments for each row execute function public.fn_calendar_service_appointment_guard();
 
 notify pgrst,'reload schema';
+
+-- ---- remove_tag atômico: tirar etiqueta no UPDATE (migration 9234) ----
+-- manifest: **Ação de automação `remove_tag`: tirar etiqueta do negócio ou do contato, atômico no banco.** Funções `fn_lead_remover_etiquetas` e `fn_contato_remover_etiquetas`, irmãs das `fn_*_adicionar_etiquetas` da 0682: a lista é refeita DENTRO do `UPDATE` (`with ordinality`, preserva a ordem das que ficam), então dois eventos concorrentes do mesmo negócio ou contato — um em cada dreno do `event_log` — não devolvem a etiqueta que o outro tirou nem apagam a que o outro pôs. A comparação é pela chave canônica (`lower(btrim(...))`), a mesma do `excluir` do vocabulário (0264/0673): tirar "VIP" tira "vip". `security definer`, `EXECUTE` só para `service_role`, `revoke` de `public`, `anon` e `authenticated`; linha de outra organização devolve nulo e não é tocada.
+
+-- ---- o remove_tag tira no UPDATE, sob a trava da linha (migration 9234) ----
+-- A irmã da 0682 no sentido contrário: a ação `remove_tag` das automações.
+--
+-- ─── Por que uma função, e por que dentro do UPDATE ────────────────────────
+--
+-- Mesma corrida da 0682: o `event_log` tem dois drenos concorrentes (o laço do
+-- worker e o cron `event-log-drain`) e o claim é por LINHA, não por negócio.
+-- Tirar a etiqueta lendo a lista no app e gravando a lista menos as pedidas
+-- seria repetir o defeito da #2888 do outro lado: a gravação de um dreno
+-- devolveria a etiqueta que o outro acabou de tirar, ou apagaria a que o outro
+-- acabou de pôr. Numa única instrução `UPDATE`, em READ COMMITTED, quem chega
+-- depois espera o commit da linha e recalcula sobre a versão vigente.
+--
+-- O PostgREST não sabe dizer `tags = tags menos estas`: só manda um valor
+-- pronto. Daí a função, como a 0682 e a 0502.
+--
+-- ─── A comparação é pela chave canônica ───────────────────────────────────
+--
+-- `lower(btrim(etiqueta))`, a mesma do `excluir` do vocabulário (0264/0673).
+-- A etiqueta do contato é guardada normalizada (#1224) e a do card pode estar em
+-- caixa mista; quem configura "VIP" quer tirar "vip". Tirar nunca cria variante,
+-- então casar pela chave não tem o risco que casar teria no `add_tag`.
+--
+-- Elemento nulo ou só espaço no pedido é descartado ANTES: `x = any(array['a',
+-- null])` dá nulo para quem não casa, e o `not (...)` descartaria a etiqueta.
+--
+-- ─── A leitura sob a TRAVA ────────────────────────────────────────────────
+--
+-- Como na 0682, o `select ... for update` não é o que conserta a corrida (quem
+-- conserta é o `UPDATE`); ele responde QUAIS etiquetas esta chamada tirou
+-- (`removidas`), que é o que a ação grava no detalhe da execução. Nada a tirar =
+-- nada gravado, e `updated_at` não muda.
+--
+-- ─── O que estas funções NÃO fazem ─────────────────────────────────────────
+--
+-- Não decidem papel nem organização (é de quem chama: a ação roda no dreno, com
+-- o client de serviço, e `p_org` vem do evento); o filtro por `organization_id`
+-- é defesa em profundidade e faz linha de outra organização devolver nulo. Não
+-- emitem evento: não existe gatilho `*.tag_removed`, e evento sem consumidor é
+-- o anti-pattern 3 do CLAUDE.md.
+--
+-- Idempotente: `create or replace`, `revoke`/`grant` reaplicáveis. Sem tabela,
+-- coluna, policy ou dado a corrigir.
+
+create or replace function public.fn_lead_remover_etiquetas(
+  p_org uuid,
+  p_lead uuid,
+  p_etiquetas text[]
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $fn$
+declare
+  v_chaves    text[];
+  v_antes     text[];
+  v_removidas text[];
+  v_depois    text[];
+begin
+  v_chaves := array(
+    select distinct lower(btrim(x))
+      from unnest(coalesce(p_etiquetas, '{}'::text[])) as x
+     where x is not null and btrim(x) <> ''
+  );
+  if cardinality(v_chaves) = 0 then
+    raise exception 'etiquetas_vazio' using errcode = '22023';
+  end if;
+
+  -- A PRÉ-IMAGEM SOB A TRAVA (é o relatório, não a remoção). Sem linha — lead
+  -- inexistente OU de outra organização — devolve nulo.
+  select coalesce(tags, '{}'::text[])
+    into v_antes
+    from public.crm_leads
+   where organization_id = p_org and id = p_lead
+     for update;
+  if not found then
+    return null;
+  end if;
+
+  v_removidas := array(
+    select t.etiqueta
+      from unnest(v_antes) with ordinality as t(etiqueta, ordem)
+     where lower(btrim(t.etiqueta)) = any (v_chaves)
+     order by t.ordem
+  );
+
+  if cardinality(v_removidas) = 0 then
+    return jsonb_build_object('tags', to_jsonb(v_antes), 'removidas', '[]'::jsonb);
+  end if;
+
+  -- UMA instrução: a lista é refeita sobre a linha vigente.
+  update public.crm_leads
+     set tags = array(
+           select t.etiqueta
+             from unnest(coalesce(tags, '{}'::text[])) with ordinality as t(etiqueta, ordem)
+            where t.etiqueta is null or not (lower(btrim(t.etiqueta)) = any (v_chaves))
+            order by t.ordem
+         ),
+         updated_at = now()
+   where organization_id = p_org and id = p_lead
+   returning tags into v_depois;
+
+  return jsonb_build_object(
+    'tags', to_jsonb(coalesce(v_depois, '{}'::text[])),
+    'removidas', to_jsonb(v_removidas)
+  );
+end
+$fn$;
+
+create or replace function public.fn_contato_remover_etiquetas(
+  p_org uuid,
+  p_contato uuid,
+  p_etiquetas text[]
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $fn$
+declare
+  v_chaves    text[];
+  v_antes     text[];
+  v_removidas text[];
+  v_depois    text[];
+begin
+  -- Irmã da de cima, na tabela do CONTATO (destino `contato`). Corpo idêntico
+  -- trocando a tabela e o nome do parâmetro.
+  v_chaves := array(
+    select distinct lower(btrim(x))
+      from unnest(coalesce(p_etiquetas, '{}'::text[])) as x
+     where x is not null and btrim(x) <> ''
+  );
+  if cardinality(v_chaves) = 0 then
+    raise exception 'etiquetas_vazio' using errcode = '22023';
+  end if;
+
+  select coalesce(tags, '{}'::text[])
+    into v_antes
+    from public.contacts
+   where organization_id = p_org and id = p_contato
+     for update;
+  if not found then
+    return null;
+  end if;
+
+  v_removidas := array(
+    select t.etiqueta
+      from unnest(v_antes) with ordinality as t(etiqueta, ordem)
+     where lower(btrim(t.etiqueta)) = any (v_chaves)
+     order by t.ordem
+  );
+
+  if cardinality(v_removidas) = 0 then
+    return jsonb_build_object('tags', to_jsonb(v_antes), 'removidas', '[]'::jsonb);
+  end if;
+
+  update public.contacts
+     set tags = array(
+           select t.etiqueta
+             from unnest(coalesce(tags, '{}'::text[])) with ordinality as t(etiqueta, ordem)
+            where t.etiqueta is null or not (lower(btrim(t.etiqueta)) = any (v_chaves))
+            order by t.ordem
+         ),
+         updated_at = now()
+   where organization_id = p_org and id = p_contato
+   returning tags into v_depois;
+
+  return jsonb_build_object(
+    'tags', to_jsonb(coalesce(v_depois, '{}'::text[])),
+    'removidas', to_jsonb(v_removidas)
+  );
+end
+$fn$;
+
+-- As DUAS origens de EXECUTE (o grant a PUBLIC da criação e o `ALTER DEFAULT
+-- PRIVILEGES` do baseline) — mesma razão da 0682: estas funções ESCREVEM.
+revoke execute on function public.fn_lead_remover_etiquetas(uuid, uuid, text[]) from public, anon, authenticated;
+revoke execute on function public.fn_contato_remover_etiquetas(uuid, uuid, text[]) from public, anon, authenticated;
+grant execute on function public.fn_lead_remover_etiquetas(uuid, uuid, text[]) to service_role;
+grant execute on function public.fn_contato_remover_etiquetas(uuid, uuid, text[]) to service_role;
+
+comment on function public.fn_lead_remover_etiquetas(uuid, uuid, text[]) is
+  'Tira etiquetas do negócio DENTRO do UPDATE, numa única instrução atômica, casando pela chave canônica, e devolve as etiquetas gravadas e as removidas. '
+  'Irmã de fn_lead_adicionar_etiquetas (0682). Não decide papel nem organização — isso é de quem chama.';
+comment on function public.fn_contato_remover_etiquetas(uuid, uuid, text[]) is
+  'Tira etiquetas do contato DENTRO do UPDATE, numa única instrução atômica. '
+  'Mesmo desenho de fn_lead_remover_etiquetas, no destino `contato` da remove_tag.';
+
+-- ---- o vocabulário de etiquetas enxerga a remove_tag (migration 9234) ----
+-- Renomear ou juntar uma etiqueta reescrevia só as regras `add_tag`: a regra
+-- que TIRA a etiqueta ficava com o nome velho e, em silêncio, parava de achar o
+-- que devia tirar. As três funções partem da ÚLTIMA definição de cada uma; o que
+-- muda é `= 'add_tag'` virar `in ('add_tag', 'remove_tag')`, nos dois lados: a
+-- escrita (`_operar`) e as contagens (`_operar` na exclusão, `_pagina` e a
+-- antiga `fn_vocabulario_de_tags`). A exclusão continua sem apagar regra nenhuma.
+create or replace function public.fn_vocabulario_de_tags(p_org uuid)
+returns table (
+  tag text,
+  uso_em_contatos bigint,
+  uso_em_leads bigint,
+  uso_em_conversas bigint,
+  em_regras bigint,
+  cor text,
+  descricao text,
+  no_vocabulario boolean
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  with vocabulario as (
+    -- A organização pode guardar o vocabulário de dois jeitos, e os dois contam:
+    -- `tags` (a lista com cor e descrição, vinda da tela) e
+    -- `canonical_conversation_tags` (as sementes, que a 0244 já usava).
+    select
+      nullif(btrim(coalesce(entrada.valor ->> 'tag', entrada.valor #>> '{}')), '') as tag,
+      nullif(btrim(coalesce(entrada.valor ->> 'cor', '')), '') as cor,
+      nullif(btrim(coalesce(entrada.valor ->> 'descricao', '')), '') as descricao
+    from public.organizations o
+    cross join lateral jsonb_array_elements(
+      case when jsonb_typeof(o.settings -> 'tags') = 'array'
+           then o.settings -> 'tags' else '[]'::jsonb end
+    ) as entrada(valor)
+    where o.id = p_org
+    union all
+    select nullif(btrim(coalesce(semente #>> '{}', '')), ''), null, null
+    from public.organizations o
+    cross join lateral jsonb_array_elements(
+      case when jsonb_typeof(o.settings -> 'canonical_conversation_tags') = 'array'
+           then o.settings -> 'canonical_conversation_tags' else '[]'::jsonb end
+    ) as semente(valor)
+    where o.id = p_org
+  ),
+  vocabulario_limpo as (
+    -- Uma linha por nome canônico. Se a lista curada tem cor/descrição, ela vence
+    -- a semente crua.
+    select distinct on (lower(v.tag))
+           v.tag, v.cor, v.descricao
+    from vocabulario v
+    where v.tag is not null
+    order by lower(v.tag), (v.cor is not null or v.descricao is not null) desc
+  ),
+  uso as (
+    select nullif(btrim(t.valor), '') as tag, 'contatos' as origem
+    from public.contacts c, unnest(coalesce(c.tags, '{}'::text[])) as t(valor)
+    where c.organization_id = p_org
+    union all
+    select nullif(btrim(t.valor), ''), 'leads'
+    from public.crm_leads l, unnest(coalesce(l.tags, '{}'::text[])) as t(valor)
+    where l.organization_id = p_org
+    union all
+    select nullif(btrim(t.valor), ''), 'conversas'
+    from public.conversations v, unnest(coalesce(v.tags, '{}'::text[])) as t(valor)
+    where v.organization_id = p_org
+  ),
+  uso_limpo as (
+    select u.tag, u.origem from uso u where u.tag is not null and u.tag <> ''
+  ),
+  regras as (
+    -- As ações `add_tag` e `remove_tag` dos agentes. É o que o operador NÃO via: a etiqueta
+    -- podia ter zero conversas e ainda estar sendo escrita amanhã pela regra.
+    -- `r.id` junto: a coluna "Regras de agente" da tela conta REGRAS, e a
+    -- exclusão (mais abaixo) conta `distinct r.id`. Sem o id aqui, uma regra com
+    -- duas ações `add_tag` da mesma etiqueta aparecia como "2" na lista e como
+    -- "1" no resultado da operação — o mesmo rótulo contando coisas diferentes.
+    select r.id as regra_id, nullif(btrim(etiqueta.valor #>> '{}'), '') as tag
+    from public.automation_rules r
+    cross join lateral jsonb_array_elements(coalesce(r.actions, '[]'::jsonb)) as acao(valor)
+    cross join lateral jsonb_array_elements(
+      case when jsonb_typeof(acao.valor -> 'config' -> 'tags') = 'array'
+           then acao.valor -> 'config' -> 'tags' else '[]'::jsonb end
+    ) as etiqueta(valor)
+    where r.organization_id = p_org
+      and acao.valor ->> 'type' in ('add_tag', 'remove_tag')
+  ),
+  regras_limpo as (
+    select r.regra_id, r.tag from regras r where r.tag is not null and r.tag <> ''
+  ),
+  bruto as (
+    select tag from vocabulario_limpo
+    union all select tag from uso_limpo
+    union all select tag from regras_limpo
+  ),
+  todas as (
+    select min(b.tag) as tag, lower(b.tag) as chave
+    from bruto b
+    where b.tag is not null
+    group by lower(b.tag)
+  )
+  select
+    coalesce(v.tag, t.tag) as tag,
+    (select count(*) from uso_limpo u
+      where lower(u.tag) = t.chave and u.origem = 'contatos') as uso_em_contatos,
+    (select count(*) from uso_limpo u
+      where lower(u.tag) = t.chave and u.origem = 'leads')    as uso_em_leads,
+    (select count(*) from uso_limpo u
+      where lower(u.tag) = t.chave and u.origem = 'conversas') as uso_em_conversas,
+    (select count(distinct r.regra_id) from regras_limpo r
+      where lower(r.tag) = t.chave)                           as em_regras,
+    v.cor,
+    v.descricao,
+    (v.tag is not null)                                       as no_vocabulario
+  from todas t
+  left join vocabulario_limpo v on lower(v.tag) = t.chave
+  order by t.chave
+  -- Teto, como na 0244: numa organização bagunçada a união cresce sem limite e
+  -- isto vai para uma tela.
+  limit 500;
+$$;
+
+revoke execute on function public.fn_vocabulario_de_tags(uuid) from public, anon;
+grant  execute on function public.fn_vocabulario_de_tags(uuid) to authenticated, service_role;
+
+create or replace function public.fn_vocabulario_de_tags_operar(
+  p_org uuid,
+  p_acao text,
+  p_tag text,
+  p_destino text,
+  p_cor text default null
+)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+declare
+  v_tag     text := btrim(coalesce(p_tag, ''));
+  v_destino text := btrim(coalesce(p_destino, ''));
+  -- A cor entra normalizada (minúscula, sem espaço). A rota valida com Zod antes;
+  -- esta linha defende o caminho que NÃO passa por ela — RPC direta, psql, um
+  -- cliente futuro. Sem isso, `#FFF` gravaria e a comparação por igualdade da
+  -- tela (que compara o que o servidor devolveu) passaria a mentir.
+  v_cor     text := lower(btrim(coalesce(p_cor, '')));
+  -- ── A RÉGUA DO MARCADOR, DERIVADA UMA VEZ (issue #3507) ────────────────────
+  --
+  -- `contacts.tags` e `conversations.tags` guardam a etiqueta em minúscula:
+  -- `normalizarTag` (`lib/contacts/tag-normalizada.ts`, issue #1224, migrations
+  -- 0324/0335) e `conversationTagSchema` (`.trim().toLowerCase()`,
+  -- `lib/schemas/messaging.ts`), e é nessa forma que o filtro `?tag=` consulta.
+  -- `v_destino` é o NOME DE EXIBIÇÃO e vai como foi digitado para o
+  -- vocabulário, para as sementes de conversa, para as regras dos agentes e
+  -- para `crm_leads.tags` (caixa mista aceita) — esta é a forma das DUAS
+  -- colunas que são minúscula POR CONTRATO, e ela é `lower(btrim(...))`: a
+  -- MESMA expressão com que `fn_tags_normalizar` compara o valor de origem e
+  -- com que a 0335 normalizou o marcador já gravado.
+  --
+  -- ⚠️ Não vai para `fn_tags_normalizar`: aquela função também atende
+  -- `crm_leads.tags`, que aceita caixa mista. A caixa é decisão de quem escreve
+  -- na coluna que a exige, e são duas.
+  --
+  -- ⚠️ O TETO DE 40 DA RÉGUA NÃO ENTRA AQUI de propósito: `tagSchema` aceita 60
+  -- (`TAG_MAX`) para o nome de exibição, e cortar o destino às escuras trocaria
+  -- a caixa por um nome TRUNCADO — outra classe de defeito, com perda de dado.
+  -- A divergência de teto entre a coluna (40, `TAMANHO_MAXIMO_DA_TAG`) e o
+  -- vocabulário (60) fica declarada, não resolvida por um renomear.
+  v_destino_minusculo text := lower(btrim(coalesce(p_destino, '')));
+  v_remover boolean;
+  v_so_cor  boolean;
+  v_contatos integer := 0;
+  v_leads integer := 0;
+  v_conversas integer := 0;
+  v_regras integer := 0;
+  v_id uuid;
+  v_ids uuid[];
+  v_settings jsonb;
+  v_antes jsonb;
+  v_depois jsonb;
+  v_definido boolean := false;
+  -- (e0) 'duas entradas do vocabulário viraram uma' — issue #2801.
+  v_juntou boolean := false;
+begin
+  -- Portão de papel ANTES de qualquer escrita. Definer com p_org vindo da rota:
+  -- é esta linha que separa o tenant de quem chama.
+  if p_org is null or not public.fn_role_at_least(p_org, 'manager') then
+    raise exception using errcode = '42501', message = 'insufficient_role';
+  end if;
+
+  if p_acao is null or p_acao not in ('renomear', 'juntar', 'excluir', 'definir_cor') then
+    raise exception using errcode = '22023', message = 'acao_invalida';
+  end if;
+  if v_tag = '' then
+    raise exception using errcode = '22023', message = 'tag_obrigatoria';
+  end if;
+  v_remover := (p_acao = 'excluir');
+  v_so_cor  := (p_acao = 'definir_cor');
+  if not v_remover and not v_so_cor and v_destino = '' then
+    raise exception using errcode = '22023', message = 'destino_obrigatorio';
+  end if;
+  -- `v_cor` vazio é pedido legítimo ("sem cor"): limpa. O que não passa é cor
+  -- malformada — gravar `#12` e devolver `#12` para a tela pintar deixaria o
+  -- chip sem cor sem ninguém saber por quê.
+  if v_so_cor and v_cor <> '' and v_cor !~ '^#[0-9a-f]{6}$' then
+    raise exception using errcode = '22023', message = 'cor_invalida';
+  end if;
+
+  -- ── POR QUE NÃO SAI EVENTO DAQUI ──────────────────────────────────────────
+  --
+  -- Os laços abaixo CONTAM as linhas alteradas e não emitem nada em `event_log`.
+  -- A primeira versão emitia `contact.tags_changed` / `lead.tags_changed` /
+  -- `conversation.tags_changed` POR LINHA, e nenhum desses tipos tem consumidor:
+  -- `lib/event-log/register-handlers.ts` registra 13 handlers e nenhum os
+  -- declara; o motor de automação ouve `lead.tag_added`/`contact.tag_added`, que
+  -- é outro tipo (e disparar automação num renomear em lote seria pior que não
+  -- disparar). Evento sem consumidor é o anti-pattern 3 do CLAUDE.md, e aqui
+  -- custava milhares de linhas dentro de UMA transação, num log que nada drena e
+  -- nada expurga.
+  --
+  -- Quem registra a operação é o AUDIT LOG, na borda: `tag_vocabulary.changed`
+  -- em `app/api/v1/tags/vocabulario/route.ts`, com os contadores que este corpo
+  -- devolve. E a tela aberta se atualiza pelo Realtime das próprias tabelas.
+
+  -- ── (z) A COR SAI ANTES DOS LAÇOS, E NÃO É OTIMIZAÇÃO ─────────────────────
+  --
+  -- Cor é atributo do VOCABULÁRIO, não das linhas: `contacts.tags`,
+  -- `crm_leads.tags` e `conversations.tags` continuam `text[]` de nomes, porque
+  -- automação, webhook (`lead.tag_added`) e MCP (`*.tags_changed`) falam em
+  -- string há versões (contrato da fatia S4). Então a ação `definir_cor` não tem
+  -- o que reescrever em contatos, leads nem conversas — e os laços abaixo, se
+  -- rodassem, custariam uma varredura das três tabelas para devolver zero.
+  --
+  -- O bloco de `canonical_conversation_tags` (mais abaixo) é pior que inútil
+  -- aqui: ele troca o nome da semente por `v_destino` e descarta o que sobra
+  -- vazio — com `destino` nulo nesta ação, a semente seria APAGADA. Daí o
+  -- `return` cedo: nesta ação, só o vocabulário curado muda.
+  if v_so_cor then
+    select coalesce(o.settings, '{}'::jsonb) into v_settings
+    from public.organizations o where o.id = p_org;
+    if v_settings is null then
+      v_settings := '{}'::jsonb;
+    end if;
+
+    -- (a) tolera `settings.tags` torto (escalar/objeto): a leitura já tolera com
+    -- `jsonb_typeof`, e sem esta guarda o `jsonb_array_elements` levantava
+    -- `cannot extract elements from a scalar` e derrubava a tela inteira numa
+    -- organização com o dado malformado. Lista que não é lista é lista vazia.
+    v_antes := case
+      when jsonb_typeof(v_settings -> 'tags') = 'array' then v_settings -> 'tags'
+      else '[]'::jsonb
+    end;
+    v_depois := coalesce(
+      (
+        select jsonb_agg(entrada.valor order by entrada.ord)
+        from (
+          -- Uma entrada por chave canônica, agora acrescentando a cor na que
+          -- casar. A entrada que era string vira objeto — a mesma forma que o
+          -- rename já grava (mais abaixo, `jsonb_build_object('tag', …)`) — e
+          -- `descricao` que já existia é PRESERVADA: esta ação fala de cor.
+          --
+          -- ⚠️ O desempate é o MESMO da função de leitura
+          -- (`fn_vocabulario_de_tags`, `order by … (cor is not null or descricao
+          -- is not null) desc`), e de propósito: onde a lista curada já tiver a
+          -- mesma etiqueta duas vezes (uma como string, outra como objeto com
+          -- cor), quem sobrevive é a entrada que carrega o metadado. Ordenar só
+          -- por `ord` apagaria a cor na primeira vez que a ação rodasse sobre um
+          -- vocabulário nesse estado, e a tela mostraria "sem cor" logo depois de
+          -- alguém ter escolhido uma.
+          select distinct on (lower(x.chave)) x.valor, x.ord
+          from (
+            select btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}')) as chave,
+                   case
+                     when lower(btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}'))) = lower(v_tag)
+                     then case
+                            when nullif(v_cor, '') is null
+                            then (case when jsonb_typeof(e.valor) = 'string'
+                                       then jsonb_build_object('tag', e.valor #>> '{}')
+                                       else e.valor end) - 'cor'
+                            else jsonb_set(
+                                   case when jsonb_typeof(e.valor) = 'string'
+                                        then jsonb_build_object('tag', e.valor #>> '{}')
+                                        else e.valor end,
+                                   '{cor}', to_jsonb(v_cor))
+                          end
+                     else case when jsonb_typeof(e.valor) = 'string'
+                               then jsonb_build_object('tag', e.valor #>> '{}')
+                               else e.valor end
+                   end as valor,
+                   e.ord
+            from jsonb_array_elements(v_antes) with ordinality as e(valor, ord)
+            where btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}')) <> ''
+          ) x
+          where x.valor is not null
+          order by lower(x.chave),
+                   ((x.valor ->> 'cor') is not null or (x.valor ->> 'descricao') is not null) desc,
+                   x.ord
+        ) as entrada
+      ),
+      '[]'::jsonb
+    );
+
+    -- A etiqueta que ainda não tinha entrada no vocabulário curado — semente, ou
+    -- nome que só existe em uso (`no_vocabulario = false` na leitura) — GANHA
+    -- uma. É deliberado: dar cor é curar. Sem isto, a tela ofereceria cor para
+    -- uma etiqueta que continuaria marcada como "em uso, fora do vocabulário", e
+    -- a leitura devolveria a cor de uma linha que não está na lista curada.
+    if nullif(v_cor, '') is not null and not exists (
+      select 1 from jsonb_array_elements(v_depois) as e(valor)
+      where lower(btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}'))) = lower(v_tag)
+    ) then
+      v_depois := v_depois || jsonb_build_array(jsonb_build_object('tag', v_tag, 'cor', v_cor));
+    end if;
+
+    if v_depois <> v_antes then
+      v_settings := jsonb_set(v_settings, '{tags}', v_depois);
+      update public.organizations o
+         set settings = v_settings,
+             updated_at = now()
+       where o.id = p_org;
+      v_definido := true;
+    end if;
+
+    return jsonb_build_object(
+      'acao', p_acao,
+      'tag', v_tag,
+      'destino', null,
+      'cor', nullif(v_cor, ''),
+      'contatos', 0,
+      'leads', 0,
+      'conversas', 0,
+      'regras', 0,
+      'alterou', v_definido
+    );
+  end if;
+
+  -- (a) contatos
+  for v_id in
+    with alvo as (
+      select c.id, public.fn_tags_normalizar(c.tags, v_tag, v_destino_minusculo, v_remover) as novas
+      from public.contacts c
+      where c.organization_id = p_org
+        and exists (
+          select 1 from unnest(coalesce(c.tags, '{}'::text[])) as x(valor)
+          where lower(btrim(x.valor)) = lower(v_tag)
+        )
+    ), mudou as (
+      update public.contacts c
+         set tags = a.novas
+        from alvo a
+       where c.id = a.id
+         and c.tags is distinct from a.novas
+      returning c.id
+    )
+    select id from mudou
+  loop
+    v_contatos := v_contatos + 1;
+  end loop;
+
+  -- (b) leads
+  for v_id in
+    with alvo as (
+      select l.id, public.fn_tags_normalizar(l.tags, v_tag, v_destino, v_remover) as novas
+      from public.crm_leads l
+      where l.organization_id = p_org
+        and exists (
+          select 1 from unnest(coalesce(l.tags, '{}'::text[])) as x(valor)
+          where lower(btrim(x.valor)) = lower(v_tag)
+        )
+    ), mudou as (
+      update public.crm_leads l
+         set tags = a.novas
+        from alvo a
+       where l.id = a.id
+         and l.tags is distinct from a.novas
+      returning l.id
+    )
+    select id from mudou
+  loop
+    v_leads := v_leads + 1;
+  end loop;
+
+  -- (c) conversas
+  for v_id in
+    with alvo as (
+      select v.id, public.fn_tags_normalizar(v.tags, v_tag, v_destino_minusculo, v_remover) as novas
+      from public.conversations v
+      where v.organization_id = p_org
+        and exists (
+          select 1 from unnest(coalesce(v.tags, '{}'::text[])) as x(valor)
+          where lower(btrim(x.valor)) = lower(v_tag)
+        )
+    ), mudou as (
+      update public.conversations v
+         set tags = a.novas
+        from alvo a
+       where v.id = a.id
+         and v.tags is distinct from a.novas
+      returning v.id
+    )
+    select id from mudou
+  loop
+    v_conversas := v_conversas + 1;
+  end loop;
+
+  -- (d) as regras dos agentes — o ponto da issue.
+  --
+  -- `excluir` NÃO apaga a regra: quem exclui a etiqueta é avisado de quantas
+  -- regras a citam (o número volta no jsonb e a tela pede confirmação), mas
+  -- apagar `add_tag` de um agente em produção é decisão de outra tela. Aqui a
+  -- lista da regra só é reescrita quando o nome muda ou quando ele sai.
+  select coalesce(o.settings, '{}'::jsonb) into v_settings
+  from public.organizations o where o.id = p_org;
+
+  if v_settings is null then
+    v_settings := '{}'::jsonb;
+  end if;
+
+  if not v_remover then
+    with alvo as (
+      select r.id,
+             jsonb_agg(
+               case
+                 when a.valor ->> 'type' in ('add_tag', 'remove_tag')
+                  and jsonb_typeof(a.valor -> 'config' -> 'tags') = 'array'
+                 then jsonb_set(
+                        a.valor,
+                        '{config,tags}',
+                        to_jsonb(public.fn_tags_normalizar(
+                          array(select jsonb_array_elements_text(a.valor -> 'config' -> 'tags')),
+                          v_tag, v_destino, false
+                        ))
+                      )
+                 else a.valor
+               end
+               order by a.ord
+             ) as novas
+      from public.automation_rules r
+      cross join lateral jsonb_array_elements(coalesce(r.actions, '[]'::jsonb))
+        with ordinality as a(valor, ord)
+      where r.organization_id = p_org
+      -- ⚠️ `group by r.id` E SÓ. Agrupar também pelo TIPO da ação devolvia uma
+      -- linha por (regra, tipo), cada uma com `novas` = só o subconjunto daquele
+      -- tipo; o `update ... from alvo` casava as duas linhas, o Postgres usava
+      -- UMA arbitrária, e `is distinct from` é sempre verdadeiro num subconjunto
+      -- — então a regra com ações de dois tipos era TRUNCADA a um tipo só, em
+      -- toda organização, mesmo que ela nunca tenha citado a etiqueta renomeada.
+      -- Medido num Postgres real: regra com `add_tag` + `assign_owner` ficava com
+      -- uma ação, e a tela dizia "atualizada em 1 regra(s) de agente".
+      group by r.id
+    ), mudou as (
+      update public.automation_rules r
+         set actions = alvo.novas,
+             updated_at = now()
+        from alvo
+       where r.id = alvo.id
+         and r.actions is distinct from alvo.novas
+      returning r.id
+    )
+    select count(*) into v_regras from mudou;
+  else
+    -- Exclusão: conta as regras que ainda citam a etiqueta, sem tocar nelas.
+    select count(distinct r.id) into v_regras
+    from public.automation_rules r
+    cross join lateral jsonb_array_elements(coalesce(r.actions, '[]'::jsonb)) as a(valor)
+    cross join lateral jsonb_array_elements(
+      case when jsonb_typeof(a.valor -> 'config' -> 'tags') = 'array'
+           then a.valor -> 'config' -> 'tags' else '[]'::jsonb end
+    ) as e(valor)
+    where r.organization_id = p_org
+      and a.valor ->> 'type' in ('add_tag', 'remove_tag')
+      and lower(btrim(e.valor #>> '{}')) = lower(v_tag);
+  end if;
+
+  -- (e) o vocabulário da organização, nos dois lugares onde ele mora.
+  -- Mesma guarda do ramo de renomear: `settings.tags` malformado não pode
+  -- derrubar a cor (a leitura tolera; a escrita agora também).
+  v_antes := case
+    when jsonb_typeof(v_settings -> 'tags') = 'array' then v_settings -> 'tags'
+    else '[]'::jsonb
+  end;
+
+  -- ── (e0) O AVISO DE JUNÇÃO — renomear NÃO é renome simples quando o nome
+  -- já existe (issue #2801) ────────────────────────────────────────────────
+  --
+  -- Renomear para um nome que JÁ ESTÁ no vocabulário junta as duas entradas
+  -- numa só, e a operação respondia `alterou: true` idêntico a um renome
+  -- simples: a tela dizia "Etiqueta atualizada" enquanto duas etiquetas
+  -- viravam uma. O marcador é medido AQUI, no vocabulário curado, e não na
+  -- tela — a tela só tem a lista que ela mesma acabou de ler, e o caso
+  -- justamente interessante é o que já vinha como DUAS linhas.
+  --
+  -- O alcance é declarado: `juntou` diz "duas ENTRADAS do vocabulário curado
+  -- colapsaram". `juntar` um nome que só existia em uso (fora do vocabulário)
+  -- não colapsa entrada nenhuma ali, e o marcador fica `false` — o que
+  -- normalizou os nomes nesse caso foi `fn_tags_normalizar`, outro desenho.
+  if not v_remover then
+    select exists (
+      select 1
+      from jsonb_array_elements(v_antes) with ordinality as e(valor, ord)
+      where btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}')) <> ''
+      group by lower(
+                case when lower(btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}'))) = lower(v_tag)
+                     then v_destino
+                     else btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}'))
+                end
+              )
+      having count(*) > 1
+    ) into v_juntou;
+  end if;
+
+  v_depois := coalesce(
+    (
+      select jsonb_agg(entrada.valor order by entrada.ord)
+      from (
+        -- Dedupe pela chave DEPOIS da substituição (mesma razão de
+        -- `fn_tags_normalizar`): juntar duas entradas de chaves diferentes num
+        -- nome só deixava as duas no vocabulário, agora com o mesmo `tag`.
+        --
+        -- ⚠️ `cor` e `descricao` da entrada sobrevivem ao rename: o `jsonb_set`
+        -- mexe só em `{tag}`. Renomear não é perder a cor que alguém escolheu.
+        select distinct on (lower(x.chave)) x.valor, x.ord
+        from (
+          select case
+                   when v_remover and lower(btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}'))) = lower(v_tag) then null
+                   when lower(btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}'))) = lower(v_tag)
+                     then v_destino
+                   else btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}'))
+                 end as chave,
+                 case
+                   when v_remover and lower(btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}'))) = lower(v_tag) then null
+                   when lower(btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}'))) = lower(v_tag)
+                     then jsonb_set(
+                            case when jsonb_typeof(e.valor) = 'string' then jsonb_build_object('tag', e.valor #>> '{}')
+                                 else e.valor end,
+                            '{tag}', to_jsonb(v_destino))
+                   else case when jsonb_typeof(e.valor) = 'string' then jsonb_build_object('tag', e.valor #>> '{}')
+                             else e.valor end
+                 end as valor,
+                 e.ord
+          from jsonb_array_elements(v_antes) with ordinality as e(valor, ord)
+          where btrim(coalesce(e.valor ->> 'tag', e.valor #>> '{}')) <> ''
+        ) x
+        where x.valor is not null and coalesce(x.chave, '') <> ''
+        -- ⚠️ O DESEMPATE É PELO METADADO, ANTES DA ORDEM (issue #2801).
+        --
+        -- Com `order by lower(x.chave), x.ord` a primeira entrada pela posição
+        -- ficava, COM OU SEM cor/descrição: renomear "a" (que tinha cor) para
+        -- "b" (que existia antes, sem cor) PERDIA a cor que o operador havia
+        -- escolhido — a entrada vazia de metadado vinha primeiro na lista.
+        -- Este é o MESMO desempate da função de leitura
+        -- (`fn_vocabulario_de_tags`) e do ramo `definir_cor`: onde a lista tem
+        -- a mesma etiqueta duas vezes, sobrevive a que carrega metadado.
+        --
+        -- Quando as DUAS já têm metadado, o metadado não decide mais nada e o
+        -- desempate volta a ser a ORDEM: fica a que já ocupava a posição no
+        -- vocabulário — isto é, o destino. Cor contra cor tem de perder uma, e
+        -- a regra escolhida preserva a identidade (nome + posição + cor) de
+        -- quem já estava lá, em vez de deixar a posição da lista decidir
+        -- qualquer coisa depois de virar empate técnico.
+        order by lower(x.chave),
+                 ((x.valor ->> 'cor') is not null or (x.valor ->> 'descricao') is not null) desc,
+                 x.ord
+      ) as entrada
+      where entrada.valor is not null
+    ),
+    '[]'::jsonb
+  );
+  if v_depois <> v_antes then
+    v_settings := jsonb_set(v_settings, '{tags}', v_depois);
+    v_definido := true;
+  end if;
+
+  v_antes := coalesce(v_settings -> 'canonical_conversation_tags', '[]'::jsonb);
+  v_depois := coalesce(
+    (
+      select jsonb_agg(semente.valor order by semente.ord)
+      from (
+        -- Dedupe pela chave DEPOIS da substituição, como acima.
+        select distinct on (lower(y.valor)) y.valor, y.ord
+        from (
+          select case
+                   when v_remover and lower(btrim(s.valor #>> '{}')) = lower(v_tag) then null
+                   when lower(btrim(s.valor #>> '{}')) = lower(v_tag) then v_destino
+                   else btrim(s.valor #>> '{}')
+                 end as valor,
+                 s.ord
+          from jsonb_array_elements(v_antes) with ordinality as s(valor, ord)
+          where btrim(s.valor #>> '{}') <> ''
+        ) y
+        where coalesce(y.valor, '') <> ''
+        order by lower(y.valor), y.ord
+      ) as semente
+      where semente.valor is not null
+    ),
+    '[]'::jsonb
+  );
+  if v_depois <> v_antes then
+    v_settings := jsonb_set(v_settings, '{canonical_conversation_tags}', v_depois);
+    v_definido := true;
+  end if;
+
+  if v_definido then
+    update public.organizations o
+       set settings = v_settings,
+           updated_at = now()
+     where o.id = p_org;
+  end if;
+
+  return jsonb_build_object(
+    'acao', p_acao,
+    'tag', v_tag,
+    'destino', nullif(v_destino, ''),
+    'cor', null,
+    'contatos', v_contatos,
+    'leads', v_leads,
+    'conversas', v_conversas,
+    'regras', v_regras,
+    -- `juntou` é o AVISO de que esta operação juntou duas etiquetas do
+    -- vocabulário numa só (issue #2801). Sem ele a resposta era indistinguível
+    -- de um renome simples, e a tela não tinha o que dizer. `false` no renome
+    -- que não juntou, no excluir e em `juntar` cujo destino não estava no
+    -- vocabulário curado (ver o bloco (e0)).
+    'juntou', v_juntou,
+    'alterou', (v_contatos + v_leads + v_conversas + v_regras > 0 or v_definido)
+  );
+end;
+$$;
+
+revoke execute on function public.fn_vocabulario_de_tags_operar(uuid, text, text, text, text) from public, anon;
+grant  execute on function public.fn_vocabulario_de_tags_operar(uuid, text, text, text, text) to authenticated, service_role;
+
+create or replace function public.fn_vocabulario_de_tags_pagina(
+  p_org uuid, p_busca text default '', p_offset integer default 0, p_limit integer default 100
+) returns jsonb language sql stable security invoker set search_path = public as $$
+
+  with vocabulario as (
+    -- A organização pode guardar o vocabulário de dois jeitos, e os dois contam:
+    -- `tags` (a lista com cor e descrição, vinda da tela) e
+    -- `canonical_conversation_tags` (as sementes, que a 0244 já usava).
+    select
+      nullif(btrim(coalesce(entrada.valor ->> 'tag', entrada.valor #>> '{}')), '') as tag,
+      nullif(btrim(coalesce(entrada.valor ->> 'cor', '')), '') as cor,
+      nullif(btrim(coalesce(entrada.valor ->> 'descricao', '')), '') as descricao
+    from public.organizations o
+    cross join lateral jsonb_array_elements(
+      case when jsonb_typeof(o.settings -> 'tags') = 'array'
+           then o.settings -> 'tags' else '[]'::jsonb end
+    ) as entrada(valor)
+    where o.id = p_org
+    union all
+    select nullif(btrim(coalesce(semente #>> '{}', '')), ''), null, null
+    from public.organizations o
+    cross join lateral jsonb_array_elements(
+      case when jsonb_typeof(o.settings -> 'canonical_conversation_tags') = 'array'
+           then o.settings -> 'canonical_conversation_tags' else '[]'::jsonb end
+    ) as semente(valor)
+    where o.id = p_org
+  ),
+  vocabulario_limpo as (
+    -- Uma linha por nome canônico. Se a lista curada tem cor/descrição, ela vence
+    -- a semente crua.
+    select distinct on (lower(v.tag))
+           v.tag, v.cor, v.descricao
+    from vocabulario v
+    where v.tag is not null
+    order by lower(v.tag), (v.cor is not null or v.descricao is not null) desc
+  ),
+  uso as (
+    select nullif(btrim(t.valor), '') as tag, 'contatos' as origem
+    from public.contacts c, unnest(coalesce(c.tags, '{}'::text[])) as t(valor)
+    where c.organization_id = p_org
+    union all
+    select nullif(btrim(t.valor), ''), 'leads'
+    from public.crm_leads l, unnest(coalesce(l.tags, '{}'::text[])) as t(valor)
+    where l.organization_id = p_org
+    union all
+    select nullif(btrim(t.valor), ''), 'conversas'
+    from public.conversations v, unnest(coalesce(v.tags, '{}'::text[])) as t(valor)
+    where v.organization_id = p_org
+  ),
+  uso_limpo as (
+    select u.tag, u.origem from uso u where u.tag is not null and u.tag <> ''
+  ),
+  regras as (
+    -- As ações `add_tag` e `remove_tag` dos agentes. É o que o operador NÃO via: a etiqueta
+    -- podia ter zero conversas e ainda estar sendo escrita amanhã pela regra.
+    -- `r.id` junto: a coluna "Regras de agente" da tela conta REGRAS, e a
+    -- exclusão (mais abaixo) conta `distinct r.id`. Sem o id aqui, uma regra com
+    -- duas ações `add_tag` da mesma etiqueta aparecia como "2" na lista e como
+    -- "1" no resultado da operação — o mesmo rótulo contando coisas diferentes.
+    select r.id as regra_id, nullif(btrim(etiqueta.valor #>> '{}'), '') as tag
+    from public.automation_rules r
+    cross join lateral jsonb_array_elements(coalesce(r.actions, '[]'::jsonb)) as acao(valor)
+    cross join lateral jsonb_array_elements(
+      case when jsonb_typeof(acao.valor -> 'config' -> 'tags') = 'array'
+           then acao.valor -> 'config' -> 'tags' else '[]'::jsonb end
+    ) as etiqueta(valor)
+    where r.organization_id = p_org
+      and acao.valor ->> 'type' in ('add_tag', 'remove_tag')
+  ),
+  regras_limpo as (
+    select r.regra_id, r.tag from regras r where r.tag is not null and r.tag <> ''
+  ),
+  bruto as (
+    select tag from vocabulario_limpo
+    union all select tag from uso_limpo
+    union all select tag from regras_limpo
+  ),
+  todas as (
+    -- #3507: a grafia COM caixa vence a minúscula. Contato e conversa guardam
+    -- a etiqueta em minúscula por contrato; regra `add_tag` e negócio guardam a
+    -- forma digitada. `min()` deixava a minúscula vencer, e renomear só a caixa
+    -- de uma etiqueta fora do vocabulário respondia 200 sem mudar a tela.
+    select (array_agg(b.tag order by (b.tag = lower(b.tag)), b.tag))[1] as tag,
+           lower(b.tag) as chave
+    from bruto b
+    where b.tag is not null
+    group by lower(b.tag)
+  ),
+  filtradas as (
+    select t.* from todas t
+    where strpos(t.chave, lower(coalesce(p_busca, ''))) > 0
+  ),
+  pagina as (
+    select * from filtradas order by chave
+    offset greatest(coalesce(p_offset, 0), 0)
+    limit least(greatest(coalesce(p_limit, 100), 1), 200)
+  ),
+  linhas as (
+  select
+    coalesce(v.tag, t.tag) as tag,
+    (select count(*) from uso_limpo u
+      where lower(u.tag) = t.chave and u.origem = 'contatos') as uso_em_contatos,
+    (select count(*) from uso_limpo u
+      where lower(u.tag) = t.chave and u.origem = 'leads')    as uso_em_leads,
+    (select count(*) from uso_limpo u
+      where lower(u.tag) = t.chave and u.origem = 'conversas') as uso_em_conversas,
+    (select count(distinct r.regra_id) from regras_limpo r
+      where lower(r.tag) = t.chave)                           as em_regras,
+    v.cor,
+    v.descricao,
+    (v.tag is not null)                                       as no_vocabulario
+  from pagina t
+  left join vocabulario_limpo v on lower(v.tag) = t.chave
+  order by t.chave
+  )
+  select jsonb_build_object(
+    'items', coalesce((select jsonb_agg(to_jsonb(l) order by lower(l.tag)) from linhas l), '[]'::jsonb),
+    'total', (select count(*) from filtradas)
+  );
+$$;
+
+revoke all on function public.fn_vocabulario_de_tags_pagina(uuid,text,integer,integer) from public, anon;
+grant execute on function public.fn_vocabulario_de_tags_pagina(uuid,text,integer,integer) to authenticated, service_role;
+
+notify pgrst, 'reload schema';
 
 -- ---- VARREDURA anon: função nova nasce exposta em quem ATUALIZA (migration 0116) ----
 --
@@ -74586,6 +76570,17 @@ begin
   end if;
 end;
 $recibos_9018$;
+
+-- ---- skill ativada pela etiqueta: trigger 'tag' (migration 9230) ----
+-- Num bloco só: o update.sh roda sem ON_ERROR_STOP, e um `add` solto que falhasse deixaria a
+-- tabela sem CHECK.
+do $skill_trigger_tag$
+begin
+  alter table public.skill_activations
+    drop constraint if exists skill_activations_trigger_check;
+  alter table public.skill_activations
+    add constraint skill_activations_trigger_check check (trigger in ('hard', 'probe', 'tag'));
+end $skill_trigger_tag$;
 
 -- ---- parcela de honorários na moeda da organização (migration 0770, #3379) ----
 -- Módulo opcional: `fn_honorarios_provisionar()` só roda na INSTALAÇÃO, então
