@@ -234,6 +234,12 @@ export const PUBLIC_PATHS: RegExp[] = [
   // por fatia, no formato do caminho da pasta; `portaDeToken` monta cada um
   // ancorado nos dois lados e com o segmento dinâmico em forma de UUID.
   ...PORTAS_DE_TOKEN,
+  // BUSCA DO TOKEN DO MÓDULO `connected` (spec 33, F2). Quem chama é o servidor do módulo, que não tem
+  // cookie: a identidade é a assinatura HMAC com o segredo da instalação (`X-Module-*`), conferida DENTRO
+  // da rota (`app/api/v1/extensions/token/route.ts`), com carimbo, nonce de uso único e rate limit. Só
+  // este caminho exato: `/api/v1/extensions/` tem irmãos de sessão (`[id]/segredo`, `install`, etc.) que
+  // não podem nascer públicos de carona.
+  /^\/api\/v1\/extensions\/token$/,
   /^\/_next\//,
   /^\/favicon\.ico$/,
   // O ícone da aba (`app/icon.tsx`), que o `<head>` de TODA página pede —
