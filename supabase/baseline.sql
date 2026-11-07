@@ -70570,6 +70570,197 @@ grant execute on function public.fn_extensions_set_switch(uuid,uuid,uuid,boolean
 notify pgrst, 'reload schema';
 
 
+-- ---- modulo conectado: consentimento por área (migration 9119) ----
+-- Espelho idempotente da 9119 (racional completo no arquivo da migration): `organization_extensions.consented_areas`
+-- (com CHECK nas 18 permissões `area.*`) e `fn_extensions_set_consent`. Fica DEPOIS do apêndice da 9118 e ANTES
+-- da VARREDURA anon.
+
+alter table public.organization_extensions
+  add column if not exists consented_areas text[] not null default '{}';
+alter table public.organization_extensions drop constraint if exists organization_extensions_consented_areas_check;
+alter table public.organization_extensions add constraint organization_extensions_consented_areas_check
+  check (consented_areas <@ array[
+    'area.contatos.leitura','area.contatos.escrita',
+    'area.negocios.leitura','area.negocios.escrita',
+    'area.conversas.leitura','area.conversas.escrita',
+    'area.agenda.leitura','area.agenda.escrita',
+    'area.funis.leitura','area.funis.escrita',
+    'area.agentes_ia.leitura','area.agentes_ia.escrita',
+    'area.catalogo.leitura','area.catalogo.escrita',
+    'area.configuracao.leitura','area.configuracao.escrita',
+    'area.analise.leitura','area.analise.escrita'
+  ]::text[]);
+
+create or replace function public.fn_extensions_set_consent(p_actor uuid, p_organization uuid, p_installation uuid,
+  p_expected_revision integer, p_areas text[])
+returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_manifest jsonb; v_removed_at timestamptz; v_declaradas text[]; v_link public.organization_extensions; v_role text;
+begin
+  if p_organization is null or p_installation is null or p_expected_revision is null or p_expected_revision < 0
+    or p_areas is null or array_position(p_areas, null) is not null
+    or cardinality(p_areas) <> (select count(distinct a) from unnest(p_areas) a) then
+    raise exception using errcode='P0001',message='extension_invalid_input';
+  end if;
+  perform public.fn_extensions_assert_actor(p_actor,p_organization);
+  -- A organização é travada como em `fn_extensions_configure`: consentir e ativar/desativar/remover não se cruzam.
+  perform 1 from public.organizations where id=p_organization for update;
+  perform public.fn_extensions_assert_actor(p_actor,p_organization);
+  select i.removed_at, a.manifest into v_removed_at, v_manifest
+    from public.extension_installations i join public.extension_artifacts a on a.id=i.artifact_id
+    where i.id=p_installation for share of i;
+  if not found then raise exception using errcode='P0001',message='extension_installation_not_found'; end if;
+  if v_removed_at is not null then raise exception using errcode='P0001',message='extension_removed'; end if;
+  -- O perfil vem do ARTEFATO admitido. Só o `connected` tem áreas.
+  if v_manifest->>'profile' is distinct from 'connected' then
+    raise exception using errcode='P0001',message='extension_consent_not_applicable';
+  end if;
+  select * into v_link from public.organization_extensions
+    where organization_id=p_organization and installation_id=p_installation for update;
+  if not found then raise exception using errcode='P0001',message='extension_not_activated'; end if;
+  if v_link.revision <> p_expected_revision then
+    raise exception using errcode='P0001',message='extension_revision_conflict';
+  end if;
+  -- "Declarado" = as permissões `area.*` do manifesto do artefato desta instalação.
+  select coalesce(array_agg(distinct p), array[]::text[]) into v_declaradas
+    from jsonb_array_elements_text(coalesce(v_manifest->'permissions','[]'::jsonb)) p where p like 'area.%';
+  if exists (select 1 from unnest(p_areas) a where a <> all (v_declaradas)) then
+    raise exception using errcode='PT409',message='extension_area_not_declared';
+  end if;
+  -- Decisão 5 da spec 33: configuração e agentes de IA só por quem administra a organização.
+  if exists (select 1 from unnest(p_areas) a where a ~ '^area\.(configuracao|agentes_ia)\.') then
+    select u.role into v_role from public.user_organizations u
+      where u.user_id=p_actor and u.organization_id=p_organization and u.revoked_at is null and u.accepted_at is not null;
+    if v_role is distinct from 'admin' and v_role is distinct from 'owner' then
+      raise exception using errcode='PT409',message='extension_area_requires_admin';
+    end if;
+  end if;
+  update public.organization_extensions
+    set consented_areas=(select coalesce(array_agg(a order by a), array[]::text[]) from unnest(p_areas) a),
+        revision=revision+1, updated_by=p_actor, updated_at=now()
+    where organization_id=p_organization and installation_id=p_installation
+    returning * into v_link;
+  return jsonb_build_object('organization_extension', to_jsonb(v_link));
+end $$;
+
+revoke execute on function public.fn_extensions_set_consent(uuid,uuid,uuid,integer,text[]) from public, anon, authenticated;
+grant execute on function public.fn_extensions_set_consent(uuid,uuid,uuid,integer,text[]) to service_role;
+
+notify pgrst, 'reload schema';
+
+-- Integridade de organização, funil e etapa (9111)
+-- manifest: Exige a mesma organização/funil/etapa em todo caminho SQL, sem reparar legado automaticamente.
+-- Operator controls statement/lock timeout; applying/validating takes locks and needs a reviewed target window.
+do $integridade_funil_etapa$
+declare actual record;expected smallint[];ref_expected smallint[];legado_invalido boolean;
+begin
+ lock table public.crm_pipelines,public.crm_stages,public.crm_leads in share row exclusive mode;
+legado_invalido:=exists(select 1 from public.crm_stages s left join public.crm_pipelines p on p.id=s.pipeline_id where p.id is null or p.organization_id is distinct from s.organization_id)
+ or exists(select 1 from public.crm_leads l left join public.crm_pipelines p on p.id=l.pipeline_id left join public.crm_stages s on s.id=l.stage_id where p.id is null or s.id is null or p.organization_id is distinct from l.organization_id or s.organization_id is distinct from l.organization_id or s.pipeline_id is distinct from l.pipeline_id);
+-- Legado inconsistente não é reparado nem derruba a atualização. As chaves antigas de uma
+-- coluna FICAM: a composta não casaria com as linhas legadas, e trocá-las deixaria apagar a
+-- etapa/funil a que elas apontam. Lado a lado também não: duas chaves entre as mesmas tabelas
+-- tornam ambíguo o join embutido do PostgREST (PGRST201). A troca, validada, acontece no
+-- update.sh seguinte ao legado revisto.
+if legado_invalido then raise warning 'crm_integrity_legacy_invalid_no_automatic_repair: chaves antigas mantidas; a troca pelas chaves compostas espera o legado ser revisto';end if;
+expected:=array[(select attnum from pg_attribute where attrelid='public.crm_pipelines'::regclass and attname='organization_id'and not attisdropped),(select attnum from pg_attribute where attrelid='public.crm_pipelines'::regclass and attname='id'and not attisdropped)]::smallint[];
+ if to_regclass('public.crm_integridade_pipelines_org_id_uq')is null then
+  create unique index crm_integridade_pipelines_org_id_uq on public.crm_pipelines(organization_id,id);
+  comment on index public.crm_integridade_pipelines_org_id_uq is 'crm-integridade-funil-etapa-v1';
+ else
+  select i.*,obj_description(i.indexrelid,'pg_class')marker into actual from pg_index i where i.indexrelid=to_regclass('public.crm_integridade_pipelines_org_id_uq');
+  if not found or actual.indrelid<>'public.crm_pipelines'::regclass or not actual.indisunique or not actual.indisvalid or not actual.indisready or actual.indpred is not null or actual.indexprs is not null or actual.indnatts<>cardinality(expected)or actual.indnkeyatts<>cardinality(expected)or actual.indkey::text<>array_to_string(expected,' ')or actual.marker is distinct from 'crm-integridade-funil-etapa-v1'then
+   raise exception 'crm_integrity_index_name_conflict'using errcode='23514';end if;
+ end if;
+expected:=array[(select attnum from pg_attribute where attrelid='public.crm_stages'::regclass and attname='organization_id'and not attisdropped),(select attnum from pg_attribute where attrelid='public.crm_stages'::regclass and attname='pipeline_id'and not attisdropped),(select attnum from pg_attribute where attrelid='public.crm_stages'::regclass and attname='id'and not attisdropped)]::smallint[];
+ if to_regclass('public.crm_integridade_stages_org_pipeline_id_uq')is null then
+  create unique index crm_integridade_stages_org_pipeline_id_uq on public.crm_stages(organization_id,pipeline_id,id);
+  comment on index public.crm_integridade_stages_org_pipeline_id_uq is 'crm-integridade-funil-etapa-v1';
+ else
+  select i.*,obj_description(i.indexrelid,'pg_class')marker into actual from pg_index i where i.indexrelid=to_regclass('public.crm_integridade_stages_org_pipeline_id_uq');
+  if not found or actual.indrelid<>'public.crm_stages'::regclass or not actual.indisunique or not actual.indisvalid or not actual.indisready or actual.indpred is not null or actual.indexprs is not null or actual.indnatts<>cardinality(expected)or actual.indnkeyatts<>cardinality(expected)or actual.indkey::text<>array_to_string(expected,' ')or actual.marker is distinct from 'crm-integridade-funil-etapa-v1'then
+   raise exception 'crm_integrity_index_name_conflict'using errcode='23514';end if;
+ end if;
+select c.*,obj_description(c.oid,'pg_constraint') marker into actual from pg_constraint c where c.conrelid='public.crm_stages'::regclass and c.conname='crm_stages_pipeline_id_fkey';
+ if not found then raise exception 'crm_integrity_required_base_fk_missing' using errcode='23514';end if;
+ if actual.contype<>'f' or actual.confrelid<>'public.crm_pipelines'::regclass or actual.confdeltype<>'c' or actual.confupdtype<>'a' or actual.confmatchtype<>'s' or actual.condeferrable or actual.condeferred then raise exception 'crm_integrity_base_fk_conflict' using errcode='23514';end if;
+ expected:=array[(select attnum from pg_attribute where attrelid='public.crm_stages'::regclass and attname='organization_id' and not attisdropped),(select attnum from pg_attribute where attrelid='public.crm_stages'::regclass and attname='pipeline_id' and not attisdropped)]::smallint[];ref_expected:=array[(select attnum from pg_attribute where attrelid='public.crm_pipelines'::regclass and attname='organization_id' and not attisdropped),(select attnum from pg_attribute where attrelid='public.crm_pipelines'::regclass and attname='id' and not attisdropped)]::smallint[];
+ if actual.conkey=expected and actual.confkey=ref_expected and actual.marker='crm-integridade-funil-etapa-v1' then
+  null;
+ elsif actual.conkey=array[(select attnum from pg_attribute where attrelid='public.crm_stages'::regclass and attname='pipeline_id' and not attisdropped)]::smallint[] and actual.confkey=array[(select attnum from pg_attribute where attrelid='public.crm_pipelines'::regclass and attname='id' and not attisdropped)]::smallint[] and actual.marker is null and actual.convalidated then
+  if not legado_invalido then
+   alter table public.crm_stages drop constraint crm_stages_pipeline_id_fkey;
+   alter table public.crm_stages add constraint crm_stages_pipeline_id_fkey foreign key(organization_id,pipeline_id) references public.crm_pipelines(organization_id,id) on delete cascade not valid;
+   comment on constraint crm_stages_pipeline_id_fkey on public.crm_stages is 'crm-integridade-funil-etapa-v1';
+  end if;
+ else raise exception 'crm_integrity_base_fk_conflict' using errcode='23514';end if;
+ if not legado_invalido then alter table public.crm_stages validate constraint crm_stages_pipeline_id_fkey;end if;
+select c.*,obj_description(c.oid,'pg_constraint') marker into actual from pg_constraint c where c.conrelid='public.crm_leads'::regclass and c.conname='crm_leads_pipeline_id_fkey';
+ if not found then raise exception 'crm_integrity_required_base_fk_missing' using errcode='23514';end if;
+ if actual.contype<>'f' or actual.confrelid<>'public.crm_pipelines'::regclass or actual.confdeltype<>'r' or actual.confupdtype<>'a' or actual.confmatchtype<>'s' or actual.condeferrable or actual.condeferred then raise exception 'crm_integrity_base_fk_conflict' using errcode='23514';end if;
+ expected:=array[(select attnum from pg_attribute where attrelid='public.crm_leads'::regclass and attname='organization_id' and not attisdropped),(select attnum from pg_attribute where attrelid='public.crm_leads'::regclass and attname='pipeline_id' and not attisdropped)]::smallint[];ref_expected:=array[(select attnum from pg_attribute where attrelid='public.crm_pipelines'::regclass and attname='organization_id' and not attisdropped),(select attnum from pg_attribute where attrelid='public.crm_pipelines'::regclass and attname='id' and not attisdropped)]::smallint[];
+ if actual.conkey=expected and actual.confkey=ref_expected and actual.marker='crm-integridade-funil-etapa-v1' then
+  null;
+ elsif actual.conkey=array[(select attnum from pg_attribute where attrelid='public.crm_leads'::regclass and attname='pipeline_id' and not attisdropped)]::smallint[] and actual.confkey=array[(select attnum from pg_attribute where attrelid='public.crm_pipelines'::regclass and attname='id' and not attisdropped)]::smallint[] and actual.marker is null and actual.convalidated then
+  if not legado_invalido then
+   alter table public.crm_leads drop constraint crm_leads_pipeline_id_fkey;
+   alter table public.crm_leads add constraint crm_leads_pipeline_id_fkey foreign key(organization_id,pipeline_id) references public.crm_pipelines(organization_id,id) on delete restrict not valid;
+   comment on constraint crm_leads_pipeline_id_fkey on public.crm_leads is 'crm-integridade-funil-etapa-v1';
+  end if;
+ else raise exception 'crm_integrity_base_fk_conflict' using errcode='23514';end if;
+ if not legado_invalido then alter table public.crm_leads validate constraint crm_leads_pipeline_id_fkey;end if;
+select c.*,obj_description(c.oid,'pg_constraint') marker into actual from pg_constraint c where c.conrelid='public.crm_leads'::regclass and c.conname='crm_leads_stage_id_fkey';
+ if not found then raise exception 'crm_integrity_required_base_fk_missing' using errcode='23514';end if;
+ if actual.contype<>'f' or actual.confrelid<>'public.crm_stages'::regclass or actual.confdeltype<>'r' or actual.confupdtype<>'a' or actual.confmatchtype<>'s' or actual.condeferrable or actual.condeferred then raise exception 'crm_integrity_base_fk_conflict' using errcode='23514';end if;
+ expected:=array[(select attnum from pg_attribute where attrelid='public.crm_leads'::regclass and attname='organization_id' and not attisdropped),(select attnum from pg_attribute where attrelid='public.crm_leads'::regclass and attname='pipeline_id' and not attisdropped),(select attnum from pg_attribute where attrelid='public.crm_leads'::regclass and attname='stage_id' and not attisdropped)]::smallint[];ref_expected:=array[(select attnum from pg_attribute where attrelid='public.crm_stages'::regclass and attname='organization_id' and not attisdropped),(select attnum from pg_attribute where attrelid='public.crm_stages'::regclass and attname='pipeline_id' and not attisdropped),(select attnum from pg_attribute where attrelid='public.crm_stages'::regclass and attname='id' and not attisdropped)]::smallint[];
+ if actual.conkey=expected and actual.confkey=ref_expected and actual.marker='crm-integridade-funil-etapa-v1' then
+  null;
+ elsif actual.conkey=array[(select attnum from pg_attribute where attrelid='public.crm_leads'::regclass and attname='stage_id' and not attisdropped)]::smallint[] and actual.confkey=array[(select attnum from pg_attribute where attrelid='public.crm_stages'::regclass and attname='id' and not attisdropped)]::smallint[] and actual.marker is null and actual.convalidated then
+  if not legado_invalido then
+   alter table public.crm_leads drop constraint crm_leads_stage_id_fkey;
+   alter table public.crm_leads add constraint crm_leads_stage_id_fkey foreign key(organization_id,pipeline_id,stage_id) references public.crm_stages(organization_id,pipeline_id,id) on delete restrict not valid;
+   comment on constraint crm_leads_stage_id_fkey on public.crm_leads is 'crm-integridade-funil-etapa-v1';
+  end if;
+ else raise exception 'crm_integrity_base_fk_conflict' using errcode='23514';end if;
+ if not legado_invalido then alter table public.crm_leads validate constraint crm_leads_stage_id_fkey;end if;
+end;
+$integridade_funil_etapa$;
+
+-- ---- a conversa do SETOR: visibility_mode = own_and_sector (migration 9214, #4022) ----
+-- Espelho da 9214, PRIMEIRA metade. Cria FUNÇÃO, então entra ANTES da VARREDURA
+-- anon. O corpo é plpgsql porque `attendant_sector_members` só nasce no apêndice
+-- da 0801/9062, mais abaixo: corpo `sql` seria resolvido na criação e reprovaria
+-- toda instalação nova. A SEGUNDA metade (a policy, que usa
+-- `conversations.sector_id`) está no fim do arquivo.
+-- O quarto modo de visibilidade: o papel restrito (agent/ai_operator) vê a
+-- conversa cujo sector_id é de um setor em que está vinculado, inclusive a que
+-- está com um colega do setor; os outros setores continuam fora, e
+-- viewer/manager/admin seguem org-wide. Nenhuma cláusula da policy anterior
+-- mudou — a disjunção do setor é ADITIVA.
+create or replace function public.fn_conversation_sector_scope()
+returns table (organization_id uuid, sector_id uuid)
+language plpgsql stable security definer
+set search_path = public
+as $$
+begin
+  return query
+    select m.organization_id, m.sector_id
+      from public.attendant_sector_members m
+     where m.user_id = auth.uid()
+       and public.fn_user_role_in_org(m.organization_id) is not null
+       and public.fn_user_role_in_org(m.organization_id) not in ('viewer','manager','admin')
+       and coalesce((select z.settings->>'visibility_mode'
+                       from public.organizations z
+                      where z.id = m.organization_id), 'own_and_unassigned') = 'own_and_sector';
+end;
+$$;
+
+revoke all on function public.fn_conversation_sector_scope() from public, anon;
+grant execute on function public.fn_conversation_sector_scope() to authenticated, service_role;
+
+comment on function public.fn_conversation_sector_scope() is
+  'Setores do chamador nas organizações em visibility_mode = own_and_sector (migration 9214). Uma linha por (organização, setor); zero linhas nos outros modos e para viewer/manager/admin. Lida por conversations_select; não concede leitura de nada por si.';
+
 -- ---- VARREDURA anon: função nova nasce exposta em quem ATUALIZA (migration 0116) ----
 --
 -- ⚠️ DE PROPÓSITO, NENHUMA FUNÇÃO É CRIADA DEPOIS DESTE BLOCO. Apêndice que cria
