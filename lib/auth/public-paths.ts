@@ -169,13 +169,11 @@ export const PUBLIC_PATHS: RegExp[] = [
   // (`app/api/v1/conversations/[id]/drafts/consume/route.ts`). O id é uma
   // FORMA DE UUID, nunca `[^/]+` — `conversations/abc/drafts/consume` não
   // entra aqui nem de carona.
-  /^\/api\/v1\/conversations\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/drafts\/consume$/i,
   // ANEXO DA NOTA INTERNA SERVER-TO-SERVER. Mesma dualidade da rota irmã
   // `media`: sessão OU Bearer `dsk_…`, resolvidos por `lib/api/auth-dual.ts`
   // DENTRO da rota
   // (`app/api/v1/conversations/[id]/notes/media/route.ts`). O id é uma FORMA
   // DE UUID, nunca `[^/]+`.
-  /^\/api\/v1\/conversations\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/notes\/media$/i,
   // CONFIGURAÇÃO DE IA, FOLLOW-UP E AGENDA SERVER-TO-SERVER (issue #1875).
   // Mesma dualidade das linhas acima: sessão OU Bearer `dsk_…`, resolvidos por
   // `lib/api/auth-dual.ts` DENTRO de cada rota (a org sai da linha do token e
@@ -202,7 +200,6 @@ export const PUBLIC_PATHS: RegExp[] = [
   // DENTRO da rota (`app/api/v1/agenda/servicos/atualizar/route.ts`). O
   // segmento `atualizar` é literal, então sem `$` um sub-path futuro
   // (`/atualizar/x`) entraria por engano — âncora de propósito.
-  /^\/api\/v1\/agenda\/servicos\/atualizar$/,
   // VERSÃO, PUBLICAÇÃO E TESTE DO AGENTE SERVER-TO-SERVER (issue #2052).
   // Mesma dualidade das linhas acima: sessão OU Bearer `dsk_…`, resolvidos por
   // `lib/api/auth-dual.ts` DENTRO de cada rota (a org sai da linha do token e
