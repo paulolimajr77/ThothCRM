@@ -264,6 +264,14 @@ describe("catálogo: 'Ligação perdida' é um gatilho de primeira classe", () =
 });
 
 describe("motor: a ligação perdida manda UMA mensagem pelo caminho de sempre", () => {
+  // Hora fixa DENTRO da janela 7h–22h do número (15:00Z = 12:00 em São Paulo). Sem ela
+  // estes casos dependiam do relógio do CI: de madrugada a ação era adiada e o
+  // envio esperado nunca saía. O caso da janela fechada fixa a própria hora.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-11T15:00:00Z"));
+  });
+
   it("dispara a regra e envia uma vez, com o contato no contexto", async () => {
     const { cliente } = mundo();
 
