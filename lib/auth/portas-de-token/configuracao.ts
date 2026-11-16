@@ -119,7 +119,6 @@ export const MODELOS_DA_CONFIGURACAO: readonly ModeloDePorta[] = [
   "/api/v1/ai/usage",
   "/api/v1/ai/voz",
 
-
   // products e tags. Quem autentica é a própria rota, por `resolveAuthDual`: token
   // com `config:read` (GET) ou `config:write` (escrita) e papel admin (`tokenRole`).
   // `[id]` é forma de UUID; `import` é irmão literal de `[id]` e tem entrada
@@ -168,10 +167,4 @@ export const MODELOS_DA_CONFIGURACAO: readonly ModeloDePorta[] = [
   "/api/v1/message-template-groups",
   "/api/v1/message-template-groups/[id]",
   "/api/v1/message-template-groups/[id]/ordem",
-
-
-
-
-
-
 ];
