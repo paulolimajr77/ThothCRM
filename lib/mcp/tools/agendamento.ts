@@ -18,6 +18,7 @@
  * dentro, e é o que separa esta chamada de um vazamento entre organizações.
  */
 import { z } from "zod";
+import { AMIGO_CONTEXT_REQUIRED } from "@/lib/amigo/agenda";
 
 import {
   horariosLivresDaOrg,
@@ -38,7 +39,7 @@ import { ApiError } from "@/lib/api/types";
 import { SITUACOES_DO_AGENDAMENTO } from "@/lib/agenda/tipos";
 import { contatoDoNegocio } from "@/lib/operacao/modelos-de-mensagem";
 import type { McpContext, McpToolDefinition } from "@/lib/mcp/types";
-import { resolveUserNames } from "./_users";
+import { nomesDosAtendentesCom } from "@/lib/users/nome-do-atendente";
 
 /** Teto do horizonte pedido — espelha o da rota, e o excesso é erro de chamada. */
 const DIAS_PADRAO = 14;
@@ -125,6 +126,7 @@ export const crmListEventTypes: McpToolDefinition<typeof tiposShape> = {
       return { tipos: [], motivo: r.codigo, mensagem: r.motivoParaCliente };
     }
     return {
+      ...(r.provider === "amigo" ? { provider: r.provider, provider_context: r.provider_context } : {}),
       tipos: r.tipos.map((t) => ({
         // O SLUG vem primeiro, e o `id` NÃO vem: o slug existe para dar à IA um
         // handle que ela não alucina, e devolver o uuid ao lado convidaria o
@@ -136,7 +138,17 @@ export const crmListEventTypes: McpToolDefinition<typeof tiposShape> = {
         // Traduzido: `in_person` é vocabulário de banco e o modelo repassa o que
         // recebe. `rotuloDoLocal` é o MESMO tradutor que a tela usa.
         onde: rotuloDoLocal(t.localKind, t.localDetalhes) ?? null,
+        // O preço que a RECEPÇÃO cobra por este tipo, em CENTAVOS e cru: é a
+        // MESMA coluna (`calendar_event_types.default_price_cents`) que a
+        // comanda lê para sugerir o valor. Formatar em reais aqui faria o
+        // modelo repassar o texto formatado e errar a conta em qualquer
+        // reajuste; `null` é "a clínica não definiu preço", e zero seria um
+        // preço — grátis — que ninguém cadastrou.
+        preco_padrao_cents: t.precoPadraoCents ?? null,
         precisa_confirmacao: t.precisaConfirmacao,
+        ...(t.external_provider
+          ? { external_provider: t.external_provider, external_id: t.external_id, external_connection_id: t.external_connection_id }
+          : {}),
         ...(t.servico ? { servico: t.servico } : {}),
       })),
     };
@@ -372,6 +384,7 @@ export const crmFindFreeSlots: McpToolDefinition<typeof horariosLivresShape> = {
       return {
         horarios: [],
         motivo: consulta.codigo,
+        ...(consulta.provider ? { provider: consulta.provider, provider_context: consulta.provider_context } : {}),
         // A face do CLIENTE, nunca a do operador: `motivoParaOperador` nomeia
         // campo e pessoa, e o modelo repassa o que recebe (DECISÃO 20).
         mensagem: consulta.motivoParaCliente,
@@ -546,12 +559,13 @@ export const crmListAppointments: McpToolDefinition<typeof listarShape> = {
     }
 
     // O NOME DO RESPONSÁVEL segue a mesma regra de exposição de #1528: sai pelo
-    // helper (`lib/mcp/tools/_users.ts`), que devolve SÓ o `full_name` — nunca
+    // helper (`lib/users/nome-do-atendente.ts`), que devolve SÓ o `full_name` — nunca
     // e-mail, telefone ou o `user_metadata` inteiro — e é não-crítico: falha de
     // lookup devolve `null`, não derruba a leitura. Montar nome à mão aqui seria
     // uma segunda fonte de verdade sobre quem é uma pessoa.
-    const nomes = await resolveUserNames(
+    const nomes = await nomesDosAtendentesCom(
       ctx.supabase,
+      ctx.organizationId,
       r.agendamentos.map((a) => a.donoId),
     );
 
@@ -565,6 +579,9 @@ export const crmListAppointments: McpToolDefinition<typeof listarShape> = {
         quando: rotuloLocal(new Date(a.iniciaEm), a.fuso),
         fim_quando: rotuloLocal(new Date(a.terminaEm), a.fuso),
         situacao: a.situacao,
+        ...(a.authority && a.authority !== "local"
+          ? { authority: a.authority, external_status: a.external_status, external_connection_id: a.external_connection_id }
+          : {}),
         meet_state: a.meetingState,
         meeting_url: a.meetingState === "ready" ? a.meetingUrl : null,
         // O RÓTULO DO CONTATO nunca é montado aqui: vem de `nomeDoContato` por
@@ -615,6 +632,10 @@ const ENSINO_POR_CODIGO: Record<string, string> = {
     "esse atendimento ainda não tem responsável definido. Não invente horários: avise que alguém da equipe confirma.",
   agenda_disponibilidade_invalida:
     "não consigo ler a agenda desse atendente agora. Não ofereça horários e não diga que está sem vaga — avise que alguém da equipe confirma.",
+  agenda_autoridade_externa:
+    "esse compromisso é gerido em outro sistema da equipe e não se muda por aqui. Não tente de novo: avise que alguém da equipe confirma.",
+  agenda_tipo_de_sistema_externo:
+    "esse atendimento é marcado pela equipe em outro sistema. Não ofereça horários: avise que alguém da equipe confirma.",
   agenda_ja_cancelado:
     "esse compromisso já estava desmarcado. Não é erro: siga sem desmarcar de novo.",
   agenda_ainda_nao_aconteceu:
@@ -636,8 +657,19 @@ async function semDerrubarOTurno<T>(
     return {
       [chave]: false,
       motivo: e.code,
+      ...(e.code === "agenda_amigo_unconfirmed"
+        ? {
+            resultado_incerto: true,
+            ...(typeof e.details?.operation_id === "string" ? { operation_id: e.details.operation_id } : {}),
+            provider: "amigo",
+          }
+        : {}),
       mensagem:
-        ENSINO_POR_CODIGO[e.code] ??
+        (e.code === "agenda_amigo_context_required"
+          ? AMIGO_CONTEXT_REQUIRED
+          : e.code === "agenda_amigo_unconfirmed"
+            ? "A operação no Amigo precisa de conferência humana. Não confirme a marcação ao paciente nem repita: avise que a equipe confere."
+            : ENSINO_POR_CODIGO[e.code]) ??
         "não consegui completar agora. Avise que alguém da equipe confirma o horário.",
     };
   }
@@ -733,7 +765,7 @@ export const crmBookAppointment: McpToolDefinition<typeof marcarShape> = {
     "visita, reunião. Use quando o cliente ESCOLHEU um horário e vai comparecer: isto reserva o " +
     "tempo de uma pessoa da equipe, e o cliente conta com ele. No atendimento atual, marcar Google Meet também agenda a entrega do link nesta conversa quando ficar pronto. " +
     "NÃO use para 'voltar a falar com o cliente depois' — isso é retorno, e a ferramenta é " +
-    "`crm_schedule_followup`. A diferença: aqui as DUAS partes combinaram e alguém vai esperar; " +
+    "a de agendar retorno. A diferença: aqui as DUAS partes combinaram e alguém vai esperar; " +
     "lá é decisão interna nossa e o cliente não sabe de nada. " +
     "⚠️ NÃO é para REMARCAR: se a cliente JÁ tem um compromisso marcado e pede outro dia ou " +
     "hora, isso é `crm_reschedule_appointment` — aqui nasce um SEGUNDO compromisso e o antigo " +
@@ -773,6 +805,11 @@ export const crmBookAppointment: McpToolDefinition<typeof marcarShape> = {
         {
           organization_id: ctx.organizationId,
           actor: ctx.actor,
+          // O domínio do Amigo lê o papel; ele vem do contexto autenticado do MCP,
+          // nunca dos argumentos.
+          amigoRole: ctx.role,
+          amigoAgentExecution: Boolean(ctx.contatoDoTurno),
+          amigoAgentToolIds: ctx.amigoAgentToolIds,
           requestId: ctx.requestId,
           meetingBooking: ctx.meetingBooking,
           ...(ctx.idempotencyKey !== undefined ? { idempotencyKey: ctx.idempotencyKey } : {}),
@@ -942,7 +979,7 @@ export const crmFindAndBookAppointment: McpToolDefinition<typeof consultarEMarca
     "fica no lugar, com dois avisos contraditórios. Localize o id do compromisso com " +
     "`crm_list_appointments` (sem `dia`) antes de mover. " +
     "Não use quando o cliente ainda não escolheu hora (aí é `crm_find_free_slots`) nem para " +
-    "voltar a falar com ele depois (é `crm_schedule_followup`). " +
+    "voltar a falar com ele depois (é retorno, outra ferramenta). " +
     "Se o horário NÃO estiver livre, NADA é marcado: a resposta traz `marcado: false` e a lista " +
     "`horarios` daquele dia — ofereça uma dessas opções ao cliente, não peça outro dia sem " +
     "mostrar o que existe. " +
@@ -975,6 +1012,7 @@ export const crmFindAndBookAppointment: McpToolDefinition<typeof consultarEMarca
         marcado: false,
         horarios: [],
         motivo: consulta.codigo,
+        ...(consulta.provider ? { provider: consulta.provider, provider_context: consulta.provider_context } : {}),
         // A face do CLIENTE, nunca a do operador (DECISÃO 20).
         mensagem: consulta.motivoParaCliente,
       };
@@ -1121,7 +1159,7 @@ export const crmRescheduleAppointment: McpToolDefinition<typeof remarcarShape> =
     semDerrubarOTurno("remarcado", async () => {
       const r = await alterarAgendamentoHandler(
         ctx.supabase,
-        { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId },
+        { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId, amigoAgentExecution: Boolean(ctx.contatoDoTurno), amigoAgentToolIds: ctx.amigoAgentToolIds },
         {
           id: input.appointment_id,
           starts_at: input.new_starts_at,
@@ -1160,7 +1198,7 @@ export const crmCancelAppointment: McpToolDefinition<typeof cancelarShape> = {
     semDerrubarOTurno("cancelado", async () => {
       const r = await cancelarAgendamentoHandler(
         ctx.supabase,
-        { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId },
+        { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId, amigoAgentExecution: Boolean(ctx.contatoDoTurno), amigoAgentToolIds: ctx.amigoAgentToolIds },
         { id: input.appointment_id, reason: input.reason },
       );
       return { cancelado: true, compromisso: compromissoComHorarioLocal(r) };
@@ -1191,7 +1229,7 @@ export const crmConfirmAppointment: McpToolDefinition<typeof confirmarShape> = {
     semDerrubarOTurno("confirmado", async () => {
       const r = await alterarAgendamentoHandler(
         ctx.supabase,
-        { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId },
+        { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId, amigoAgentExecution: Boolean(ctx.contatoDoTurno), amigoAgentToolIds: ctx.amigoAgentToolIds },
         {
           id: input.appointment_id,
           status: "confirmed",
@@ -1227,7 +1265,7 @@ export const crmSetAppointmentOutcome: McpToolDefinition<typeof desfechoShape> =
         href: `/app/agenda?compromisso=${input.appointment_id}` };
       const r = await alterarAgendamentoHandler(
         ctx.supabase,
-        { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId },
+        { organization_id: ctx.organizationId, actor: ctx.actor, requestId: ctx.requestId, amigoAgentExecution: Boolean(ctx.contatoDoTurno), amigoAgentToolIds: ctx.amigoAgentToolIds },
         {
           id: input.appointment_id,
           status: input.outcome,
