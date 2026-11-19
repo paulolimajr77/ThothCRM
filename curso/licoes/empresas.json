@@ -143,7 +143,7 @@
               "tipo": "numero"
             },
             {
-              "alvo": { "role": "heading", "nome": "Telefones", "exato": true },
+              "alvo": { "role": "heading", "nome": "Telefones e e-mails", "exato": true },
               "rotulo": "Os números da empresa",
               "tipo": "caixa"
             },
@@ -219,18 +219,28 @@
         {
           "id": "p3",
           "titulo": "A empresa entrou na lista",
-          "texto": "Depois de \"Criar\", a janela pergunta quem fala pela empresa: dá para cadastrar o contato ali mesmo ou clicar em \"Pular por agora\", como fizemos aqui. A farmácia aparece no alto da lista. Sem CNPJ, a situação fica \"pending\": não há o que consultar. Para completar, abra a ficha e use \"Editar empresa\".",
+          "texto": "Depois de \"Criar\", a janela pergunta quem fala pela empresa: dá para cadastrar o contato ali mesmo ou clicar em \"Pular por agora\", como fizemos aqui. Em seguida abre a ficha da farmácia. Sem CNPJ, o \"Enriquecimento\" fica \"pending\": não há o que consultar. Para completar, use \"Editar empresa\".",
           "antes": [
             { "acao": "click", "alvo": { "role": "button", "nome": "Criar", "exato": true, "dentro": { "role": "dialog" } } },
             { "acao": "aguardar", "alvo": { "role": "button", "nome": "Pular por agora", "exato": true } },
             { "acao": "click", "alvo": { "role": "button", "nome": "Pular por agora", "exato": true } },
-            { "acao": "aguardar", "alvo": { "role": "link", "nome": "Farmácia Vida Plena", "exato": true, "literal": true } }
+            { "acao": "aguardar", "alvo": { "role": "heading", "nome": "Farmácia Vida Plena", "exato": true, "literal": true } }
           ],
           "destaques": [
             {
-              "alvo": { "role": "link", "nome": "Farmácia Vida Plena", "exato": true, "literal": true },
+              "alvo": { "role": "heading", "nome": "Farmácia Vida Plena", "exato": true, "literal": true },
               "rotulo": "Empresa nova",
               "tipo": "caixa"
+            },
+            {
+              "alvo": { "texto": "pending", "exato": true, "literal": true },
+              "rotulo": "Ainda sem consulta",
+              "tipo": "numero"
+            },
+            {
+              "alvo": { "role": "button", "nome": "Editar empresa", "exato": true },
+              "rotulo": "Completar",
+              "tipo": "seta"
             }
           ]
         },

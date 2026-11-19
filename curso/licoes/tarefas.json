@@ -248,16 +248,10 @@
             },
             {
               "alvo": {
-                "rotulo": "Situação",
-                "dentro": {
-                  "role": "dialog"
-                }
+                "css": "#tarefa-situacao"
               },
               "rotulo": "Situação",
-              "tipo": "caixa",
-              "dentro": {
-                "role": "dialog"
-              }
+              "tipo": "caixa"
             }
           ]
         },

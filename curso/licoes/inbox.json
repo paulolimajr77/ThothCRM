@@ -1811,9 +1811,7 @@
             },
             {
               "alvo": {
-                "role": "button",
-                "nome": "Liberar",
-                "exato": true
+                "css": "button:text-is('Liberar')"
               },
               "rotulo": "Soltar a conversa (é outra coisa)",
               "tipo": "caixa"
@@ -1964,7 +1962,14 @@
               }
             },
             {
-              "acao": "click",
+              "acao": "hover",
+              "alvo": {
+                "testid": "acao-lembrar"
+              }
+            },
+            {
+              "acao": "press",
+              "tecla": "ArrowRight",
               "alvo": {
                 "testid": "acao-lembrar"
               }

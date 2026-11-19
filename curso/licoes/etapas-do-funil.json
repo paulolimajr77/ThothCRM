@@ -486,16 +486,20 @@
             {
               "acao": "esperar",
               "ms": 2000
+            },
+            {
+              "acao": "rolar",
+              "alvo": {
+                "role": "textbox",
+                "nome": "Aguardando pagamento",
+                "regex": true,
+                "dentro": {
+                  "testid": "etapas-d1110000-0000-4000-8000-000000000001"
+                }
+              }
             }
           ],
           "destaques": [
-            {
-              "alvo": {
-                "testid": "nome-d1110100-0000-4000-8000-000000000004"
-              },
-              "rotulo": "Antes",
-              "tipo": "numero"
-            },
             {
               "alvo": {
                 "role": "textbox",

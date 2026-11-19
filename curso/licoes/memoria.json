@@ -472,12 +472,10 @@
         {
           "id": "p6",
           "titulo": "Reativar um aprendizado",
-          "texto": "Agora a lista mostra só os arquivados. Clique num deles para abrir e ver o botão \"Reativar\". Reativar devolve o aprendizado à lista dos ativos, e os agentes voltam a levá-lo em conta. Para voltar à lista dos ativos, clique em \"Ver aprendizados ativos\".",
+          "texto": "Agora a lista mostra só os arquivados. Aberto, cada um tem o botão \"Reativar\". Reativar devolve o aprendizado à lista dos ativos, e os agentes voltam a levá-lo em conta. Para voltar à lista dos ativos, clique em \"Ver aprendizados ativos\".",
           "antes": [
             { "acao": "click", "alvo": { "role": "button", "nome": "Ver aprendizados arquivados", "exato": true } },
-            { "acao": "aguardar", "alvo": { "role": "button", "nome": "Ver aprendizados ativos", "exato": true } },
-            { "acao": "click", "alvo": { "role": "button", "nome": "^Pacientes do pilates preferem o fim da tarde", "regex": true } },
-            { "acao": "esperar", "ms": 600 }
+            { "acao": "aguardar", "alvo": { "role": "button", "nome": "Ver aprendizados ativos", "exato": true } }
           ],
           "destaques": [
             {

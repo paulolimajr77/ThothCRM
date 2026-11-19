@@ -221,8 +221,13 @@
             },
             {
               "alvo": {
-                "texto": "3h em Primeiro contato",
-                "exato": true
+                "texto": "3h",
+                "exato": true,
+                "dentro": {
+                  "role": "group",
+                  "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
+                  "exato": true
+                }
               },
               "rotulo": "Tempo nesta etapa",
               "tipo": "seta"
@@ -291,19 +296,6 @@
               },
               "rotulo": "O aviso",
               "tipo": "caixa"
-            },
-            {
-              "alvo": {
-                "texto": "em Consulta agendada",
-                "exato": true,
-                "dentro": {
-                  "role": "group",
-                  "nome": "Negócio: Avaliação odontológica — Sérgio Tavares",
-                  "exato": true
-                }
-              },
-              "rotulo": "Sem o tempo na etapa",
-              "tipo": "seta"
             }
           ]
         },

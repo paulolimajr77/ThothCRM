@@ -165,7 +165,7 @@
           "id": "p5",
           "titulo": "Pessoa sem empresa e sem telefone",
           "rota": "/app/people/f1a02008-0000-4000-8000-000000000008",
-          "texto": "A Beatriz foi cadastrada à mão, com nome e e-mail. Por isso a ficha avisa \"Sem vínculo empresarial.\" e \"Nenhum contato vinculado.\". Quem liga uma pessoa a uma empresa e a um telefone é a importação de planilha, em Importações.",
+          "texto": "A Beatriz foi cadastrada à mão, com nome e e-mail. Por isso a ficha avisa \"Sem vínculo empresarial.\", e em \"Telefones e e-mails\" aparece só o e-mail da ficha dela, com o botão \"Criar contato\" para transformá-lo num contato do CRM. Quem liga uma pessoa a uma empresa e a um telefone é a importação de planilha, em Importações.",
           "destaques": [
             {
               "alvo": {
@@ -177,11 +177,12 @@
             },
             {
               "alvo": {
-                "texto": "Nenhum contato vinculado.",
+                "role": "button",
+                "nome": "Criar contato",
                 "exato": true
               },
-              "rotulo": "Sem telefone",
-              "tipo": "caixa"
+              "rotulo": "Vira contato do CRM",
+              "tipo": "seta"
             }
           ]
         }
