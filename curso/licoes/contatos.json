@@ -649,17 +649,13 @@
      "destaques": [
       {
        "alvo": {
-        "role": "dialog"
+        "texto": "Tags",
+        "exato": true,
+        "dentro": {
+         "role": "dialog"
+        }
        },
-       "rotulo": "Novo contato",
-       "tipo": "caixa"
-      },
-      {
-       "alvo": {
-        "texto": "Preencha pelo menos um identificador (email ou telefone).",
-        "exato": true
-       },
-       "rotulo": "E-mail ou telefone é obrigatório",
+       "rotulo": "Etiquetas do contato",
        "tipo": "seta"
       },
       {
@@ -669,6 +665,15 @@
         "exato": true
        },
        "rotulo": "Salvar e já abrir a conversa",
+       "tipo": "caixa"
+      },
+      {
+       "alvo": {
+        "role": "button",
+        "nome": "Criar contato",
+        "exato": true
+       },
+       "rotulo": "Só salvar",
        "tipo": "caixa"
       }
      ],
@@ -1031,7 +1036,8 @@
        "alvo": {
         "role": "button",
         "nome": "Editar",
-        "exato": true
+        "exato": true,
+        "n": 0
        },
        "rotulo": "Editar o cadastro",
        "tipo": "seta"
@@ -1102,13 +1108,13 @@
     {
      "id": "p5",
      "titulo": "O histórico do cliente",
-     "texto": "A aba \"Timeline\" conta o que aconteceu com este cliente, do mais novo para o mais antigo, separado por dia. Entram aqui os movimentos dos negócios dele, como a entrada no funil (\"Entrou no funil\") e a troca de etapa (\"Mudou de estágio\"), e as anotações da equipe. Ao lado de cada linha aparece quem fez.",
+     "texto": "A aba \"Linha do tempo\" conta o que aconteceu com este cliente, do mais novo para o mais antigo, separado por dia. Entram aqui os movimentos dos negócios dele, como a entrada no funil (\"Entrou no funil\") e a troca de etapa (\"Mudou de estágio\"), e as anotações da equipe. Ao lado de cada linha aparece quem fez.",
      "antes": [
       {
        "acao": "click",
        "alvo": {
         "role": "tab",
-        "nome": "Timeline",
+        "nome": "Linha do tempo",
         "exato": true
        }
       },
@@ -1122,7 +1128,7 @@
        "alvo": {
         "role": "tablist"
        },
-       "rotulo": "Aba \"Timeline\" aberta",
+       "rotulo": "Aba \"Linha do tempo\" aberta",
        "tipo": "caixa"
       },
       {

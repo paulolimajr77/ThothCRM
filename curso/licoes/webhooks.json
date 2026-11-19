@@ -421,7 +421,8 @@
           "destaques": [
             {
               "alvo": {
-                "css": "code.truncate"
+                "css": "code.truncate",
+                "n": 0
               },
               "rotulo": "Endereço da fonte",
               "tipo": "caixa"

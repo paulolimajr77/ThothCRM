@@ -865,6 +865,14 @@
               }
             },
             {
+              "acao": "esperar",
+              "ms": 10000
+            },
+            {
+              "acao": "esperar",
+              "ms": 10000
+            },
+            {
               "acao": "aguardar",
               "alvo": {
                 "texto": "Não foi possível ler o catálogo do banco agora. Confira a conexão e tente de novo."

@@ -54,15 +54,6 @@
             {
               "alvo": {
                 "role": "heading",
-                "nome": "Prospecção",
-                "exato": true
-              },
-              "rotulo": "Prospecção",
-              "tipo": "caixa"
-            },
-            {
-              "alvo": {
-                "role": "heading",
                 "nome": "1. Encontrar empresas",
                 "exato": true
               },
@@ -1062,15 +1053,6 @@
             }
           ],
           "destaques": [
-            {
-              "alvo": {
-                "role": "group",
-                "nome": "Quando oferecer a opção de parar de receber",
-                "exato": true
-              },
-              "rotulo": "Quando oferecer a saída",
-              "tipo": "caixa"
-            },
             {
               "alvo": {
                 "rotulo": "Referência da avaliação de legítimo interesse",

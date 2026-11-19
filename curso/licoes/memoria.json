@@ -196,7 +196,7 @@
               "tipo": "caixa"
             },
             {
-              "alvo": { "texto": "^\\d+ caracteres$", "regex": true },
+              "alvo": { "texto": "^\\d+ caracteres", "regex": true },
               "rotulo": "Tamanho do texto",
               "tipo": "numero"
             },
@@ -414,8 +414,12 @@
         {
           "id": "p4",
           "titulo": "Arquivar o que não vale mais",
-          "texto": "Quando um aprendizado deixa de valer, ou quando você não concorda com algo que um agente anotou, clique em \"Arquivar\", no pé do item. Aqui, vamos arquivar a anotação do agente sobre o pilates.",
+          "texto": "Quando um aprendizado deixa de valer, ou quando você não concorda com algo que um agente anotou, clique no item para abrir e depois em \"Arquivar\", no pé dele. Aqui, vamos arquivar a anotação do agente sobre o pilates.",
           "dica": "Não existe botão de apagar. Arquivar tira o aprendizado de uso sem perder o texto.",
+          "antes": [
+            { "acao": "click", "alvo": { "role": "button", "nome": "^Pacientes do pilates preferem o fim da tarde", "regex": true } },
+            { "acao": "esperar", "ms": 600 }
+          ],
           "destaques": [
             {
               "alvo": { "css": "li:has-text('Pacientes do pilates preferem o fim da tarde')" },
@@ -468,10 +472,12 @@
         {
           "id": "p6",
           "titulo": "Reativar um aprendizado",
-          "texto": "Agora a lista mostra só os arquivados, cada um com o botão \"Reativar\". Reativar devolve o aprendizado à lista dos ativos, e os agentes voltam a levá-lo em conta. Para voltar à lista dos ativos, clique em \"Ver aprendizados ativos\".",
+          "texto": "Agora a lista mostra só os arquivados. Clique num deles para abrir e ver o botão \"Reativar\". Reativar devolve o aprendizado à lista dos ativos, e os agentes voltam a levá-lo em conta. Para voltar à lista dos ativos, clique em \"Ver aprendizados ativos\".",
           "antes": [
             { "acao": "click", "alvo": { "role": "button", "nome": "Ver aprendizados arquivados", "exato": true } },
-            { "acao": "aguardar", "alvo": { "role": "button", "nome": "Ver aprendizados ativos", "exato": true } }
+            { "acao": "aguardar", "alvo": { "role": "button", "nome": "Ver aprendizados ativos", "exato": true } },
+            { "acao": "click", "alvo": { "role": "button", "nome": "^Pacientes do pilates preferem o fim da tarde", "regex": true } },
+            { "acao": "esperar", "ms": 600 }
           ],
           "destaques": [
             {

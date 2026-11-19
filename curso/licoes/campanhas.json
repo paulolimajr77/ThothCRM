@@ -518,7 +518,7 @@
         {
           "id": "p5",
           "titulo": "A mensagem",
-          "texto": "Em \"Mensagem\", escreva como se falasse com uma pessoa só. Os botões logo abaixo põem, no fim do texto, um campo que muda para cada contato: {{nome}} é o nome do cadastro, {{primeiro_nome}} é só o primeiro nome e {{saudacao}} vira \"Bom dia\", \"Boa tarde\" ou \"Boa noite\", conforme a hora do envio. Quem não tiver o dado que a mensagem usa fica de fora da lista, com o motivo anotado. Para não perder ninguém por falta de dado, ponha um texto de reserva entre aspas: {{primeiro_nome|\"paciente\"}} usa \"paciente\" quando o cadastro não tem o nome.",
+          "texto": "Em \"Mensagem\", escreva como se falasse com uma pessoa só. O botão \"Inserir variável\", logo abaixo, abre a lista dos campos que mudam para cada contato e põe o escolhido no fim do texto: {{nome}} é o nome do cadastro, {{primeiro_nome}} é só o primeiro nome e {{saudacao}} vira \"Bom dia\", \"Boa tarde\" ou \"Boa noite\", conforme a hora do envio. Quem não tiver o dado que a mensagem usa fica de fora da lista, com o motivo anotado. Para não perder ninguém por falta de dado, ponha um texto de reserva entre aspas: {{primeiro_nome|\"paciente\"}} usa \"paciente\" quando o cadastro não tem o nome.",
           "antes": [
             {
               "acao": "fill",
@@ -541,20 +541,11 @@
             {
               "alvo": {
                 "role": "button",
-                "nome": "{{primeiro_nome}}",
+                "nome": "Inserir variável",
                 "exato": true
               },
-              "rotulo": "Muda para cada contato",
+              "rotulo": "Campos que mudam para cada contato",
               "tipo": "caixa"
-            },
-            {
-              "alvo": {
-                "role": "button",
-                "nome": "{{saudacao}}",
-                "exato": true
-              },
-              "rotulo": "Bom dia, boa tarde ou boa noite",
-              "tipo": "numero"
             }
           ]
         },

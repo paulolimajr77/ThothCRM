@@ -248,10 +248,16 @@
             },
             {
               "alvo": {
-                "rotulo": "Situação"
+                "rotulo": "Situação",
+                "dentro": {
+                  "role": "dialog"
+                }
               },
               "rotulo": "Situação",
-              "tipo": "caixa"
+              "tipo": "caixa",
+              "dentro": {
+                "role": "dialog"
+              }
             }
           ]
         },

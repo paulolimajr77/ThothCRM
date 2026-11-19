@@ -995,9 +995,8 @@
             {
               "acao": "rolar",
               "alvo": {
-                "role": "switch",
-                "nome": "Habilitar gatilhos automáticos de follow-up",
-                "exato": true
+                "role": "group",
+                "nome": "Fluxos publicados"
               }
             },
             {
@@ -1006,15 +1005,6 @@
             }
           ],
           "destaques": [
-            {
-              "alvo": {
-                "role": "switch",
-                "nome": "Habilitar gatilhos automáticos de follow-up",
-                "exato": true
-              },
-              "rotulo": "Ligar os gatilhos",
-              "tipo": "caixa"
-            },
             {
               "alvo": {
                 "role": "group",

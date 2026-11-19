@@ -170,7 +170,7 @@
               "acao": "aguardar",
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Avaliação de fisioterapia — Roberto Almeida",
+                "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
                 "exato": true
               }
             }
@@ -212,7 +212,7 @@
                 "css": "a[href^='/app/inbox?id=']",
                 "dentro": {
                   "role": "group",
-                  "nome": "Lead: Avaliação de fisioterapia — Roberto Almeida",
+                  "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
                   "exato": true
                 }
               },
@@ -241,7 +241,7 @@
                 "literal": true,
                 "dentro": {
                   "role": "group",
-                  "nome": "Lead: Avaliação de fisioterapia — Roberto Almeida",
+                  "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
                   "exato": true
                 }
               },
@@ -254,7 +254,7 @@
                 "literal": true,
                 "dentro": {
                   "role": "group",
-                  "nome": "Lead: Pacote de pilates — Camila Rocha",
+                  "nome": "Negócio: Pacote de pilates — Camila Rocha",
                   "exato": true
                 }
               },
@@ -285,7 +285,7 @@
                 "exato": true,
                 "dentro": {
                   "role": "group",
-                  "nome": "Lead: Avaliação odontológica — Sérgio Tavares",
+                  "nome": "Negócio: Avaliação odontológica — Sérgio Tavares",
                   "exato": true
                 }
               },
@@ -298,7 +298,7 @@
                 "exato": true,
                 "dentro": {
                   "role": "group",
-                  "nome": "Lead: Avaliação odontológica — Sérgio Tavares",
+                  "nome": "Negócio: Avaliação odontológica — Sérgio Tavares",
                   "exato": true
                 }
               },
@@ -323,7 +323,7 @@
             {
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Implante dentário — Ricardo Nunes",
+                "nome": "Negócio: Implante dentário — Ricardo Nunes",
                 "exato": true
               },
               "rotulo": "Negócio perdido",
@@ -467,7 +467,7 @@
             {
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Pacote de pilates — Camila Rocha",
+                "nome": "Negócio: Pacote de pilates — Camila Rocha",
                 "exato": true
               },
               "rotulo": "O que combina",
@@ -564,7 +564,7 @@
             {
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Avaliação de fisioterapia — Roberto Almeida",
+                "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
                 "exato": true
               },
               "rotulo": "Negócio da Ana",
@@ -620,7 +620,7 @@
             {
               "acao": "rolar",
               "alvo": {
-                "css": "[role=group][aria-label='Lead: Implante dentário — Ricardo Nunes']"
+                "css": "[role=group][aria-label='Negócio: Implante dentário — Ricardo Nunes']"
               }
             },
             {
@@ -655,7 +655,7 @@
             },
             {
               "alvo": {
-                "css": "[role=group][aria-label='Lead: Implante dentário — Ricardo Nunes']"
+                "css": "[role=group][aria-label='Negócio: Implante dentário — Ricardo Nunes']"
               },
               "rotulo": "Negócio perdido",
               "tipo": "caixa"
@@ -699,7 +699,7 @@
               "acao": "rolar",
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Avaliação odontológica — Sérgio Tavares",
+                "nome": "Negócio: Avaliação odontológica — Sérgio Tavares",
                 "exato": true
               }
             }
@@ -715,7 +715,7 @@
             {
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Avaliação odontológica — Sérgio Tavares",
+                "nome": "Negócio: Avaliação odontológica — Sérgio Tavares",
                 "exato": true
               },
               "rotulo": "Negócio atrasado",
@@ -740,8 +740,8 @@
       "passos": [
         {
           "id": "p1",
-          "titulo": "O botão \"Novo Lead\"",
-          "texto": "Quando um cliente chega por telefone ou no balcão, você mesmo cria o cartão dele. Clique em \"Novo Lead\", no alto do quadro. O sistema chama cada negócio de \"lead\".",
+          "titulo": "O botão \"Novo negócio\"",
+          "texto": "Quando um cliente chega por telefone ou no balcão, você mesmo cria o cartão dele. Clique em \"Novo negócio\", no alto do quadro. O sistema chama cada negócio de \"lead\".",
           "rota": "/app/kanban",
           "antes": [
             {
@@ -754,7 +754,7 @@
               "acao": "aguardar",
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Avaliação de fisioterapia — Roberto Almeida",
+                "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
                 "exato": true
               }
             }
@@ -763,7 +763,7 @@
             {
               "alvo": {
                 "role": "button",
-                "nome": "Novo Lead",
+                "nome": "Novo negócio",
                 "exato": true
               },
               "rotulo": "Criar um negócio",
@@ -772,7 +772,7 @@
           ],
           "clicar": {
             "role": "button",
-            "nome": "Novo Lead",
+            "nome": "Novo negócio",
             "exato": true
           }
         },
@@ -785,7 +785,7 @@
               "acao": "click",
               "alvo": {
                 "role": "button",
-                "nome": "Novo Lead",
+                "nome": "Novo negócio",
                 "exato": true
               }
             },
@@ -919,21 +919,21 @@
           ],
           "clicar": {
             "role": "button",
-            "nome": "Criar lead",
+            "nome": "Criar negócio",
             "exato": true
           }
         },
         {
           "id": "p4",
           "titulo": "O cartão novo no quadro",
-          "texto": "Clique em \"Criar lead\". O cartão aparece na etapa escolhida, com o valor, o telefone e a última conversa do contato. O quadro desce sozinho até o cartão novo; os outros continuam lá em cima. Como a Beatriz ainda não tem ninguém fixo cuidando dela, ele nasce \"Sem responsável\". Para escolher quem cuida, use o menu do cartão, que você conhece na próxima lição.",
-          "dica": "Se o contato já tem um negócio aberto neste funil, ao clicar em \"Criar lead\" a janela avisa e mostra o link para o que já existe. Aí você escolhe entre \"Não criar\" e \"Criar mesmo assim\".",
+          "texto": "Clique em \"Criar negócio\". O cartão aparece na etapa escolhida, com o valor, o telefone e a última conversa do contato. O quadro desce sozinho até o cartão novo; os outros continuam lá em cima. Como a Beatriz ainda não tem ninguém fixo cuidando dela, ele nasce \"Sem responsável\". Para escolher quem cuida, use o menu do cartão, que você conhece na próxima lição.",
+          "dica": "Se o contato já tem um negócio aberto neste funil, ao clicar em \"Criar negócio\" a janela avisa e mostra o link para o que já existe. Aí você escolhe entre \"Não criar\" e \"Criar mesmo assim\".",
           "antes": [
             {
               "acao": "click",
               "alvo": {
                 "role": "button",
-                "nome": "Criar lead",
+                "nome": "Criar negócio",
                 "exato": true
               }
             },
@@ -941,7 +941,7 @@
               "acao": "aguardar",
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Limpeza e avaliação odontológica — Beatriz Nogueira",
+                "nome": "Negócio: Limpeza e avaliação odontológica — Beatriz Nogueira",
                 "exato": true
               }
             },
@@ -954,7 +954,7 @@
             {
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Limpeza e avaliação odontológica — Beatriz Nogueira",
+                "nome": "Negócio: Limpeza e avaliação odontológica — Beatriz Nogueira",
                 "exato": true
               },
               "rotulo": "Negócio criado",
@@ -995,7 +995,7 @@
               "acao": "aguardar",
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Avaliação de fisioterapia — Roberto Almeida",
+                "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
                 "exato": true
               }
             },
@@ -1003,7 +1003,7 @@
               "acao": "hover",
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Avaliação de fisioterapia — Roberto Almeida",
+                "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
                 "exato": true
               }
             }
@@ -1012,10 +1012,10 @@
             {
               "alvo": {
                 "role": "button",
-                "nome": "Ações do lead",
+                "nome": "Ações do negócio",
                 "dentro": {
                   "role": "group",
-                  "nome": "Lead: Avaliação de fisioterapia — Roberto Almeida",
+                  "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
                   "exato": true
                 }
               },
@@ -1025,10 +1025,10 @@
           ],
           "clicar": {
             "role": "button",
-            "nome": "Ações do lead",
+            "nome": "Ações do negócio",
             "dentro": {
               "role": "group",
-              "nome": "Lead: Avaliação de fisioterapia — Roberto Almeida",
+              "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
               "exato": true
             }
           }
@@ -1042,10 +1042,10 @@
               "acao": "click",
               "alvo": {
                 "role": "button",
-                "nome": "Ações do lead",
+                "nome": "Ações do negócio",
                 "dentro": {
                   "role": "group",
-                  "nome": "Lead: Avaliação de fisioterapia — Roberto Almeida",
+                  "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
                   "exato": true
                 }
               }
@@ -1148,7 +1148,7 @@
               "acao": "hover",
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Clareamento dental — Juliana Castro",
+                "nome": "Negócio: Clareamento dental — Juliana Castro",
                 "exato": true
               }
             },
@@ -1156,10 +1156,10 @@
               "acao": "click",
               "alvo": {
                 "role": "button",
-                "nome": "Ações do lead",
+                "nome": "Ações do negócio",
                 "dentro": {
                   "role": "group",
-                  "nome": "Lead: Clareamento dental — Juliana Castro",
+                  "nome": "Negócio: Clareamento dental — Juliana Castro",
                   "exato": true
                 }
               }
@@ -1183,7 +1183,7 @@
             },
             {
               "alvo": {
-                "css": "[role=group][aria-label='Lead: Clareamento dental — Juliana Castro']"
+                "css": "[role=group][aria-label='Negócio: Clareamento dental — Juliana Castro']"
               },
               "rotulo": "Cartão da Juliana",
               "tipo": "caixa"
@@ -1217,7 +1217,7 @@
             {
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Clareamento dental — Juliana Castro",
+                "nome": "Negócio: Clareamento dental — Juliana Castro",
                 "exato": true
               },
               "rotulo": "Negócio ganho",
@@ -1320,7 +1320,7 @@
               "acao": "aguardar",
               "alvo": {
                 "role": "group",
-                "nome": "Lead: Avaliação de fisioterapia — Roberto Almeida",
+                "nome": "Negócio: Avaliação de fisioterapia — Roberto Almeida",
                 "exato": true
               }
             }

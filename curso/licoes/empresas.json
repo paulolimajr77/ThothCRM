@@ -133,7 +133,7 @@
           "dica": "Um telefone só aparece aqui se estiver ligado a uma pessoa da empresa. Quem liga telefone a pessoa é a importação de planilha, em Importações.",
           "destaques": [
             {
-              "alvo": { "role": "link", "nome": "Marcos Teixeira", "exato": true, "literal": true },
+              "alvo": { "role": "link", "nome": "Marcos Teixeira", "exato": true, "literal": true, "n": 0 },
               "rotulo": "Quem decide",
               "tipo": "caixa"
             },
@@ -219,9 +219,11 @@
         {
           "id": "p3",
           "titulo": "A empresa entrou na lista",
-          "texto": "Depois de \"Criar\", a farmácia aparece no alto da lista. Sem CNPJ, a situação fica \"pending\": não há o que consultar. Para completar, abra a ficha e use \"Editar empresa\".",
+          "texto": "Depois de \"Criar\", a janela pergunta quem fala pela empresa: dá para cadastrar o contato ali mesmo ou clicar em \"Pular por agora\", como fizemos aqui. A farmácia aparece no alto da lista. Sem CNPJ, a situação fica \"pending\": não há o que consultar. Para completar, abra a ficha e use \"Editar empresa\".",
           "antes": [
             { "acao": "click", "alvo": { "role": "button", "nome": "Criar", "exato": true, "dentro": { "role": "dialog" } } },
+            { "acao": "aguardar", "alvo": { "role": "button", "nome": "Pular por agora", "exato": true } },
+            { "acao": "click", "alvo": { "role": "button", "nome": "Pular por agora", "exato": true } },
             { "acao": "aguardar", "alvo": { "role": "link", "nome": "Farmácia Vida Plena", "exato": true, "literal": true } }
           ],
           "destaques": [
@@ -262,7 +264,7 @@
           "texto": "\"Excluir empresa\" apaga o cadastro. Se ainda há pessoas ligadas à empresa, como o Paulo aqui na Rota Sul, a exclusão é recusada, a tela mostra o motivo e nada é apagado.",
           "destaques": [
             {
-              "alvo": { "role": "link", "nome": "Paulo Henrique Sales", "exato": true, "literal": true },
+              "alvo": { "role": "link", "nome": "Paulo Henrique Sales", "exato": true, "literal": true, "n": 0 },
               "rotulo": "Pessoa ligada",
               "tipo": "numero"
             },

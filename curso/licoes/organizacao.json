@@ -78,12 +78,12 @@
         {
           "id": "p3",
           "titulo": "Os outros quadros",
-          "texto": "Rolando a tela aparecem mais três quadros. \"Menu lateral\" escolhe quais áreas a empresa mostra no menu. \"Inbox\" guarda uma regra de atendimento que vale para todos. \"Zona de perigo\" apaga os dados de teste. O cadastro, o menu e a regra da Inbox têm cada um o seu botão de gravar: salvar um não salva os outros.",
+          "texto": "Rolando a tela aparecem mais quadros. \"Menu lateral\" escolhe quais áreas a empresa mostra no menu. \"Inbox\" guarda uma regra de atendimento que vale para todos.",
           "antes": [
             {
               "acao": "rolar",
               "alvo": {
-                "testid": "zona-de-perigo"
+                "css": "div.shadow-xs:has(> h2:text-is('Inbox'))"
               }
             }
           ],
@@ -100,6 +100,35 @@
                 "css": "div.shadow-xs:has(> h2:text-is('Inbox'))"
               },
               "rotulo": "Regra de atendimento",
+              "tipo": "caixa"
+            }
+          ]
+        },
+        {
+          "id": "p4",
+          "titulo": "O fim da tela",
+          "texto": "No fim da tela ficam mais três quadros. \"Permissões\" escolhe quais perfis podem ver o texto de uma mensagem que o contato apagou. \"Catálogo\" liga recursos dos produtos usados pelo atendente de IA. \"Zona de perigo\" apaga os dados de teste. Cada quadro tem o seu botão de gravar: salvar um não salva os outros.",
+          "antes": [
+            {
+              "acao": "rolar",
+              "alvo": {
+                "testid": "zona-de-perigo"
+              }
+            }
+          ],
+          "destaques": [
+            {
+              "alvo": {
+                "css": "div.shadow-xs:has(> h2:text-is('Permissões'))"
+              },
+              "rotulo": "Quem vê mensagem apagada",
+              "tipo": "caixa"
+            },
+            {
+              "alvo": {
+                "css": "div.shadow-xs:has(> h2:text-is('Catálogo'))"
+              },
+              "rotulo": "Recursos dos produtos",
               "tipo": "caixa"
             },
             {

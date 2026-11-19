@@ -270,14 +270,14 @@
         {
           "id": "p2",
           "titulo": "Preencher o convite",
-          "texto": "No campo \"Emails\", escreva um e-mail por linha. Escolha em \"Papel\" o acesso que as pessoas vão ter nesta empresa. Depois clique em \"Enviar convites\"; o resultado aparece logo abaixo do botão, com a situação de cada convite. Nesta foto os e-mails estão preenchidos, sem enviar.",
+          "texto": "No campo \"E-mails\", escreva um e-mail por linha. Escolha em \"Papel\" o acesso que as pessoas vão ter nesta empresa. Depois clique em \"Enviar convites\"; o resultado aparece logo abaixo do botão, com a situação de cada convite. Nesta foto os e-mails estão preenchidos, sem enviar.",
           "dica": "Se o sistema não tiver um serviço de e-mail configurado, o convite é criado mesmo assim. Embaixo do e-mail aparece um aviso técnico (\"Resend não configurado\") e o link do convite: copie esse link e mande para a pessoa, por exemplo pelo WhatsApp.",
           "rota": "/app/team/invite",
           "antes": [
             {
               "acao": "fill",
               "alvo": {
-                "rotulo": "Emails"
+                "rotulo": "E-mails"
               },
               "valor": "bruno.lima@clinicabemviver.com.br\nclara.souza@clinicabemviver.com.br"
             }
@@ -285,7 +285,7 @@
           "destaques": [
             {
               "alvo": {
-                "rotulo": "Emails"
+                "rotulo": "E-mails"
               },
               "rotulo": "Um e-mail por linha",
               "tipo": "caixa"

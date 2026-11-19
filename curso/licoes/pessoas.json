@@ -119,7 +119,7 @@
           "id": "p4",
           "titulo": "A ficha da pessoa",
           "rota": "/app/people/f1a02003-0000-4000-8000-000000000003",
-          "texto": "\"Empresas\" mostra onde a pessoa trabalha e o cargo dela. \"Telefones (contacts)\" lista os números ligados a ela: o Marcos tem o celular e o fixo do RH. Clique na empresa para abrir a ficha dela, ou num número para abrir aquele contato.",
+          "texto": "\"Empresas\" mostra onde a pessoa trabalha e o cargo dela. \"Telefones e e-mails\" lista os números e e-mails ligados a ela: o Marcos tem o celular e o fixo do RH. Clique na empresa para abrir a ficha dela, ou num número para abrir aquele contato.",
           "destaques": [
             {
               "alvo": {
@@ -133,8 +133,8 @@
             },
             {
               "alvo": {
-                "texto": "Gerente de RH",
-                "exato": true
+                "texto": "^Gerente de RH",
+                "regex": true
               },
               "rotulo": "Cargo",
               "tipo": "numero"
@@ -165,7 +165,7 @@
           "id": "p5",
           "titulo": "Pessoa sem empresa e sem telefone",
           "rota": "/app/people/f1a02008-0000-4000-8000-000000000008",
-          "texto": "A Beatriz foi cadastrada à mão, com nome e e-mail. Por isso a ficha avisa \"Sem vínculo empresarial.\" e \"Nenhum telefone vinculado.\". Quem liga uma pessoa a uma empresa e a um telefone é a importação de planilha, em Importações.",
+          "texto": "A Beatriz foi cadastrada à mão, com nome e e-mail. Por isso a ficha avisa \"Sem vínculo empresarial.\" e \"Nenhum contato vinculado.\". Quem liga uma pessoa a uma empresa e a um telefone é a importação de planilha, em Importações.",
           "destaques": [
             {
               "alvo": {
@@ -177,7 +177,7 @@
             },
             {
               "alvo": {
-                "texto": "Nenhum telefone vinculado.",
+                "texto": "Nenhum contato vinculado.",
                 "exato": true
               },
               "rotulo": "Sem telefone",

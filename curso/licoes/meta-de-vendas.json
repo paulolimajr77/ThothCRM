@@ -55,7 +55,7 @@
         {
           "id": "p2",
           "titulo": "As partes da tela",
-          "texto": "No alto, o título e a frase logo abaixo dele explicam para que serve a meta. No meio fica o quadro com os dois campos e o botão \"Salvar meta\". Embaixo, uma nota avisa o que entra na conta: a meta é da clínica inteira e conta a quantidade de vendas ganhas no mês, e não o valor delas.",
+          "texto": "No alto, o título e a frase logo abaixo dele explicam para que serve a meta. No meio fica o quadro com os campos e o botão \"Salvar meta\". Embaixo, uma nota avisa o que entra na conta: a meta da empresa conta os negócios fechados como ganhos no mês, e a de um vendedor conta só os dele.",
           "antes": [
             {
               "acao": "click",
@@ -91,7 +91,7 @@
             },
             {
               "alvo": {
-                "texto": "Nesta primeira versão a meta é da EMPRESA inteira",
+                "texto": "A meta da empresa conta os negócios",
                 "exato": false
               },
               "rotulo": "O que entra na conta",
@@ -102,7 +102,7 @@
         {
           "id": "p3",
           "titulo": "Preenchendo os campos",
-          "texto": "O campo \"Mês\" já vem no mês atual: a meta vale do dia 1º ao último dia dele. Em \"Vendas ganhas no mês\", digite quantos negócios a clínica quer fechar como ganhos. Aqui a Helena digitou 20. Use um número inteiro maior que zero: com o campo vazio ou em zero, o botão \"Salvar meta\" fica apagado. Embaixo do número, a frase \"Ainda não há meta para este mês.\" confirma que este mês ainda não tem meta salva.",
+          "texto": "O campo \"Mês\" já vem no mês atual: a meta vale do dia 1º ao último dia dele. Em \"Indicador\", escolha se a meta conta a quantidade de vendas ganhas ou o valor vendido. Em \"De quem é a meta\", deixe \"Empresa (todos)\" para a clínica inteira, ou escolha um vendedor. Em \"Vendas ganhas no mês\", digite quantos negócios a clínica quer fechar como ganhos. Aqui a Helena digitou 20. Use um número inteiro maior que zero: com o campo vazio ou em zero, o botão \"Salvar meta\" fica apagado.",
           "dica": "Conta como venda o negócio marcado como ganho no funil, na data em que foi fechado. Um negócio criado no mês passado e ganho neste mês conta para este mês.",
           "antes": [
             {
@@ -125,19 +125,27 @@
             },
             {
               "alvo": {
+                "texto": "Indicador",
+                "exato": true
+              },
+              "rotulo": "Quantidade ou valor",
+              "tipo": "numero"
+            },
+            {
+              "alvo": {
+                "texto": "De quem é a meta",
+                "exato": true
+              },
+              "rotulo": "Empresa ou vendedor",
+              "tipo": "numero"
+            },
+            {
+              "alvo": {
                 "rotulo": "Vendas ganhas no mês",
                 "exato": true
               },
               "rotulo": "Quantas vendas fechar",
               "tipo": "caixa"
-            },
-            {
-              "alvo": {
-                "texto": "Ainda não há meta para este mês.",
-                "exato": true
-              },
-              "rotulo": "Ainda sem meta",
-              "tipo": "seta"
             }
           ],
           "clicar": {
@@ -149,7 +157,7 @@
         {
           "id": "p4",
           "titulo": "Salvando a meta",
-          "texto": "Clique em \"Salvar meta\". Um aviso rápido, \"Meta salva.\", pisca por alguns segundos no canto de baixo da tela (some sozinho), e a frase embaixo do número muda para \"Salvar de novo corrige a meta deste mês — nada é duplicado.\". A partir de agora a tela de Desempenho mostra o progresso da clínica contra essas 20 vendas.",
+          "texto": "Clique em \"Salvar meta\". Um aviso rápido, \"Meta salva.\", pisca por alguns segundos no canto de baixo da tela (some sozinho), e a frase embaixo do número lembra que salvar de novo corrige a meta deste mês, sem duplicar. A partir de agora a tela de Desempenho mostra o progresso da clínica contra essas 20 vendas.",
           "antes": [
             {
               "acao": "click",
