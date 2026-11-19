@@ -24,9 +24,9 @@ jobs:
       # só português (decisão do Paulo, 31/10/2026)
       CURSO_IDIOMA: pt-BR
       # vazio = todas as jornadas; "pular" = nenhuma (rodada curta de diagnóstico)
-      CURSO_JORNADAS: ""
+      CURSO_JORNADAS: "pular"
       # vazio = todos os módulos; com nomes = rodada curta de diagnóstico
-      CURSO_MODULOS: ""
+      CURSO_MODULOS: "campanhas contatos conversoes dados-externos empresas equipe etapas-do-funil follow-ups funis inbox memoria meta-de-vendas organizacao pessoas prospeccao respostas-rapidas tags tarefas webhooks"
       NEXT_TELEMETRY_DISABLED: "1"
       SENTRY_DSN: "off"
     steps:
