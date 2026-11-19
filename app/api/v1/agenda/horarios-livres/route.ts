@@ -43,9 +43,9 @@ import {
   type CodigoDeRecusaDaConsulta,
 } from "@/lib/agenda/consulta";
 import { DURACAO_MAXIMA_MIN, DURACAO_MINIMA_MIN } from "@/lib/agenda/duracao-escolhida";
+import { resolveAuthDual, tetoDeEscritaDoToken } from "@/lib/api/auth-dual";
+import { IDIOMA_PADRAO } from "@/lib/i18n/idiomas";
 import { fail, ok } from "@/lib/api/wrappers";
-import { requireRole } from "@/lib/auth/require-role";
-import { createClient } from "@/lib/supabase/server";
 import { traduzir } from "@/lib/i18n/dicionario";
 
 const querySchema = z.object({
@@ -71,10 +71,16 @@ const querySchema = z.object({
 export async function GET(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
 
-  const authz = await requireRole("viewer", { requestId, resource: "agenda" });
+  const authz = await resolveAuthDual(req, {
+    requestId,
+    resource: "agenda",
+    role: "viewer",
+    scope: "mcp:read",
+  });
   if (!authz.ok) return authz.response;
-  const t = (texto: string) => traduzir(texto, authz.user.idioma);
-  const { org: activeOrg } = authz;
+  const teto = await tetoDeEscritaDoToken(authz, "agenda", requestId);
+  if (teto) return teto;
+  const t = (texto: string) => traduzir(texto, authz.idioma ?? IDIOMA_PADRAO);
 
   const url = new URL(req.url);
   const parsed = querySchema.safeParse({
@@ -104,12 +110,12 @@ export async function GET(req: NextRequest): Promise<Response> {
     });
   }
 
-  const supabase = await createClient();
+  const supabase = authz.supabase;
 
   // O miolo mora em `lib/agenda/consulta.ts` porque as ferramentas MCP precisam
   // do MESMO cálculo sem ter request nem cookie. Duas coletas dariam à IA e à
   // tela respostas diferentes sobre o mesmo horário.
-  const consulta = await horariosLivresDaOrg(supabase, activeOrg.orgId, {
+  const consulta = await horariosLivresDaOrg(supabase, authz.organizationId, {
     eventTypeId: parsed.data.event_type_id,
     eventTypeSlug: null,
     ownerUserId: parsed.data.owner_user_id ?? null,
@@ -163,4 +169,3 @@ export async function GET(req: NextRequest): Promise<Response> {
     { requestId },
   );
 }
-

@@ -95,4 +95,25 @@ export const MODELOS_DA_OPERACAO: readonly ModeloDePorta[] = [
   "/api/v1/leads/import",
   "/api/v1/leads/proposals",
   "/api/v1/leads/reactivations",
+  // AGENDA (tarefa 4 da R2). Quem autentica é a própria rota, por `resolveAuthDual`
+  // (sessão OU Bearer `dsk_…`, a organização vinda da linha do token): `mcp:read`
+  // nos GET e `mcp:write` na escrita, com o papel que a sessão já exige
+  // (`viewer` lê, `agent` escreve), sem `tokenRole` porque nenhuma tool MCP de
+  // agenda declara `requiresRole` no catálogo. O PATCH de
+  // `agenda/configuracao` chama `fn_agenda_settings`, que exige `auth.uid()`,
+  // então segue só de sessão — não entra. O POST de `agenda/excecoes` grava
+  // `calendar_availability_exceptions.user_id` com `auth.uid()` (NOT NULL), então
+  // também fica só de sessão. Segmento `[id]` em forma de UUID: nenhum desses
+  // diretórios tem irmão literal que dê carona.
+  "/api/v1/agenda/configuracao",
+  "/api/v1/agenda/enderecos",
+  "/api/v1/agenda/google/calendarios",
+  "/api/v1/agenda/google/calendarios/atualizar",
+  "/api/v1/agenda/agendamentos/[id]",
+  "/api/v1/agenda/agendamentos/[id]/google/resolver",
+  "/api/v1/agenda/agendamentos/[id]/google/retry",
+  "/api/v1/agenda/horarios-livres",
+  "/api/v1/agenda/pessoas",
+  "/api/v1/agenda/tipos/reativar",
+  "/api/v1/agenda/vinculos",
 ];

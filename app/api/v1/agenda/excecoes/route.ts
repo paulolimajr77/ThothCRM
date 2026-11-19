@@ -32,6 +32,11 @@
  * **`is_unavailable` tem os DOIS sentidos.** `true` fecha (feriado, férias);
  * `false` ABRE uma faixa que a jornada semanal não tem — o sábado excepcional.
  * A tabela foi desenhada para os dois, e expor só o fechar desperdiçaria metade.
+ *
+ * ⚠️ O POST desta rota NÃO é convertido para token: `user_id` é `NOT NULL` no
+ * `baseline.sql` e é preenchido com `auth.uid()` da sessão. Com token não há
+ * `auth.uid()`, e não há como preencher a coluna de forma confiável. O método
+ * fica só de sessão.
  */
 import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
@@ -40,11 +45,12 @@ import { z } from "zod";
 import { fusoDasExcecoes, instantesDaExcecao } from "@/lib/agenda/fechamentos-na-grade";
 import { ok, fail } from "@/lib/api/wrappers";
 import { audit } from "@/lib/audit";
-import { requireRole } from "@/lib/auth/require-role";
-import { requireSupportWrite } from "@/lib/impersonate/support";
+import { resolveAuthDual, tetoDeEscritaDoToken } from "@/lib/api/auth-dual";
+import { IDIOMA_PADRAO } from "@/lib/i18n/idiomas";
 import { traduzir } from "@/lib/i18n/dicionario";
 import { createClient } from "@/lib/supabase/server";
 import { fusoUtilizavel } from "@/lib/tempo/fusos";
+import { requireSupportWrite } from "@/lib/impersonate/support";
 
 export const dynamic = "force-dynamic";
 
@@ -67,18 +73,26 @@ const criarSchema = z
 
 export async function GET(req: NextRequest): Promise<Response> {
   const requestId = randomUUID();
-  const authz = await requireRole("agent", { requestId, resource: "agenda" });
+  const authz = await resolveAuthDual(req, {
+    requestId,
+    resource: "agenda",
+    role: "agent",
+    scope: "mcp:read",
+  });
   if (!authz.ok) return authz.response;
+  const teto = await tetoDeEscritaDoToken(authz, "agenda", requestId);
+  if (teto) return teto;
+  const t = (texto: string) => traduzir(texto, authz.idioma ?? IDIOMA_PADRAO);
 
   const url = new URL(req.url);
   const de = url.searchParams.get("de");
   const ate = url.searchParams.get("ate");
 
-  const supabase = await createClient();
+  const supabase = authz.supabase;
   let q = supabase
     .from("calendar_availability_exceptions")
     .select(COLUNAS)
-    .eq("organization_id", authz.org.orgId)
+    .eq("organization_id", authz.organizationId)
     .order("exception_date", { ascending: true })
     .limit(500);
   // Sem janela, devolve do dia de hoje em diante: a lista serve para conferir o
@@ -95,7 +109,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   // `comeca`/`termina` são ACRÉSCIMO, para a grade da Agenda pintar a faixa
   // fechada sem refazer a conta do motor (`lib/agenda/fechamentos-na-grade.ts`).
   // Quem já lia esta rota (a lista de "Dias fora da rotina") segue igual.
-  const fusos = await fusosDasPessoas(supabase, authz.org.orgId, [
+  const fusos = await fusosDasPessoas(supabase, authz.organizationId, [
     ...new Set(linhas.map((l) => l.user_id)),
   ]);
   return ok(
@@ -218,9 +232,16 @@ export async function DELETE(req: NextRequest): Promise<Response> {
   if (supportDenied) return supportDenied;
 
   const requestId = randomUUID();
-  const authz = await requireRole("agent", { requestId, resource: "agenda" });
+  const authz = await resolveAuthDual(req, {
+    requestId,
+    resource: "agenda",
+    role: "agent",
+    scope: "mcp:write",
+  });
   if (!authz.ok) return authz.response;
-  const t = (texto: string) => traduzir(texto, authz.user.idioma);
+  const teto = await tetoDeEscritaDoToken(authz, "agenda", requestId);
+  if (teto) return teto;
+  const t = (texto: string) => traduzir(texto, authz.idioma ?? IDIOMA_PADRAO);
 
   const lido = apagarSchema.safeParse(await req.json().catch(() => ({})));
   if (!lido.success) return fail("validation_failed", t("id inválido."), 422, { requestId });
@@ -229,12 +250,12 @@ export async function DELETE(req: NextRequest): Promise<Response> {
   // CLAUDE.md. Um bloqueio não é fato histórico: é uma regra que vale enquanto
   // está lá. Guardá-lo desativado só criaria a pergunta "este feriado valeu ou
   // não?" para sempre — e o audit log acima já registra que existiu e por quem.
-  const supabase = await createClient();
+  const supabase = authz.supabase;
   const { data, error } = await supabase
     .from("calendar_availability_exceptions")
     .delete()
     .eq("id", lido.data.id)
-    .eq("organization_id", authz.org.orgId)
+    .eq("organization_id", authz.organizationId)
     .select("id, exception_date")
     .maybeSingle();
 
@@ -245,8 +266,9 @@ export async function DELETE(req: NextRequest): Promise<Response> {
 
   void audit({
     action: "agenda.bloqueio_removido",
-    actorUserId: authz.user.id,
-    organizationId: authz.org.orgId,
+    actorUserId: authz.actor.type === "user" ? authz.actor.id : null,
+    actorApiTokenId: authz.apiTokenId ?? null,
+    organizationId: authz.organizationId,
     resourceType: "calendar_availability_exception",
     resourceId: data.id,
     requestId,
