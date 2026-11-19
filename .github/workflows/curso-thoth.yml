@@ -26,7 +26,7 @@ jobs:
       # vazio = todas as jornadas; "pular" = nenhuma (rodada curta de diagnóstico)
       CURSO_JORNADAS: "pular"
       # vazio = todos os módulos; com nomes = rodada curta de diagnóstico
-      CURSO_MODULOS: "campanhas contatos conversoes dados-externos empresas equipe etapas-do-funil follow-ups funis inbox memoria meta-de-vendas organizacao pessoas prospeccao respostas-rapidas tags tarefas webhooks"
+      CURSO_MODULOS: "empresas etapas-do-funil funis inbox memoria pessoas tarefas admin-audit admin-cobranca"
       NEXT_TELEMETRY_DISABLED: "1"
       SENTRY_DSN: "off"
     steps:
