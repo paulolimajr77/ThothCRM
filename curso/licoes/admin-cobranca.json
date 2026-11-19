@@ -292,7 +292,7 @@
         {
           "id": "p2",
           "titulo": "Montando um plano novo",
-          "texto": "No formulário 'Novo plano', dê um nome, o preço e o 'Intervalo de cobrança' ('Mensal' ou 'Anual'). Em 'Dias de teste grátis', 0 quer dizer entrada paga: a empresa fica suspensa até o primeiro pagamento. Os limites são opcionais e campo vazio é sem limite. O teto de IA é em dólar. Ao clicar em 'Salvar plano', ele entra na lista e aparece 'Plano salvo.'.",
+          "texto": "No formulário 'Novo plano', dê um nome, escolha a moeda, o preço e o 'Intervalo de cobrança' ('Mensal' ou 'Anual'). Em 'Dias de teste grátis', 0 quer dizer entrada paga: a empresa fica suspensa até o primeiro pagamento. Os limites são opcionais e campo vazio é sem limite. O teto de IA é em dólar. Ao clicar em 'Salvar plano', ele entra na lista e aparece 'Plano salvo.'.",
           "dica": "O preço mínimo é R$ 5,00 e o teste grátis vai de 0 a 90 dias.",
           "antes": [
             {
@@ -306,8 +306,7 @@
             {
               "acao": "fill",
               "alvo": {
-                "rotulo": "Preço (R$)",
-                "exato": true
+                "css": "#plano-preco"
               },
               "valor": "297,00"
             },

@@ -393,7 +393,7 @@
         {
           "id": "p2",
           "titulo": "O que mudou",
-          "texto": "\"Metadata\" guarda os detalhes da mudança, do jeito que o sistema anotou. Nesta transferência, \"to_user_id\" é o código da pessoa que recebeu a conversa e \"note\" é o motivo escrito por quem transferiu. Logo abaixo, \"Resource Type\" e \"Resource ID\" dizem qual coisa foi mexida; aqui, uma conversa. \"negocio_aberto\" diz o que aconteceu com o negócio do contato: \"sem_negocio_aberto\" quer dizer que ele não tinha negócio aberto, então nada mudou no funil.",
+          "texto": "\"Metadados\" guarda os detalhes da mudança, do jeito que o sistema anotou. Nesta transferência, \"to_user_id\" é o código da pessoa que recebeu a conversa e \"note\" é o motivo escrito por quem transferiu. Logo abaixo, \"Resource Type\" e \"Resource ID\" dizem qual coisa foi mexida; aqui, uma conversa. \"negocio_aberto\" diz o que aconteceu com o negócio do contato: \"sem_negocio_aberto\" quer dizer que ele não tinha negócio aberto, então nada mudou no funil.",
           "dica": "\"Actor IP\" e \"User Agent\" mostram o endereço e o navegador de quem fez, quando o sistema anotou; o traço quer dizer que não foi anotado. \"Request ID\" é o número do pedido, útil para o suporte achar o caso nos registros técnicos. \"Bypassed RLS\" = \"Sim\" diz que a ação passou por cima da separação entre empresas, como fazem as ações do administrador do servidor.",
           "antes": [],
           "destaques": [
@@ -406,7 +406,7 @@
             },
             {
               "alvo": {
-                "css": "div.rounded-md.border:has-text(\"Request ID\")"
+                "css": "div.rounded-md.border:has-text(\"Resource Type\")"
               },
               "rotulo": "Ficha técnica do evento",
               "tipo": "caixa"
