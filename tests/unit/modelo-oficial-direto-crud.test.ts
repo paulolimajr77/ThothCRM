@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type * as Sessao from "@/lib/channels/meta/session";
@@ -273,7 +273,10 @@ describe("canal oficial direto — editar", () => {
       )
       .mockResolvedValueOnce(fetchOk({ success: true, id: "777", name: "boas_vindas" }));
 
-    const NOVOS = [{ type: "BODY", text: "Oi {{1}}" }];
+    // O corpo tem variável, então leva a amostra: sem ela a régua da #3635
+    // recusa o payload antes de chegar aqui — e o que este caso mede é o
+    // caminho de EDIÇÃO (id da variante + POST no nó), não a validação.
+    const NOVOS = [{ type: "BODY", text: "Oi {{1}}", example: { body_text: [["Ana"]] } }];
     const res = await post({ acao: "editar", ...ALVO, components: NOVOS });
 
     expect(res.status).toBe(200);
@@ -465,3 +468,220 @@ describe("CONTROLE CRÍTICO — o canal de PARCEIRO não mudou", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * OS LIMITES E OS EXEMPLOS, CONFERIDOS ANTES DE FALAR COM A PLATAFORMA (#3635, 2).
+ *
+ * ─── O que estava errado ─────────────────────────────────────────────────────
+ *
+ * `components` viajava cru até a Meta. Um corpo de 1500 caracteres e uma
+ * variável `{{n}}` sem amostra saíam daqui como se estivessem bons, e a recusa
+ * voltava horas depois com um erro genérico — sem dizer qual campo estourou nem
+ * qual variável ficou sem exemplo. O operador corrigia por tentativa.
+ *
+ * ─── O que estes casos prendem ───────────────────────────────────────────────
+ *
+ * 1. reprovado é 422 NOMEANDO o campo (`error.details`), não 502 "não deu";
+ * 2. a fronteira é inclusiva: 1024 passa e chega na plataforma, 1025 não;
+ * 3. o dublê de `fetch` NÃO é chamado nas recusas — sem chamada nova à Meta;
+ * 4. editar é barrado pelo mesmo caminho que criar.
+ */
+describe("canal oficial direto — limites e exemplos ANTES da plataforma", () => {
+  const corpoDe = (n: number, exemplo?: string[][]) => [
+    { type: "BODY", text: "a".repeat(n), ...(exemplo ? { example: { body_text: exemplo } } : {}) },
+  ];
+
+  it("⭐ corpo de 1500 caracteres é 422 nomeando `corpo`, e a Meta NÃO é chamada", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const res = await post({ acao: "criar", ...ALVO, category: "UTILITY", components: corpoDe(1500) });
+
+    expect(res.status).toBe(422);
+    const j = (await res.json()) as {
+      error: { code: string; message: string; details: Record<string, unknown> };
+    };
+    expect(j.error.details).toMatchObject({ campo: "corpo", atual: 1500, limite: 1024 });
+    // A mensagem nomeia o campo, em vez de "erro ao criar modelo".
+    expect(j.error.message).toContain("corpo");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(h.sync).not.toHaveBeenCalled();
+    expect(h.audit).not.toHaveBeenCalled();
+  });
+
+  it("⭐ variável sem exemplo é 422 apontando o NÚMERO da variável", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const res = await post({
+      acao: "criar",
+      ...ALVO,
+      components: [
+        { type: "BODY", text: "Olá {{1}}, seu pedido {{2}} saiu", example: { body_text: [["Ana"]] } },
+      ],
+    });
+
+    expect(res.status).toBe(422);
+    const j = (await res.json()) as {
+      error: { message: string; details: Record<string, unknown> };
+    };
+    expect(j.error.details).toMatchObject({ campo: "exemploDaVariavel", variavel: 2 });
+    // O número tem de estar na mensagem: "variável sem exemplo" não diz qual.
+    expect(j.error.message).toContain("2");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("fronteira: 1024 passa e chega na Meta; 1025 não sai daqui", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(fetchOk({ id: "tpl-novo", name: "boas_vindas", status: "PENDING" }));
+
+    const ok1024 = await post({ acao: "criar", ...ALVO, components: corpoDe(1024) });
+    expect(ok1024.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const nao1025 = await post({ acao: "criar", ...ALVO, components: corpoDe(1025) });
+    expect(nao1025.status).toBe(422);
+    // A chamada do caso de 1024 continua sendo a ÚNICA: a de 1025 não saiu.
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("editar é barrado pelo MESMO caminho — e antes de resolver o id na Meta", async () => {
+    h.espelho = [LINHA_OFICIAL];
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const res = await post({
+      acao: "editar",
+      ...ALVO,
+      components: [{ type: "FOOTER", text: "b".repeat(61) }],
+    });
+
+    expect(res.status).toBe(422);
+    const j = (await res.json()) as { error: { details: Record<string, unknown> } };
+    expect(j.error.details).toMatchObject({ campo: "rodape", atual: 61, limite: 60 });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("botão com texto acima de 25 é 422 com o índice do botão", async () => {
+    const res = await post({
+      acao: "criar",
+      ...ALVO,
+      components: [
+        { type: "BODY", text: "Olá" },
+        {
+          type: "BUTTONS",
+          buttons: [
+            { type: "QUICK_REPLY", text: "Ok" },
+            { type: "QUICK_REPLY", text: "c".repeat(26) },
+          ],
+        },
+      ],
+    });
+
+    expect(res.status).toBe(422);
+    const j = (await res.json()) as { error: { details: Record<string, unknown> } };
+    expect(j.error.details).toMatchObject({ campo: "textoDoBotao", botao: 2, limite: 25 });
+  });
+
+  it("o caminho feliz continua 200 — corpo com variável E exemplo passa", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(fetchOk({ id: "tpl-novo", status: "PENDING" }));
+
+    const res = await post({ acao: "criar", ...ALVO, components: CORPO });
+
+    expect(res.status).toBe(200);
+    expect(h.sync).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * QUEM NÃO É `admin` E A RECUSA DO CONTEÚDO (#3635, fatia 1) — os dois desfechos
+ * que faltavam prender.
+ *
+ * ─── Por que estes dois ──────────────────────────────────────────────────────
+ *
+ * 1. `admin` é a única porta da ESCRITA. Ele já era exigido, mas nenhum caso
+ *    provava que a recusa acontece ANTES da plataforma: um `requireRole`
+ *    movido para depois do `fetch` (ou um ramo novo que o ignore) continuaria
+ *    "verde" na asserção de status, enquanto um `agent` conseguiria criar
+ *    modelo na conta da empresa. Aqui a prova é a chamada NÃO existir.
+ *
+ * 2. A recusa do CONTEÚDO pela plataforma chegava como `502` com o texto cru:
+ *    "erro do servidor" para um nome repetido ou um componente fora do formato.
+ *    O caso prende o desfecho que o operador lê (422, na língua dele) e o motivo
+ *    da plataforma em `details` — e, no mesmo caso, que o canal de PARCEIRO não
+ *    herdou nada disto: ele segue com a mensagem crua, que é o contrato dele.
+ */
+describe("canal oficial direto — admin obrigatório e recusa legível da plataforma", () => {
+  it("⭐ sem `admin` a escrita é recusada ANTES da plataforma (nenhuma chamada)", async () => {
+    h.role.mockResolvedValue({
+      ok: false,
+      response: NextResponse.json(
+        { error: { code: "forbidden_role", message: "forbidden_role" } },
+        { status: 403, headers: { "x-request-id": "req-recusa" } },
+      ),
+    });
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const res = await post({ acao: "criar", ...ALVO, category: "UTILITY", components: CORPO });
+
+    expect(res.status).toBe(403);
+    await expect(res.json()).resolves.toMatchObject({ error: { code: "forbidden_role" } });
+    // E o papel exigido é `admin`, não "algum papel": um `orgOrFail` trocado por
+    // `agent` deixaria um convidado criar modelo na conta da empresa, e o 403
+    // acima continuaria verde porque o dublê nega qualquer papel.
+    expect(h.role).toHaveBeenCalledWith(
+      "admin",
+      expect.objectContaining({ resource: "channels_templates" }),
+    );
+    // A prova que importa: o corpo era VÁLIDO e mesmo assim nada saiu daqui.
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(h.sync).not.toHaveBeenCalled();
+    expect(h.audit).not.toHaveBeenCalled();
+    // E a credencial nem foi resolvida: a recusa é antes de qualquer I/O de conta.
+    expect(h.creds).not.toHaveBeenCalled();
+    expect(h.sessao).not.toHaveBeenCalled();
+  });
+
+  it("⭐ recusa do CONTEÚDO vira 422 legível com o motivo — e o parceiro não muda", async () => {
+    h.espelho = [LINHA_OFICIAL];
+    const MOTIVO = "Invalid parameter: name is already in use";
+    // A plataforma recusa o payload: 4xx com código e motivo no corpo.
+    // `mockImplementation` e não `mockResolvedValue`: o corpo de uma `Response` só
+    // pode ser lido UMA vez, e o mesmo objeto servido às duas chamadas (oficial e
+    // parceiro) chegaria vazio na segunda.
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      new Response(
+        JSON.stringify({ error: { message: MOTIVO, code: 100, type: "OAuthException" } }),
+        { status: 400 },
+      ),
+    );
+
+    const res = await post({ acao: "criar", ...ALVO, category: "UTILITY", components: CORPO });
+
+    // 422, não 502: o defeito é do MODELO, não do servidor.
+    expect(res.status).toBe(422);
+    const j = (await res.json()) as {
+      error: { code: string; message: string; details: { codigo: string; motivo: string } };
+    };
+    expect(j.error.code).toBe("validation_failed");
+    // Mensagem na língua da tela, dizendo O QUE conferir — e nada de "erro do servidor".
+    expect(j.error.message).toContain("recusou o modelo");
+    expect(j.error.message).not.toMatch(/internal_error|502/);
+    // O motivo da plataforma chega preservado, em `details` (diagnóstico, não interface).
+    expect(j.error.details).toMatchObject({ codigo: "100", motivo: MOTIVO });
+    // Recusa não sincroniza nem audita: nada foi gravado.
+    expect(h.sync).not.toHaveBeenCalled();
+    expect(h.audit).not.toHaveBeenCalled();
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    // ─── CONTROLE: o canal de PARCEIRO segue com o contrato DELE ───────────────
+    // O mesmo 400, pelo binding do parceiro: a mensagem crua continua saindo
+    // (é o que a rota dele já devolvia), sem a tradução desta fatia.
+    await expect(
+      graphPartnerTemplateOps.create({
+        organizationId: "org-da-sessao",
+        sessionRef: "PN-PARCEIRO",
+        draft: { name: "boas_vindas", language: "pt_BR", category: "UTILITY", components: CORPO },
+      }),
+    ).rejects.toThrow(MOTIVO);
+  });
+});
+

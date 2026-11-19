@@ -29,6 +29,7 @@ import { parseServiceBoundary } from '@/lib/atendimento/fronteira';
  */
 import { sendWithLedger, pgSendLedger, type SendOutcome } from './send-ledger';
 import { registrarCustoDeVoz, resolverCaminhoDeVoz, VozLedgerTerminalError } from './send-voice';
+import type { FormatoDaVoz } from '@/lib/ai/voz/formato';
 import { logger } from '@/lib/logger';
 export type { SendOutcome, SendLedgerStatus } from './send-ledger';
 
@@ -58,6 +59,17 @@ export interface SendMessageInput {
   jobId: string;
   /** Posição da mensagem no turno (1..n) — com jobId forma a identidade da intenção. */
   seq: number;
+  /**
+   * `seq` da PRIMEIRA mensagem física do ENVIO (#4370, migration 9407).
+   *
+   * Vai para `send_ledger.envio_seq` e é o que permite ao reprocesso ler só as
+   * bolhas deste envio. `seq` continua sendo a identidade da intenção
+   * (`unique (job_id, seq)`), intocada; `envioSeq` é a fronteira. `input` desce
+   * inteiro até `sendWithLedger` como `Intent`, então o campo atravessa sem
+   * tradução. Ausente = NULL (follow-up de mensagem única, envio fixo). A nota de
+   * voz do `send_message` leva o mesmo `envioSeq` das bolhas que ela substitui.
+   */
+  envioSeq?: number;
   conversationId: string;
   body: string;
   /**
@@ -86,6 +98,8 @@ export interface SendMessageInput {
     apiKey: string;
     voiceId: string;
     modelId?: string;
+    /** mp3 ou ogg/opus — o que o canal da conversa entrega como nota de voz (`lib/ai/voz/formato.ts`). */
+    formato?: FormatoDaVoz;
     /**
      * Grava os bytes no Storage e devolve o path — ver `send-voice.ts`.
      *
@@ -99,21 +113,38 @@ export interface SendMessageInput {
   /**
    * Presente = o envio sai como MÍDIA e o `body` é a LEGENDA.
    *
-   * Duas procedências, um caminho só (o handler de envio): `storagePath` é a imagem
+   * Duas procedências, um caminho só (o handler de envio): `storagePath` é a imagem ou o áudio
    * que já mora na pasta da conversa (`whatsapp-media/...`, foto de produto — assinada
    * curta por quem conhece o provider), e `url` é a mídia de um passo automático
    * (#2734, ampliada pelo #2972 para áudio, vídeo e documento), que o operador
    * aponta direto e o handler confere antes de buscar.
    */
   media?:
-    | { storagePath: string; mime: string }
+    | {
+        storagePath: string;
+        mime: string;
+        /** Áudio × imagem do arquivo já no Storage (catálogo). Ausente = imagem. */
+        kind?: 'audio' | 'image';
+        /** Ausente = imagem (foto do produto). Ver `ChannelSendInput` no contrato do canal. */
+        type?: TipoDeMidiaComLegenda;
+        /** Nome do documento para o cliente; ausente = o basename do arquivo. */
+        filename?: string;
+      }
     | { url: string; mime: string; type: TipoDeMidiaComLegenda };
+  /**
+   * O material da empresa que ESTA mensagem carrega (#4129), quando houver.
+   *
+   * Vai para o `metadata` da linha: é por ele que a conversa sabe o que já
+   * recebeu (freio de 7 dias/3 em 24 h) e que a timeline mostra o documento da
+   * IA sem depender de cruzar o caminho do Storage.
+   */
+  materialId?: string;
 }
 
 /**
- * O corpo que o handler de mensagens recebe: texto, template ou imagem da
+ * O corpo que o handler de mensagens recebe: texto, template ou mídia da
  * conversa. Exportado para o teste — o tipo decide o caminho no handler, e um
- * `type` errado manda a foto como texto sem ninguém ver.
+ * `type` errado degrada áudio ou imagem sem ninguém ver.
  */
 export function corpoDoEnvio(
   input: SendMessageInput,
@@ -143,14 +174,23 @@ export function corpoDoEnvio(
               media_mime: input.media.mime,
             }
           : {
-              type: 'image' as const,
+              // Material da empresa (#4129) é documento; foto de produto não
+              // declara `type` e continua saindo como imagem. O `type` errado
+              // manda o PDF como foto — e o WhatsApp não entrega. `kind` é a
+              // marca do áudio/imagem do catálogo (apresentação); os dois
+              // convivem e `type` tem precedência por ser o mais específico.
+              type: input.media.type ?? input.media.kind ?? 'image',
               media_storage_path: input.media.storagePath,
               media_mime: input.media.mime,
+              ...(input.media.filename ? { media_filename: input.media.filename } : {}),
             }
         : { type: 'text' as const }),
     // Foto sem legenda vai sem `body`: o schema do envio pede corpo não vazio.
     ...(input.body !== '' || !input.media ? { body: input.body } : {}),
-    metadata: { idempotency_key: idempotencyKey },
+    metadata: {
+      idempotency_key: idempotencyKey,
+      ...(input.materialId ? { material_id: input.materialId } : {}),
+    },
   };
 }
 
@@ -250,7 +290,12 @@ export async function sendTurnMessage(
         store: pgSendLedger(db),
         identidade: { tenantId: input.tenantId, leadId: input.leadId, jobId: input.jobId, seq: input.seq },
         textoFalado: input.body,
-        voz: { apiKey: input.voz.apiKey, voiceId: input.voz.voiceId, modelId: input.voz.modelId },
+        voz: {
+          apiKey: input.voz.apiKey,
+          voiceId: input.voz.voiceId,
+          modelId: input.voz.modelId,
+          ...(input.voz.formato ? { formato: input.voz.formato } : {}),
+        },
         upload: input.voz.upload,
       });
       vozResolvida = { mediaStoragePath: r.mediaStoragePath, mimeType: r.mimeType };

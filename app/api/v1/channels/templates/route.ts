@@ -47,7 +47,9 @@ import { deriveTemplateContract, describeAddress } from "@/lib/channels/meta/tem
 import { slotKey } from "@/lib/channels/meta/build-components";
 import { syncTemplates } from "@/lib/channels/meta/template-sync";
 import { mesclarValoresSalvos } from "@/lib/channels/meta/valores-salvos";
-import { erroDePermissaoDeGestao } from "@/lib/channels/templates-graph";
+import { erroDePermissaoDeGestao, recusaDeConteudoDoModelo } from "@/lib/channels/templates-graph";
+import { problemasDoModelo, textoDoProblema } from "@/lib/channels/limites-do-modelo";
+import { lerConteudo } from "@/lib/channels/template-conteudo";
 import { traduzir } from "@/lib/i18n/dicionario";
 import type { Idioma } from "@/lib/i18n/idiomas";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -292,6 +294,43 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   const corpo = parsed.data;
 
+  /**
+   * OS LIMITES E O EXEMPLO DE CADA VARIÁVEL SÃO CONFERIDOS AQUI (#3635).
+   *
+   * Antes disto `components` viajava cru até a plataforma. Um corpo de 1500
+   * caracteres e um `{{2}}` sem amostra saíam daqui como se estivessem bons, e a
+   * recusa voltava horas depois com um erro genérico — sem dizer qual campo
+   * estourou nem qual variável ficou sem exemplo. Cada tentativa de adivinhar
+   * custa um ciclo de revisão inteiro.
+   *
+   * O 422 sai NOMEANDO o campo (e o número da variável), no mesmo formato de
+   * erro do resto da rota; a plataforma não é chamada. Só criar e editar têm
+   * componentes — sincronizar não passa por aqui.
+   */
+  if (corpo.acao === "criar" || corpo.acao === "editar") {
+    const conteudo = lerConteudo(corpo.components);
+    const problema = problemasDoModelo({
+      corpo: conteudo.body,
+      cabecalhoTexto: conteudo.header?.texto ?? null,
+      rodape: conteudo.footer,
+      botoes: conteudo.botoes,
+      exemplos: conteudo.exemplos,
+    })[0];
+    if (problema) {
+      return fail("validation_failed", textoDoProblema(problema, t), 422, {
+        requestId,
+        details: {
+          campo: problema.campo,
+          atual: problema.atual,
+          limite: problema.limite,
+          excesso: problema.excesso,
+          ...(problema.botao !== undefined ? { botao: problema.botao } : {}),
+          ...(problema.variavel !== undefined ? { variavel: problema.variavel } : {}),
+        },
+      });
+    }
+  }
+
   try {
     // A gestão (editar/apagar) precisa do `sessionRef` desta conexão: no canal
     // oficial ele é o `phone_number_id`, e é por ele que a credencial e a WABA
@@ -386,6 +425,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         ),
         403,
         { requestId },
+      );
+    }
+    // A recusa do CONTEÚDO (nome repetido, categoria recusada, componente fora
+    // do formato) chega como 4xx da plataforma. Antes disto ela saía como `502`
+    // com o texto cru em inglês — o operador lia "erro do servidor" para um
+    // defeito do próprio modelo e não sabia o que corrigir. Agora sai 422, na
+    // língua da tela, com o motivo da plataforma em `details` (é diagnóstico,
+    // não interface: não se traduz).
+    const recusa = recusaDeConteudoDoModelo(err);
+    if (recusa) {
+      return fail(
+        "validation_failed",
+        recusa.acesso
+          ? t("O acesso à conta do WhatsApp expirou. Reconecte o número e tente de novo.")
+          : t(
+              "A plataforma recusou o modelo. Confira nome, categoria, cabeçalho, corpo e exemplos e tente de novo.",
+            ),
+        422,
+        { requestId, details: { codigo: recusa.codigo, motivo: recusa.motivo } },
       );
     }
     // Conexão sem conta/token não é falha da plataforma, é PRECONDIÇÃO da nossa
