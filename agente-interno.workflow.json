@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Agente Interno — do pedido à resposta",
+    "subtitle": "DeskcommCRM: acesso, decisões e aprovação até a resposta final",
+    "output": "agente-interno-workflow.html",
+    "viewBox": [720, 900]
+  },
+  "lanes": [
+    { "id": "ui", "label": "Interface com o Usuário" },
+    { "id": "agent", "label": "Runtime do Agente" },
+    { "id": "policy", "label": "Fronteira de Política" },
+    { "id": "exceptions", "label": "Exceções / Bloqueio", "variant": "exception" },
+    { "id": "tools", "label": "Execução de Ferramentas" },
+    { "id": "trace", "label": "Observabilidade" }
+  ],
+  "phases": [
+    { "id": "intake", "label": "Entrada", "fromCol": 0, "toCol": 1 },
+    { "id": "planejar", "label": "Planejar + Rotear", "fromCol": 2, "toCol": 4, "variant": "emphasis" },
+    { "id": "decidir", "label": "Decidir + Aprovar", "fromCol": 4, "toCol": 5, "variant": "emphasis" },
+    { "id": "executar", "label": "Executar + Responder", "fromCol": 2, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "ciclo", "label": "Loop de planejamento", "lane": "agent", "fromCol": 2, "toCol": 4, "variant": "emphasis" },
+    { "id": "escrita", "label": "Apenas propõe (não grava)", "lane": "tools", "fromCol": 2, "toCol": 5, "variant": "dashed" },
+    { "id": "bloqueio", "label": "Parada humana ou de política", "lane": "exceptions", "fromCol": 0, "toCol": 2, "variant": "security" }
+  ],
+  "mainPath": ["usuario", "chat", "planejador", "roteador", "eEscrita", "aprovada", "aplica", "resposta"],
+  "nodes": [
+    { "id": "usuario", "lane": "ui", "col": 0, "type": "external", "label": "Usuário", "sublabel": "pede no chat" },
+    { "id": "chat", "lane": "ui", "col": 1, "type": "frontend", "label": "Chat", "sublabel": "sessão + mensagem", "width": 80 },
+    { "id": "resposta", "lane": "ui", "col": 5, "type": "backend", "label": "Resposta", "sublabel": "resposta + cartões" },
+    { "id": "planejador", "lane": "agent", "col": 2, "type": "backend", "label": "Planejador", "sublabel": "plano + rota", "tag": "contexto" },
+    { "id": "roteador", "lane": "agent", "col": 4, "type": "backend", "label": "Roteador", "sublabel": "escolhe ferramenta" },
+    { "id": "eEscrita", "lane": "policy", "col": 4, "type": "security", "label": "Escrita?", "sublabel": "só admin", "tag": "guarda", "width": 70 },
+    { "id": "aprovada", "lane": "policy", "col": 5, "type": "security", "label": "Aprovar?", "sublabel": "dono aprova", "tag": "bloqueia", "width": 70 },
+    { "id": "bloqueado", "lane": "exceptions", "col": 2, "type": "security", "label": "Bloqueado", "sublabel": "sem papel" },
+    { "id": "retry", "lane": "exceptions", "col": 0, "type": "messagebus", "label": "Retry", "sublabel": "revisar pedido" },
+    { "id": "leitura", "lane": "tools", "col": 2, "type": "messagebus", "label": "Ler Porta", "sublabel": "GET direto", "tag": "sem escrita", "width": 70 },
+    { "id": "propoe", "lane": "tools", "col": 4, "type": "messagebus", "label": "Propor", "sublabel": "POST propostas", "tag": "apenas propõe", "width": 70 },
+    { "id": "aplica", "lane": "tools", "col": 5, "type": "cloud", "label": "Aplicar", "sublabel": "POST rota", "tag": "rede", "width": 70 },
+    { "id": "contexto", "lane": "trace", "col": 1, "type": "database", "label": "Contexto", "sublabel": "org + memória" },
+    { "id": "trace", "lane": "trace", "col": 4, "type": "database", "label": "Trace", "sublabel": "eventos + saída" }
+  ],
+  "edges": [
+    { "from": "usuario", "to": "chat", "variant": "default" },
+    { "from": "chat", "to": "planejador", "label": "pedido", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "drop", "labelSegment": 1 },
+    { "from": "planejador", "to": "roteador", "variant": "default" },
+    { "from": "roteador", "to": "eEscrita", "label": "é escrita?", "variant": "security", "fromSide": "bottom", "toSide": "top", "route": "drop", "labelSegment": 0, "labelDx": 26, "labelDy": 16 },
+    { "from": "eEscrita", "to": "leitura", "label": "não", "variant": "default", "fromSide": "left", "toSide": "left", "route": "return-left" },
+    { "from": "eEscrita", "to": "bloqueado", "label": "não (admin)", "variant": "security", "role": "error", "fromSide": "bottom", "toSide": "top", "route": "drop", "labelSegment": 0, "labelAt": [430, 430] },
+    { "from": "eEscrita", "to": "aprovada", "label": "sim", "variant": "emphasis", "fromSide": "right", "toSide": "left", "route": "drop", "labelSegment": 1, "labelAt": [505, 420] },
+    { "from": "aprovada", "to": "aplica", "label": "aplicar", "variant": "emphasis", "fromSide": "bottom", "toSide": "top", "route": "drop", "labelSegment": 0, "labelDy": -10 },
+    { "from": "aprovada", "to": "bloqueado", "label": "rejeitado", "variant": "security", "role": "error", "fromSide": "bottom", "toSide": "top", "route": "drop", "labelSegment": 1, "labelAt": [430, 460] },
+    { "from": "leitura", "to": "aplica", "variant": "default", "route": "bottom-channel" },
+    { "from": "propoe", "to": "aplica", "label": "aplicar", "variant": "default" },
+    { "from": "aplica", "to": "resposta", "variant": "emphasis", "role": "return", "fromSide": "right", "toSide": "right", "route": "outside-right", "width": 1.2 },
+    { "from": "aplica", "to": "trace", "label": "registra", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "route": "bottom-channel", "labelSegment": 1 },
+    { "from": "contexto", "to": "trace", "label": "contexto + memória", "variant": "dashed", "labelAt": [365, 735] },
+    { "from": "bloqueado", "to": "retry", "variant": "dashed", "role": "branch" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Como o agente funciona",
+      "items": [
+        "O usuário pede algo no chat e o agente planeja o próximo passo",
+        "O roteador escolhe a ferramenta (capacidade) a ser chamada"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Decisões de acesso",
+      "items": [
+        "Leitura: executa diretamente (GET), sem efeito colateral",
+        "Escrita: exige papel de admin; senão, bloqueia",
+        "Escrita com admin: PROPÕE (não grava) — o dono aprova o cartão no chat"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Resultado",
+      "items": [
+        "Após aplicar (ou ler diretamente), o resultado volta ao usuário",
+        "Tudo é registrado no Trace Log (observabilidade)"
+      ]
+    }
+  ]
+}
