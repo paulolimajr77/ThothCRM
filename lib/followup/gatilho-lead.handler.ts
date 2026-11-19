@@ -3,6 +3,7 @@
  * A decisão fica em `gatilho-lead.ts`; aqui só a ligação com o client real.
  */
 import type { EventHandler, HandlerResult } from "@/lib/event-log/dispatcher";
+import { detalheDoErro } from "@/lib/event-log/detalhe-do-erro";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseFollowupGateDb } from "@/lib/followup/agent-followup-gate";
 import {
@@ -37,7 +38,9 @@ export const followupGatilhoLeadHandler: EventHandler = {
           `sem_contato=${summary.sem_contato} planilha=${summary.vindos_de_planilha}`,
       };
     } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err);
+      // Objeto do PostgREST não é Error: `String(err)` virava "[object Object]"
+      // no last_error (ver `detalheDoErro`).
+      const detail = detalheDoErro(err);
       return { consumer_key: FOLLOWUP_GATILHO_LEAD_HANDLER_KEY, status: "error", detail };
     }
   },

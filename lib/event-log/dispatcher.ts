@@ -14,6 +14,8 @@
 
 import { logger } from "@/lib/logger";
 
+import { detalheDoErro } from "./detalhe-do-erro";
+
 export interface EventRow {
   id: string;
   organization_id: string;
@@ -114,7 +116,7 @@ export async function dispatchEvent(
       const r = await handler.handle(row);
       results.push(r);
     } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err);
+      const detail = detalheDoErro(err);
       logger.error("[event-log.dispatcher] handler threw", {
         handler: handler.key,
         event: row.event_type,
