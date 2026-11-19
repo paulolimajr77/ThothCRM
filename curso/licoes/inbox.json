@@ -1951,7 +1951,7 @@
         {
           "id": "p4",
           "titulo": "Pedir um lembrete",
-          "texto": "\"Lembrar\", no menu \"⋯\" do topo da conversa, serve para quando você está esperando o cliente responder. Escolha o prazo: se ele não responder até lá, a conversa sobe para o topo da lista e aparece um aviso na Central dizendo que o cliente não respondeu no prazo. Nada é enviado ao cliente. Nesta conversa o robô já estava pausado. O balão vermelho é uma mensagem que não saiu, e o quadro bege é um recado interno da equipe: nada disso tem a ver com o lembrete.",
+          "texto": "\"Lembrar\", no menu \"⋯\" do topo da conversa, serve para quando você está esperando o cliente responder. Passe o mouse em \"Lembrar\" e escolha o prazo, por exemplo \"Em 1 hora\": se ele não responder até lá, a conversa sobe para o topo da lista e aparece um aviso na Central dizendo que o cliente não respondeu no prazo. Nada é enviado ao cliente. Nesta conversa o robô já estava pausado. O balão vermelho é uma mensagem que não saiu, e o quadro bege é um recado interno da equipe: nada disso tem a ver com o lembrete.",
           "dica": "Com um lembrete ligado, o botão passa a dizer \"Lembrete ativo\", e é por ele que você cancela.",
           "rota": "/app/inbox?id=be100000-0000-4000-8000-000000000005",
           "antes": [
@@ -1966,21 +1966,6 @@
               "alvo": {
                 "testid": "acao-lembrar"
               }
-            },
-            {
-              "acao": "press",
-              "tecla": "ArrowRight",
-              "alvo": {
-                "testid": "acao-lembrar"
-              }
-            },
-            {
-              "acao": "aguardar",
-              "alvo": {
-                "role": "menuitem",
-                "nome": "Em 1 hora",
-                "exato": true
-              }
             }
           ],
           "destaques": [
@@ -1990,22 +1975,8 @@
               },
               "rotulo": "Lembrar, no menu \"⋯\"",
               "tipo": "caixa"
-            },
-            {
-              "alvo": {
-                "role": "menuitem",
-                "nome": "Em 1 hora",
-                "exato": true
-              },
-              "rotulo": "Prazo do lembrete",
-              "tipo": "seta"
             }
-          ],
-          "clicar": {
-            "role": "menuitem",
-            "nome": "Em 1 hora",
-            "exato": true
-          }
+          ]
         },
         {
           "id": "p5",
@@ -2014,16 +1985,12 @@
           "dica": "O lembrete marcado no passo anterior continua ligado. Se o prazo vencer com a conversa fechada, nada acontece. Se ela for reaberta antes, o lembrete volta a valer.",
           "antes": [
             {
-              "acao": "click",
-              "alvo": {
-                "role": "menuitem",
-                "nome": "Em 1 hora",
-                "exato": true
-              }
+              "acao": "press",
+              "tecla": "Escape"
             },
             {
               "acao": "esperar",
-              "ms": 1500
+              "ms": 400
             },
             {
               "acao": "click",
