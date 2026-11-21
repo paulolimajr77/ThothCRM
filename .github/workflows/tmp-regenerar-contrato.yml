@@ -1,0 +1,20 @@
+name: tmp-regenerar-contrato
+on:
+  pull_request:
+jobs:
+  regenerar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/preparar-node
+      - name: Regenerar o instantâneo do contrato
+        run: UPDATE_CONTRATO=1 pnpm exec vitest run tests/unit/modulo-contrato-congelado.test.ts --project produto 2>&1 | tail -60
+      - name: Resumo do que mudou
+        run: |
+          git diff --stat -- tests/unit/__contrato__/modulo-contrato.json || true
+          git diff -- tests/unit/__contrato__/modulo-contrato.json | grep -E "^[-+]" | grep -vE "^(\+\+\+|---)" | cut -c1-160 | head -80 || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: contrato
+          path: tests/unit/__contrato__/modulo-contrato.json
