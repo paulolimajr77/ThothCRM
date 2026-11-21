@@ -49,7 +49,7 @@ export async function ingerirMensagemDoChat(
   p: IngerirMensagemDoChatInput,
 ): Promise<IngerirMensagemDoChatResult> {
   const identity = `webchat:${p.channelSessionId}:${p.visitanteId}`;
-  const externalId = `wc:${p.channelSessionId}:${p.visitanteId}:${p.mensagemId}`;
+  const externalId = p.mensagemId;
 
   const contactId = await upsertContact(admin, p.organizationId, identity);
   const conversationId = await upsertConversation(admin, {

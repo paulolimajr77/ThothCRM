@@ -77,7 +77,6 @@ export async function lerSaidasNovas(
   const { data, error } = await admin
     .from("messages")
     .select("id, body, created_at")
-    .eq("organization_id", p.organizationId)
     .eq("conversation_id", p.conversationId)
     .eq("direction", "outbound")
     .eq("type", "text")
