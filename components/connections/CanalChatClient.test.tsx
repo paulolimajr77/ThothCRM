@@ -606,3 +606,20 @@ it("som desmarcado e marcado volta ao estado inicial desliga o botao", async () 
   fireEvent.click(screen.getByLabelText("Tocar som ao chegar resposta"));
   expect(salvar.disabled).toBe(true);
 });
+
+it("teto_anonimo aceita 150 (entre 100 e 200) e em branco não envia nada", async () => {
+  h.get.mockResolvedValue({ data: comConexao });
+  h.patch.mockResolvedValue({ data: { id: "conexao-1" } });
+  mount();
+  const teto = (await screen.findByLabel("Quantas respostas da IA por conversa")) as HTMLInputElement;
+
+  // Nunca salvo e em branco: o botão está desligado (vale o padrão 20, nada a enviar).
+  expect(teto.value).toBe("");
+  expect((screen.getByRole("button", { name: "Salvar teto" }) as HTMLButtonElement).disabled).toBe(true);
+
+  fireEvent.change(teto, { target: { value: "150" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar teto" }));
+  await waitFor(() =>
+    expect(h.patch).toHaveBeenCalledWith(ROTA, { config: { teto_anonimo: 150 } }),
+  );
+});
