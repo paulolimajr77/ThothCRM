@@ -78,7 +78,7 @@ function politicaProvedora(url: string | null): string | null {
 }
 
 function montarCsp(origens: string[]): string {
-  const ancestrais = origens.length > 0 ? origens.join(" ") : "'none'";
+  const ancestrais = origens.length > 0 ? "*" : "'none'";
   return [
     `frame-ancestors ${ancestrais}`,
     "base-uri 'none'",

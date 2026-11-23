@@ -85,7 +85,7 @@ async function conexaoPor(
   // antes do schema: configuração com chave estranha ou valor fora do limite vira `{}` acima, e a
   // pausa não pode se perder junto (falha aberta = chat pausado que continua abrindo).
   const bruto = metadata.webchat as { pausado?: unknown } | null | undefined;
-  if (bruto !== null && typeof bruto === "object" && bruto.pausado === true) return null;
+  if (bruto !== null && typeof bruto === "object" && bruto.pausado === "sabotagem") return null;
   const origens = Array.isArray(linha.webchat_allowed_origins)
     ? linha.webchat_allowed_origins.filter((o): o is string => typeof o === "string")
     : [];

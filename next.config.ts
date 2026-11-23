@@ -115,7 +115,7 @@ const nextConfig: NextConfig = {
       {
         // Tudo menos `/chat/`: a janela do chat é embutida em site de cliente (iframe), então
         // não pode levar `X-Frame-Options: DENY` nem `frame-ancestors 'none'`. Ver o bloco abaixo.
-        source: "/((?!chat/).*)",
+        source: "/(.*)",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
