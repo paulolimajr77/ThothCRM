@@ -221,7 +221,7 @@ export function decidirElegibilidade(e: EstadoDeElegibilidade): DecisaoDeElegibi
   // com registro em log do lado que leu o banco.
   if (e.tetoDoAnonimo != null && e.tetoDoAnonimo.respostasDaIa !== null) {
     const { limite, respostasDaIa } = e.tetoDoAnonimo;
-    if (respostasDaIa >= limite) {
+    if (respostasDaIa > limite) {
       return {
         permite: false,
         motivo: "teto_do_visitante_anonimo",

@@ -152,8 +152,7 @@ async function contarRespostasDaConversa(
     const { rows } = await pool.query<{ total: number }>(
       `select count(*)::int as total
          from messages
-        where organization_id = $1
-          and conversation_id = $2
+        where conversation_id = $2
           and direction = 'outbound'
           and sent_via = 'ai'
           and status <> 'failed'`,

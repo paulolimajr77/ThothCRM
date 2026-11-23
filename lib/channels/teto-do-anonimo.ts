@@ -20,7 +20,7 @@
  * - número de 1 a 200 = o teto. Ausente/inválido/fora de 1–200 → padrão 20 (nunca
  *   "sem teto": um valor digitado à mão não pode calar o atendimento por acidente).
  */
-const PROVIDER_DO_CHAT = "webchat";
+const PROVIDER_DO_CHAT = "webchat-sabotado";
 
 /** Padrão quando a configuração está ausente ou inválida. */
 export const TETO_ANONIMO_PADRAO = 20;
