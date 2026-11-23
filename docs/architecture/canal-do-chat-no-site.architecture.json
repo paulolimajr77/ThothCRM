@@ -32,7 +32,9 @@
     { "id": "redact", "lane": "banco", "col": 3, "type": "database", "label": "trg_redigir_conversas_ao_anonimizar: ao virar is_anonymized, zera contacts.social_identity e redige as mensagens" },
     { "id": "janela", "lane": "servidor", "col": 2, "type": "route", "label": "GET /chat/<chave>: HTML da janela com CSP frame-ancestors da lista de domínios; referencia /webchat-janela.js; sem React" },
     { "id": "bolha", "lane": "visitante", "col": 1, "type": "external", "label": "public/webchat.js: lê a chave do ?k= do próprio src, cria a bolha e o iframe; postMessage com href/referrer/UTMs" },
-    { "id": "aba", "lane": "operador", "col": 2, "type": "frontend", "label": "Conexões › Chat no site (CanalChatClient): ativa conexão, domínios, aparência, coleta, pausa (metadata.webchat.pausado), giro da chave" }
+    { "id": "aba", "lane": "operador", "col": 2, "type": "frontend", "label": "Conexões › Chat no site (CanalChatClient): ativa conexão, domínios, aparência, coleta, pausa (metadata.webchat.pausado), giro da chave, teto de respostas da IA para visitante anônimo (metadata.webchat.teto_anonimo)" },
+    { "id": "gate", "lane": "servidor", "col": 2, "type": "service", "label": "Gate de elegibilidade: teto de respostas da IA para visitante anônimo (motivo teto_do_visitante_anonimo); nega quando respostasDaIa >= limite; lê contagem em messages e configuração da aba" },
+    { "id": "teto_cfg", "lane": "banco", "col": 3, "type": "database", "label": "Configuração do teto: metadata.webchat.teto_anonimo (inteiro 1 a 200, padrão 20), vem da aba Chat no site" }
   ],
   "edges": [
     { "id": "e1", "from": "admin", "to": "conexao_rota", "label": "cria, muda domínios, gira a chave" },
@@ -63,6 +65,9 @@
     { "id": "e26", "from": "aba", "to": "sessao_banco", "label": "grava webchat_public_key, allowed_origins, metadata.webchat" },
     { "id": "e27", "from": "janela", "to": "chave_rota", "label": "POST /api/v1/webchat/sessao com a chave pública" },
     { "id": "e28", "from": "janela", "to": "mensagens_rota", "label": "POST /api/v1/webchat/mensagens com bearer token" },
-    { "id": "e29", "from": "janela", "to": "eventos_rota", "label": "GET /api/v1/webchat/eventos stream com bearer token" }
+    { "id": "e29", "from": "janela", "to": "eventos_rota", "label": "GET /api/v1/webchat/eventos stream com bearer token" },
+    { "id": "e30", "from": "aba", "to": "gate", "label": "configuração do teto: metadata.webchat.teto_anonimo" },
+    { "id": "e31", "from": "gate", "to": "contato_banco", "label": "conta respostas da IA: direction=outbound, sent_via=ai, status<>failed" },
+    { "id": "e32", "from": "teto_cfg", "to": "gate", "label": "limite do teto (1 a 200, padrão 20)" }
   ]
 }
