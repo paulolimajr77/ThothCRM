@@ -1756,7 +1756,7 @@ export const AUDIT_ACTIONS = [
   "channel.webchat_created",
   "channel.webchat_updated",
   "channel.webchat_key_rotated",
-  // Pausa do chat (Task 7): emitida só quando o valor MUDA. Metadata leva o canal e o novo valor.
+  // Pausa do chat: emitida só quando o valor MUDA. Metadata leva o canal e o novo valor.
   "channel.webchat_paused",
   // Venda registrada à mão num negócio (Vendas registradas): conta no painel de
   // vendas pela DATA dela, em qualquer etapa. Metadata com lead, valor e data —
