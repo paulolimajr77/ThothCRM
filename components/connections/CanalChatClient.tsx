@@ -22,7 +22,7 @@ import { apiClient } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/types";
 import { copyToClipboard } from "@/lib/clipboard";
 import { codigoParaColar, linkDireto } from "@/lib/channels/webchat/codigo-para-colar";
-import { TETO_ANONIMO_PADRAO } from "@/lib/channels/webchat/teto-do-anonimo";
+import { TETO_ANONIMO_MAXIMO, TETO_ANONIMO_PADRAO } from "@/lib/channels/teto-do-anonimo";
 import { useT } from "@/hooks/i18n/useT";
 
 /**
@@ -197,11 +197,10 @@ function ComConexao({ estado, aoMudar }: { estado: Estado; aoMudar: () => Promis
   const [ocupado, setOcupado] = useState(false);
   const [girarAberto, setGirarAberto] = useState(false);
   const [pausaAberta, setPausaAberta] = useState(false);
-  const [tetoAberto, setTetoAberto] = useState(false);
   const pausado = estado.config.pausado === true;
   const tetoPreenchido = estado.config.teto_anonimo !== undefined && Number.isInteger(estado.config.teto_anonimo);
   const [tetoAnonimo, setTetoAnonimo] = useState(
-    tetoPreenchido ? String(estado.config.teto_anonimo) : String(TETO_ANONIMO_PADRAO),
+    tetoPreenchido ? String(estado.config.teto_anonimo) : "",
   );
 
   // Aparência: campo em branco é "não mudar". Só vai o que foi preenchido.
@@ -216,11 +215,12 @@ function ComConexao({ estado, aoMudar }: { estado: Estado; aoMudar: () => Promis
   // Coleta: o servidor troca o objeto `coleta` inteiro, então vai sempre com os três campos.
   const coletaMudou = CAMPOS.some((campo) => coleta[campo] !== coletaAtual(estado.config)[campo]);
 
-  // Teto do anônimo: inteiro de 1 a 200. Campo em branco é "não mudar".
+  // Teto do anônimo: inteiro de 1 a 200. Em branco = "não mudar" (vale o salvo, ou 20 se nunca salvo).
   const tetoBruto = tetoAnonimo.trim();
-  const tetoValido = tetoBruto === "" || /^[1-9][0-9]?$|^200$/.test(tetoBruto);
-  const tetoNumero = tetoBruto === "" ? null : Number(tetoBruto);
-  const tetoMudou = tetoPreenchido ? tetoNumero !== estado.config.teto_anonimo : tetoBruto !== "";
+  const tetoNumero = /^[0-9]+$/.test(tetoBruto) ? Number(tetoBruto) : null;
+  const tetoValido = tetoBruto === "" || (tetoNumero !== null && tetoNumero >= 1 && tetoNumero <= TETO_ANONIMO_MAXIMO);
+  const tetoAtual = tetoPreenchido ? (estado.config.teto_anonimo ?? null) : null;
+  const tetoMudou = tetoBruto !== "" && tetoValido && tetoNumero !== tetoAtual;
 
   const listaDominios = linhasDeDominio(dominios);
   const dominiosMudaram = listaDominios.join("\n").toLowerCase() !== estado.allowed_origins.join("\n");
@@ -445,12 +445,9 @@ function ComConexao({ estado, aoMudar }: { estado: Estado; aoMudar: () => Promis
         <div>
           <Button
             onClick={() =>
-              salvar(
-                { config: { teto_anonimo: tetoNumero } },
-                () => {
-                  setTetoAnonimo(tetoNumero !== null ? String(tetoNumero) : String(TETO_ANONIMO_PADRAO));
-                },
-              )
+              salvar({ config: { teto_anonimo: tetoNumero } }, () => {
+                setTetoAnonimo(tetoNumero !== null ? String(tetoNumero) : "");
+              })
             }
             disabled={ocupado || !tetoMudou || !tetoValido}
           >
