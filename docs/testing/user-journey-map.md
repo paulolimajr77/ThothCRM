@@ -289,6 +289,7 @@ pela tela fica para o CI do PR ao mantenedor.
 | J74.9 | Retomar o chat | PATCH `config.pausado: false` volta a funcionar: sessão, mensagens e eventos respondem normalmente |
 | J74.10 | Visitante anônimo atinge o teto de respostas da IA | O visitante manda mensagens até o teto configurado na aba (padrão 20); passado o teto, a IA para de responder e a conversa fica na Inbox para a equipe; quem deixa e-mail sai do teto — escrito e NÃO executado ainda: o e2e só roda em PR para a main; a prova pela tela fica para o CI do PR ao mantenedor. |
 | J74.11 | Horário do atendimento e conexão sem agente | Fora do horário do agente da conexão, a conversa mostra o aviso do agente ou o texto padrão com a hora da volta. Sem agente publicado, depois da primeira mensagem aceita aparece "Recebemos sua mensagem. Nossa equipe responde por aqui." O chat segue funcionando nos dois casos. Roteiro: `docs/testing/chat-no-site.md`, caso C9 |
+| J74.12 | Origem da página | Visitante chega por uma página com `utm_source=instagram` e `utm_campaign=natal` e manda a primeira mensagem: a ficha do contato mostra essa origem. Uma segunda mensagem, de outra página, não troca a origem. Roteiro: `docs/testing/chat-no-site.md`, caso C10 |
 
 ## J5 — Time: convites e atuação de atendentes `[P0]` (convite) / `[P1]` (rotina)
 
