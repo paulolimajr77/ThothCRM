@@ -128,6 +128,7 @@ vi.mock("@/lib/audit", () => ({
 }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => h.admin }));
 
+import { PROVIDERS_DE_TELEFONE } from "@/lib/channels/capabilities";
 import { GET, PATCH, POST } from "./route";
 import { POST as GIRAR } from "./girar/route";
 
@@ -308,7 +309,7 @@ describe("PATCH valida whatsapp_channel_session_id", () => {
     h.estado.tabela.push({
       id: "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1",
       organization_id: ORG,
-      provider: "waha",
+      provider: PROVIDERS_DE_TELEFONE[0],
       phone_number: "+5511999999999",
       archived_at: null,
       webchat_public_key: "wck_" + "a".repeat(43),
@@ -320,7 +321,7 @@ describe("PATCH valida whatsapp_channel_session_id", () => {
     h.estado.tabela.push({
       id: "b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2",
       organization_id: ORG,
-      provider: "waha",
+      provider: PROVIDERS_DE_TELEFONE[0],
       phone_number: null,
       archived_at: null,
       webchat_public_key: "wck_" + "b".repeat(43),
@@ -358,7 +359,7 @@ describe("PATCH valida whatsapp_channel_session_id", () => {
     h.estado.tabela.push({
       id: "d4d4d4d4-d4d4-4d4d-8d4d-d4d4d4d4d4d4",
       organization_id: "f6f6f6f6-f6f6-4f6f-8f6f-f6f6f6f6f6f6",
-      provider: "waha",
+      provider: PROVIDERS_DE_TELEFONE[0],
       phone_number: "+5511999999999",
       archived_at: null,
       webchat_public_key: "wck_" + "d".repeat(43),

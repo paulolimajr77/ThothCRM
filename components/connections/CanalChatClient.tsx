@@ -234,7 +234,10 @@ function ComConexao({ estado, aoMudar }: { estado: Estado; aoMudar: () => Promis
   const whatsappInicial = estado.config.whatsapp_channel_session_id ?? "";
   const [whatsapp, setWhatsapp] = useState(whatsappInicial);
   const conexoes = useChannelSessions();
-  const conexoesDeWhatsapp = (conexoes.data ?? []).filter((c) => alcancaNumero(c.provider) && c.phone_number);
+  // Lista só quando a resposta é lista: o que vier fora do formato vira "nenhuma conexão".
+  const conexoesDeWhatsapp = (Array.isArray(conexoes.data) ? conexoes.data : []).filter(
+    (c) => alcancaNumero(c.provider) && c.phone_number,
+  );
   const whatsappMudou = whatsapp !== whatsappInicial;
 
   // Uma resposta rápida por linha, aparadas e sem linha vazia. A validação de verdade é do servidor.
