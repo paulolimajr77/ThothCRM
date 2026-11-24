@@ -24,6 +24,9 @@ export interface EntradaDaJanela {
   config: ConfiguracaoDoChat;
   controlador: { razaoSocial: string | null; politicaUrl: string | null };
   origens: string[];
+  /** Número de WhatsApp (só dígitos) resolvido pelo servidor a partir de
+   * `config.whatsapp_channel_session_id`, ou `null` quando não há conexão válida. */
+  whatsappNumero?: string | null;
 }
 
 export interface JanelaMontada {
@@ -162,6 +165,9 @@ export function montarJanela(entrada: EntradaDaJanela): JanelaMontada {
     autoAbrirSegundos: config.auto_abrir_segundos ?? 0,
     som: config.som ?? false,
     respostasRapidas: config.respostas_rapidas ?? [],
+    // "Continuar no WhatsApp" (F4-B): número só com dígitos, ou null quando não há
+    // conexão de WhatsApp válida configurada. O botão só aparece se houver número.
+    whatsappNumero: entrada.whatsappNumero,
   };
 
   const html = `<!doctype html>

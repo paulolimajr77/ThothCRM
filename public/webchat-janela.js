@@ -68,6 +68,66 @@
     alignSelf: "flex-start",
   };
 
+  /* ---------- "Continuar no WhatsApp" (F4-B) ---------- */
+
+  /** Chaves de UTM aceitas, mesma lista fechada de `lib/leads/origem-do-site.ts`. */
+  var CHAVES_DE_UTM_JS = [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_term",
+    "utm_content",
+    "utm_adset",
+    "utm_ad",
+    "utm_placement",
+    "gclid",
+    "fbclid",
+  ];
+  var TAMANHO_MAXIMO_DO_VALOR_JS = 200;
+  var TAMANHO_MAXIMO_DO_CODIGO_JS = 3000;
+  var VERSAO_DO_CODIGO_JS = "dk1";
+
+  /** Normaliza um mapa de UTM: só chaves aceitas, minúsculas, aparado, teto por valor. */
+  function normalizarUtmJs(carga) {
+    if (!carga || typeof carga !== "object" || Array.isArray(carga)) return {};
+    var utm = {};
+    for (var chaveBruta in carga) {
+      var chave = chaveBruta.trim().toLowerCase();
+      if (CHAVES_DE_UTM_JS.indexOf(chave) === -1) continue;
+      var valor = carga[chaveBruta];
+      if (typeof valor !== "string") continue;
+      var limpo = valor.trim().slice(0, TAMANHO_MAXIMO_DO_VALOR_JS);
+      if (limpo === "") continue;
+      utm[chave] = limpo;
+    }
+    return utm;
+  }
+
+  /** Base64URL sem padding, igual a `Buffer.from(...).toString("base64url")`. */
+  function base64UrlJs(texto) {
+    return btoa(unescape(encodeURIComponent(texto)))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+  }
+
+  /**
+   * O código `[dk1:<base64url>]` que a página embute no `?text=` do `wa.me`.
+   * Espelho de `montarCodigoDeOrigemDoSite` em `lib/leads/origem-do-site.ts`.
+   * Devolve `null` quando não há UTM válida ou o código passa do teto.
+   */
+  function montarCodigoDeOrigemDoSiteJs(utm) {
+    var normalizado = normalizarUtmJs(utm);
+    var chaves = Object.keys(normalizado);
+    if (chaves.length === 0) return null;
+    chaves.sort();
+    var ordenado = {};
+    for (var i = 0; i < chaves.length; i++) ordenado[chaves[i]] = normalizado[chaves[i]];
+    var carga = base64UrlJs(JSON.stringify(ordenado));
+    if (carga.length > TAMANHO_MAXIMO_DO_CODIGO_JS) return null;
+    return "[dk" + VERSAO_DO_CODIGO_JS.slice(2) + ":" + carga + "]";
+  }
+
   /* ---------- funções puras (testadas) ---------- */
 
   /** Só o que a página de fora manda, aparado e cortado em 200 caracteres por valor. */
@@ -1049,6 +1109,29 @@
     });
     ui.cabecalho.appendChild(fechar);
 
+    // "Continuar no WhatsApp": só aparece quando o servidor resolveu um número.
+    if (typeof config.whatsappNumero === "string" && config.whatsappNumero !== "") {
+      var btnWhatsapp = criar(doc, "button", null, "Continuar no WhatsApp");
+      btnWhatsapp.type = "button";
+      estilo(btnWhatsapp, {
+        padding: ".55rem .9rem",
+        border: "0",
+        borderRadius: "8px",
+        background: "var(--cor)",
+        color: "var(--cor-texto)",
+        font: "inherit",
+        cursor: "pointer",
+        marginRight: ".5rem",
+      });
+      btnWhatsapp.addEventListener("click", function () {
+        var dk1 = estado.contexto ? montarCodigoDeOrigemDoSiteJs(estado.contexto.utm) : null;
+        var url = "https://wa.me/" + config.whatsappNumero + (dk1 ? "?text=" + encodeURIComponent(dk1) : "");
+        var aba = window.open(url, "_blank");
+        if (aba) aba.opener = null;
+      });
+      ui.cabecalho.insertBefore(btnWhatsapp, fechar);
+    }
+
     function fecharJanela() {
       if (pai && typeof pai.postMessage === "function") pai.postMessage({ tipo: "fechar" }, "*");
     }
@@ -1107,6 +1190,8 @@
       lerEventos: lerEventos,
       validarColeta: validarColeta,
       normalizarContexto: normalizarContexto,
+      normalizarUtmJs: normalizarUtmJs,
+      montarCodigoDeOrigemDoSiteJs: montarCodigoDeOrigemDoSiteJs,
       iniciar: iniciar,
     };
   } else if (typeof document !== "undefined") {

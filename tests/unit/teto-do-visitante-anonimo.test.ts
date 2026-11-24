@@ -14,8 +14,6 @@
  *  3. RASTRO (ponto 3): a passagem grava a linha em `passagens_de_atendimento`
  *     com `origem = 'teto_do_anonimo'` e `motivo_codigo = 'teto_do_visitante_anonimo'`.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -59,7 +57,7 @@ const MENSAGEM = "66666666-6666-4666-8666-666666666666";
 
 function poolCom(
   historico: Array<{ direction: "inbound" | "outbound"; body: string; sent_at: Date }>,
-  fixada: { direction: "inbound" | "outbound"; body: string; sent_at: Date },
+  _fixada: { direction: "inbound" | "outbound"; body: string; sent_at: Date },
 ): never {
   return {
     query: vi.fn(async (sql: string) => {

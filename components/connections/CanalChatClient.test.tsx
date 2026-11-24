@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PROVIDERS_DE_TELEFONE } from "@/lib/channels/capabilities";
 
 import { ApiError } from "@/lib/api/types";
 import { makeQueryClient } from "@/lib/query/client";
@@ -11,6 +12,13 @@ vi.mock("@/lib/api/client", () => ({ apiClient: { get: h.get, post: h.post, patc
 vi.mock("@/hooks/i18n/useT", () => ({ useT: () => (s: string) => s }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
+// A lista de conexões (seletor do "Continuar no WhatsApp") tem leitura própria; dublada aqui
+// para que `h.get` conte só as leituras do chat. `channelLabel` segue o real.
+const conexoes = vi.hoisted(() => ({ lista: [] as Array<Record<string, unknown>> }));
+vi.mock("@/hooks/channels/useChannelSessions", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  useChannelSessions: () => ({ data: conexoes.lista, isLoading: false, isError: false }),
+}));
 
 const ROTA = "/api/v1/channels/webchat";
 const CHAVE = "wck_chave-de-teste_1234567890";
@@ -41,6 +49,7 @@ beforeEach(() => {
   h.get.mockReset();
   h.post.mockReset();
   h.patch.mockReset();
+  conexoes.lista = [];
 });
 
 function mount() {
@@ -621,5 +630,38 @@ it("teto_anonimo aceita 150 (entre 100 e 200) e em branco não envia nada", asyn
   fireEvent.click(screen.getByRole("button", { name: "Salvar teto" }));
   await waitFor(() =>
     expect(h.patch).toHaveBeenCalledWith(ROTA, { config: { teto_anonimo: 150 } }),
+  );
+});
+
+it("Continuar no WhatsApp: lista só conexões com número, salva o id e \"Nenhum\" manda null", async () => {
+  conexoes.lista = [
+    { id: "zap-1", provider: PROVIDERS_DE_TELEFONE[0], display_name: "Vendas", phone_number: "+5511999990000" },
+    { id: "zap-sem-numero", provider: PROVIDERS_DE_TELEFONE[0], display_name: "Sem número", phone_number: null },
+    { id: "robo", provider: "telegram", display_name: "Robô", phone_number: "+5511888880000" },
+  ];
+  h.get.mockResolvedValue({ data: comConexao });
+  h.patch.mockResolvedValue({ data: { id: "conexao-1" } });
+  mount();
+  const seletor = (await screen.findByLabelText("WhatsApp do botão")) as HTMLSelectElement;
+  expect(Array.from(seletor.options).map((o) => o.value)).toEqual(["", "zap-1"]);
+  const salvarBotao = screen.getByRole("button", { name: "Salvar botão do WhatsApp" });
+  expect(salvarBotao).toBeDisabled();
+
+  fireEvent.change(seletor, { target: { value: "zap-1" } });
+  fireEvent.click(salvarBotao);
+  await waitFor(() =>
+    expect(h.patch).toHaveBeenCalledWith(ROTA, { config: { whatsapp_channel_session_id: "zap-1" } }),
+  );
+});
+
+it("Continuar no WhatsApp: voltar para Nenhum manda null", async () => {
+  h.get.mockResolvedValue({ data: { ...comConexao, config: { ...comConexao.config, whatsapp_channel_session_id: "zap-1" } } });
+  h.patch.mockResolvedValue({ data: { id: "conexao-1" } });
+  mount();
+  const seletor = (await screen.findByLabelText("WhatsApp do botão")) as HTMLSelectElement;
+  fireEvent.change(seletor, { target: { value: "" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar botão do WhatsApp" }));
+  await waitFor(() =>
+    expect(h.patch).toHaveBeenCalledWith(ROTA, { config: { whatsapp_channel_session_id: null } }),
   );
 });

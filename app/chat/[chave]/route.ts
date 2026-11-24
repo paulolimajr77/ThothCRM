@@ -20,6 +20,7 @@ import { montarJanela, PAGINA_INDISPONIVEL } from "@/lib/channels/webchat/janela
 import { lerControladorDoChat } from "@/lib/legal/controlador-do-chat";
 import { ipDoCliente } from "@/lib/http/ip-do-cliente";
 import { logger } from "@/lib/logger";
+import { alcancaNumero } from "@/lib/channels/capabilities";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /** A janela não é gerada em cache: a configuração e a marca mudam sem aviso. */
@@ -70,12 +71,31 @@ export async function GET(req: Request, { params }: { params: Promise<{ chave: s
       lerControladorDoChat(admin, conexao.organizationId),
     ]);
 
+    // "Continuar no WhatsApp" (F4-B): resolve o número da conexão escolhida,
+    // filtrando a organização da conexão do chat. Só dígitos, sem número = sem botão.
+    let whatsappNumero: string | null = null;
+    const sessaoId = (conexao.config as { whatsapp_channel_session_id?: string | null }).whatsapp_channel_session_id;
+    if (sessaoId) {
+      const { data: sessao, error: erroSessao } = await admin
+        .from("channel_sessions")
+        .select("phone_number, provider")
+        .eq("id", sessaoId)
+        .eq("organization_id", conexao.organizationId)
+        .is("archived_at", null)
+        .maybeSingle();
+      if (!erroSessao && sessao && alcancaNumero(sessao.provider as string | null)) {
+        const numero = sessao.phone_number as string | null;
+        if (numero) whatsappNumero = numero.replace(/\D/g, "");
+      }
+    }
+
     const { html, csp } = montarJanela({
       chave,
       marca,
       config: conexao.config,
       controlador,
       origens: conexao.allowedOrigins,
+      whatsappNumero,
     });
 
     return new Response(html, {

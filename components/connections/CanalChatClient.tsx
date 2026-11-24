@@ -24,6 +24,8 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { codigoParaColar, linkDireto } from "@/lib/channels/webchat/codigo-para-colar";
 import { TETO_ANONIMO_MAXIMO, TETO_ANONIMO_PADRAO } from "@/lib/channels/teto-do-anonimo";
 import { useT } from "@/hooks/i18n/useT";
+import { channelLabel, useChannelSessions } from "@/hooks/channels/useChannelSessions";
+import { alcancaNumero } from "@/lib/channels/capabilities";
 
 /**
  * Conectar o chat no site (spec 36, F2). Só aparece quando a instalação liga o módulo
@@ -67,6 +69,8 @@ interface Config {
   /** Teto de respostas da IA para visitante anônimo (`metadata.webchat.teto_anonimo`).
    * 1 a 200; ausente ou inválido cai no padrão 20. */
   teto_anonimo?: number;
+  /** Conexão de WhatsApp do botão "Continuar no WhatsApp" (F4-B); `null` = sem botão. */
+  whatsapp_channel_session_id?: string | null;
 }
 
 interface Estado {
@@ -225,6 +229,16 @@ function ComConexao({ estado, aoMudar }: { estado: Estado; aoMudar: () => Promis
   const [autoAbrirSegundos, setAutoAbrirSegundos] = useState(String(autoAbrirInicial));
   const [som, setSom] = useState(somInicial);
   const [respostasRapidas, setRespostasRapidas] = useState(respostasInicial);
+
+  // "Continuar no WhatsApp" (F4-B): só as conexões que alcançam um número. "" = nenhuma.
+  const whatsappInicial = estado.config.whatsapp_channel_session_id ?? "";
+  const [whatsapp, setWhatsapp] = useState(whatsappInicial);
+  const conexoes = useChannelSessions();
+  // Lista só quando a resposta é lista: o que vier fora do formato vira "nenhuma conexão".
+  const conexoesDeWhatsapp = (Array.isArray(conexoes.data) ? conexoes.data : []).filter(
+    (c) => alcancaNumero(c.provider) && c.phone_number,
+  );
+  const whatsappMudou = whatsapp !== whatsappInicial;
 
   // Uma resposta rápida por linha, aparadas e sem linha vazia. A validação de verdade é do servidor.
   function linhasDeResposta(texto: string): string[] {
@@ -521,6 +535,40 @@ function ComConexao({ estado, aoMudar }: { estado: Estado; aoMudar: () => Promis
             disabled={ocupado || !formatoMudou || !formatoValido}
           >
             {t("Salvar formato")}
+          </Button>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h4 className="text-sm font-medium">{t("Continuar no WhatsApp")}</h4>
+        <p className="text-xs text-muted-foreground">
+          {t("Mostra na janela um botão que abre a conversa no WhatsApp escolhido, levando a origem da página.")}
+        </p>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="canal-chat-whatsapp">{t("WhatsApp do botão")}</Label>
+          <select
+            id="canal-chat-whatsapp"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+          >
+            <option value="">{t("Nenhum (sem botão)")}</option>
+            {conexoesDeWhatsapp.map((c) => (
+              <option key={c.id} value={c.id}>
+                {channelLabel(c, t)}
+              </option>
+            ))}
+          </select>
+        </div>
+        {conexoes.isError ? (
+          <p className="text-xs text-destructive">{t("Não foi possível carregar as conexões de WhatsApp.")}</p>
+        ) : null}
+        <div>
+          <Button
+            onClick={() => salvar({ config: { whatsapp_channel_session_id: whatsapp === "" ? null : whatsapp } })}
+            disabled={ocupado || !whatsappMudou}
+          >
+            {t("Salvar botão do WhatsApp")}
           </Button>
         </div>
       </section>

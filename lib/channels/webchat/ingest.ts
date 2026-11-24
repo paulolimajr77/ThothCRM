@@ -325,8 +325,14 @@ async function lerMensagemPeloExternalId(
 /**
  * Grava os campos que o visitante informou. Campo `oculto` é ignorado; campo vazio ou
  * ausente não apaga o que o contato já tem; nome real não some por um vazio.
+ *
+ * Telefone e e-mail são tentados UM POR VEZ: se um colidir com outra ficha viva
+ * (23505), o valor não é descartado — vira `source_metadata.telefone_em_conflito`
+ * ou `source_metadata.email_em_conflito`, gravado por merge no jsonb (nunca apaga
+ * as outras chaves), e o outro campo segue normalmente. O nome não é único e nunca
+ * colide.
  */
-async function atualizarDadosDoContato(
+export async function atualizarDadosDoContato(
   admin: SupabaseClient,
   input: {
     organizationId: string;
@@ -339,37 +345,76 @@ async function atualizarDadosDoContato(
   const telefone = valorGravavel(input.contato, input.coleta, "telefone");
   const email = valorGravavel(input.contato, input.coleta, "email");
 
-  const patch: Record<string, string> = {};
+  if (!nome && !telefone && !email) return;
+
+  // Nome não é único: grava sozinho, sem risco de conflito.
   if (nome) {
-    patch.name = nome;
-    patch.display_name = nome;
-  }
-  if (telefone) patch.phone_number = telefone;
-  if (email) patch.email = email;
-  if (Object.keys(patch).length === 0) return;
-
-  const { error } = await admin
-    .from("contacts")
-    .update(patch)
-    .eq("organization_id", input.organizationId)
-    .eq("id", input.contactId);
-
-  // 23505: telefone ou e-mail já é de outro contato da organização. A mensagem entra mesmo
-  // assim, sem o campo repetido; o nome, se veio, é gravado sozinho.
-  if (error?.code === "23505") {
-    logger.warn("webchat: telefone ou e-mail já usado por outro contato; mensagem gravada sem ele", {
-      rota: "webchat_ingest",
-    });
-    if (!nome) return;
     const { error: erroNome } = await admin
       .from("contacts")
       .update({ name: nome, display_name: nome })
       .eq("organization_id", input.organizationId)
       .eq("id", input.contactId);
     if (erroNome) throw new Error(`webchat_contact_update_failed: ${erroNome.code ?? ""}`.trim());
-    return;
   }
-  if (error) throw new Error(`webchat_contact_update_failed: ${error.code ?? ""}`.trim());
+
+  // Telefone: se colidir, guarda em source_metadata e segue com o e-mail.
+  if (telefone) {
+    const { error } = await admin
+      .from("contacts")
+      .update({ phone_number: telefone })
+      .eq("organization_id", input.organizationId)
+      .eq("id", input.contactId);
+    if (error?.code === "23505") {
+      await gravarConflitoEmMetadados(admin, input, "telefone_em_conflito", telefone);
+    } else if (error) {
+      throw new Error(`webchat_contact_update_failed: ${error.code ?? ""}`.trim());
+    }
+  }
+
+  // E-mail: se colidir, guarda em source_metadata e segue.
+  if (email) {
+    const { error } = await admin
+      .from("contacts")
+      .update({ email })
+      .eq("organization_id", input.organizationId)
+      .eq("id", input.contactId);
+    if (error?.code === "23505") {
+      await gravarConflitoEmMetadados(admin, input, "email_em_conflito", email);
+    } else if (error) {
+      throw new Error(`webchat_contact_update_failed: ${error.code ?? ""}`.trim());
+    }
+  }
+}
+
+/**
+ * Lê o `source_metadata` atual da ficha, mescla a chave do conflito e regrava.
+ * Nunca apaga as outras chaves. Lê filtrando `organization_id` e `id` — a fonte
+ * confiável, nunca o corpo do pedido.
+ */
+async function gravarConflitoEmMetadados(
+  admin: SupabaseClient,
+  input: {
+    organizationId: string;
+    contactId: string;
+  },
+  chave: "telefone_em_conflito" | "email_em_conflito",
+  valor: string,
+): Promise<void> {
+  const { data: contato, error: erroDaLeitura } = await admin
+    .from("contacts")
+    .select("source_metadata")
+    .eq("organization_id", input.organizationId)
+    .eq("id", input.contactId)
+    .maybeSingle();
+  // Sem a leitura, regravar só a chave nova apagaria o resto do `source_metadata`.
+  if (erroDaLeitura) throw new Error(`webchat_contact_metadata_failed: ${erroDaLeitura.code ?? ""}`.trim());
+  const atual = (contato?.source_metadata as Record<string, unknown> | null) ?? {};
+  const { error } = await admin
+    .from("contacts")
+    .update({ source_metadata: { ...atual, [chave]: valor } })
+    .eq("organization_id", input.organizationId)
+    .eq("id", input.contactId);
+  if (error) throw new Error(`webchat_contact_metadata_failed: ${error.code ?? ""}`.trim());
 }
 
 /**

@@ -78,6 +78,7 @@ export type MotivoDeDuplicidade =
   | "telefone"
   | "email"
   | "telefone_em_conflito"
+  | "email_em_conflito"
   | "cpf"
   | "whatsapp"
   | "nome_parecido";
@@ -157,6 +158,12 @@ export function chaveDeEmail(contato: Pick<ContatoParaDeduplicar, "email" | "ema
 export function telefoneEmConflito(contato: Pick<ContatoParaDeduplicar, "source_metadata">): string {
   const valor = contato.source_metadata?.["telefone_em_conflito"];
   return typeof valor === "string" ? chaveDeTelefone(valor) : "";
+}
+
+/** O e-mail que a ingestão do chat parkou por já pertencer a outro contato vivo. */
+export function emailEmConflito(contato: Pick<ContatoParaDeduplicar, "source_metadata">): string {
+  const valor = contato.source_metadata?.["email_em_conflito"];
+  return typeof valor === "string" ? chaveDeEmail({ email: valor, email_normalized: null }) : "";
 }
 
 /**
@@ -284,6 +291,13 @@ export function encontrarContatosDuplicados(
     if (!conflito) continue;
     for (const outroId of porTelefone.get(conflito) ?? []) {
       if (outroId !== contato.id) unir(contato.id, outroId, "telefone_em_conflito");
+    }
+  }
+  for (const contato of vivos) {
+    const conflito = emailEmConflito(contato);
+    if (!conflito) continue;
+    for (const outroId of porEmail.get(conflito) ?? []) {
+      if (outroId !== contato.id) unir(contato.id, outroId, "email_em_conflito");
     }
   }
 
@@ -430,7 +444,11 @@ export function ligadosPorMotivoForte(
   const conflitoA = telefoneEmConflito(a);
   if (conflitoA && conflitoA === telefoneB) return true;
   const conflitoB = telefoneEmConflito(b);
-  return Boolean(conflitoB && conflitoB === telefoneA);
+  if (conflitoB && conflitoB === telefoneA) return true;
+  const emailConflitoA = emailEmConflito(a);
+  if (emailConflitoA && emailConflitoA === chaveDeEmail(b)) return true;
+  const emailConflitoB = emailEmConflito(b);
+  return Boolean(emailConflitoB && emailConflitoB === chaveDeEmail(a));
 }
 
 /**

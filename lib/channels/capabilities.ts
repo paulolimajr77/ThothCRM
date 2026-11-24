@@ -413,6 +413,15 @@ export const PROVIDERS_DE_TELEFONE = [
 ] as const satisfies readonly Exclude<(typeof PROVIDERS_DE_MENSAGEM)[number], "zernio_social" | "telegram" | "webchat">[];
 
 /**
+ * `true` quando a conexão alcança um número de telefone (está em `PROVIDERS_DE_TELEFONE`).
+ * Aceita a coluna crua do banco: provider desconhecido ou `null` responde `false`.
+ * Quem chama fora de `lib/channels/` usa esta função, e não o nome do provider.
+ */
+export function alcancaNumero(provider: string | null | undefined): boolean {
+  return (PROVIDERS_DE_TELEFONE as readonly string[]).includes(provider ?? "");
+}
+
+/**
  * `true` quando a linha de `channel_sessions` é um canal de mensagem.
  *
  * Aceita `string | null | undefined` de propósito: quem chama está lendo uma
