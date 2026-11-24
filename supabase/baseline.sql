@@ -84548,10 +84548,10 @@ $$;
 revoke execute on function public.fn_tipo_nasce_no_fuso_da_empresa() from public, anon, authenticated;
 
 drop trigger if exists trg_tipo_nasce_no_fuso_da_empresa on public.calendar_event_types;
-create trigger trg_tipo_nasce_no_fuso_da_empresa
-  before insert on public.calendar_event_types
-  for each row
-  execute function public.fn_tipo_nasce_no_fuso_da_empresa();
+-- SABOTAGEM create trigger trg_tipo_nasce_no_fuso_da_empresa
+-- SABOTAGEM   before insert on public.calendar_event_types
+-- SABOTAGEM   for each row
+-- SABOTAGEM   execute function public.fn_tipo_nasce_no_fuso_da_empresa();
 
 -- (c) O tipo acompanha a empresa.
 create or replace function public.fn_tipo_segue_o_fuso_da_empresa()
