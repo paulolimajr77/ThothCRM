@@ -84587,10 +84587,10 @@ $$;
 revoke execute on function public.fn_tipo_segue_o_fuso_da_empresa() from public, anon, authenticated;
 
 drop trigger if exists trg_tipo_segue_o_fuso_da_empresa on public.organizations;
-create trigger trg_tipo_segue_o_fuso_da_empresa
-  after update of timezone on public.organizations
-  for each row
-  execute function public.fn_tipo_segue_o_fuso_da_empresa();
+-- SABOTAGEM create trigger trg_tipo_segue_o_fuso_da_empresa
+-- SABOTAGEM   after update of timezone on public.organizations
+-- SABOTAGEM   for each row
+-- SABOTAGEM   execute function public.fn_tipo_segue_o_fuso_da_empresa();
 
 
 -- ---- VARREDURA anon: função nova nasce exposta em quem ATUALIZA (migration 0116) ----
