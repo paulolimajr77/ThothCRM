@@ -115,6 +115,12 @@ export const configuracaoDoChatSchema = z
       .min(1)
       .max(TETO_ANONIMO_MAXIMO)
       .optional(),
+    /**
+     * Conexão de WhatsApp para o botão "Continuar no WhatsApp" (F4-B). UUID de uma
+     * `channel_sessions` da MESMA organização, cujo provedor de mensagem não seja `webchat`
+     * e que tenha `phone_number`. Sem ela, ou com valor inválido, o botão não aparece.
+     */
+    whatsapp_channel_session_id: z.string().uuid().nullable().optional(),
   })
   .strict();
 

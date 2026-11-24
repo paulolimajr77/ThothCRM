@@ -11445,6 +11445,9 @@ export const DICIONARIO: Traducoes = {
   "telefone que o WhatsApp deixou em conflito": {
     es: "teléfono que WhatsApp dejó en conflicto",
   },
+  "e-mail que o chat deixou em conflito": {
+    es: "correo que el chat dejó en conflicto",
+  },
   "Manter este cadastro": { es: "Conservar este registro" },
   "Este fica": { es: "Este se queda" },
   "Será absorvido por quem fica": { es: "Será absorbido por el que se queda" },
@@ -22955,6 +22958,12 @@ export const DICIONARIO: Traducoes = {
   "Página inteira": { es: "Página entera" },
   "Mudou o formato? Cole o código novo no seu site (abaixo). Embutido não mostra a bolha: o iframe fica dentro de um elemento da sua página.": { es: "¿Cambió el formato? Pegue el código nuevo en su sitio (abajo). Insertado no muestra la burbuja: el iframe queda dentro de un elemento de su página." },
   "Salvar formato": { es: "Guardar formato" },
+  "Continuar no WhatsApp": { es: "Continuar en WhatsApp" },
+  "Mostra na janela um botão que abre a conversa no WhatsApp escolhido, levando a origem da página.": { es: "Muestra en la ventana un botón que abre la conversación en el WhatsApp elegido, con el origen de la página." },
+  "WhatsApp do botão": { es: "WhatsApp del botón" },
+  "Nenhum (sem botão)": { es: "Ninguno (sin botón)" },
+  "Não foi possível carregar as conexões de WhatsApp.": { es: "No se pudieron cargar las conexiones de WhatsApp." },
+  "Salvar botão do WhatsApp": { es: "Guardar botón de WhatsApp" },
   "Lado da tela onde a janela fica aberta.": { es: "Lado de la pantalla donde se abre la ventana." },
   "Direita": { es: "Derecha" },
   "Esquerda": { es: "Izquierda" },

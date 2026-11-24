@@ -70,6 +70,10 @@ const h = vi.hoisted(() => {
         return builder;
       },
       single: () => Promise.resolve(executar(true)),
+      maybeSingle: () => {
+        const r = executar(true);
+        return Promise.resolve(r.error?.code === "PGRST116" ? { data: null, error: null } : r);
+      },
       then(resolve: (r: Resultado) => unknown, reject: (e: unknown) => unknown) {
         return Promise.resolve(executar(false)).then(resolve, reject);
       },
@@ -294,6 +298,100 @@ describe("PATCH muda domínios e configuração", () => {
     expect((await atualizar({})).status).toBe(422);
     expect((await atualizar({ config: { cor: "vermelho" } })).status).toBe(422);
     expect((await atualizar({ config: { script: "alert(1)" } })).status).toBe(422);
+  });
+});
+
+describe("PATCH valida whatsapp_channel_session_id", () => {
+  beforeEach(async () => {
+    await criar();
+    // Insere uma conexão de WhatsApp válida na mesma organização.
+    h.estado.tabela.push({
+      id: "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1",
+      organization_id: ORG,
+      provider: "waha",
+      phone_number: "+5511999999999",
+      archived_at: null,
+      webchat_public_key: "wck_" + "a".repeat(43),
+      display_name: "WhatsApp válido",
+      status: "WORKING",
+      metadata: {},
+    });
+    // E uma conexão de WhatsApp SEM número.
+    h.estado.tabela.push({
+      id: "b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2",
+      organization_id: ORG,
+      provider: "waha",
+      phone_number: null,
+      archived_at: null,
+      webchat_public_key: "wck_" + "b".repeat(43),
+      display_name: "WhatsApp sem número",
+      status: "WORKING",
+      metadata: {},
+    });
+    // E uma conexão de mensagem que não alcança número (Telegram).
+    h.estado.tabela.push({
+      id: "c3c3c3c3-c3c3-4c3c-8c3c-c3c3c3c3c3c3",
+      organization_id: ORG,
+      provider: "telegram",
+      phone_number: "+5511999999999",
+      archived_at: null,
+      webchat_public_key: "wck_" + "c".repeat(43),
+      display_name: "Robô do Telegram",
+      status: "WORKING",
+      metadata: {},
+    });
+  });
+
+  it("aceita o id de uma conexão WhatsApp da mesma organização, com número e provedor não-webchat", async () => {
+    const res = await atualizar({ config: { whatsapp_channel_session_id: "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1" } });
+    expect(res.status).toBe(200);
+    const corpo = await corpoDe(res);
+    expect((corpo.data.config as Record<string, unknown>).whatsapp_channel_session_id).toBe("a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1");
+  });
+
+  it("recusa conexão que não existe nesta organização", async () => {
+    const res = await atualizar({ config: { whatsapp_channel_session_id: "e5e5e5e5-e5e5-4e5e-8e5e-e5e5e5e5e5e5" } });
+    expect(res.status).toBe(422);
+  });
+
+  it("recusa conexão de outro tenant (id que existe mas de outra organização)", async () => {
+    h.estado.tabela.push({
+      id: "d4d4d4d4-d4d4-4d4d-8d4d-d4d4d4d4d4d4",
+      organization_id: "f6f6f6f6-f6f6-4f6f-8f6f-f6f6f6f6f6f6",
+      provider: "waha",
+      phone_number: "+5511999999999",
+      archived_at: null,
+      webchat_public_key: "wck_" + "d".repeat(43),
+      display_name: "Outro tenant",
+      status: "WORKING",
+      metadata: {},
+    });
+    const res = await atualizar({ config: { whatsapp_channel_session_id: "d4d4d4d4-d4d4-4d4d-8d4d-d4d4d4d4d4d4" } });
+    expect(res.status).toBe(422);
+  });
+
+  it("recusa conexão que não alcança número (Telegram)", async () => {
+    const res = await atualizar({ config: { whatsapp_channel_session_id: "c3c3c3c3-c3c3-4c3c-8c3c-c3c3c3c3c3c3" } });
+    expect(res.status).toBe(422);
+  });
+
+  it("recusa conexão de WhatsApp sem phone_number", async () => {
+    const res = await atualizar({ config: { whatsapp_channel_session_id: "b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2" } });
+    expect(res.status).toBe(422);
+  });
+
+  it("null desliga o botão (grava null, sem conferência)", async () => {
+    const ligar = await atualizar({ config: { whatsapp_channel_session_id: "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1" } });
+    expect(ligar.status).toBe(200);
+    const res = await atualizar({ config: { whatsapp_channel_session_id: null } });
+    expect(res.status).toBe(200);
+    const corpo = await corpoDe(res);
+    expect((corpo.data.config as Record<string, unknown>).whatsapp_channel_session_id).toBeNull();
+  });
+
+  it("uuid inválido dá 422 pelo schema", async () => {
+    const res = await atualizar({ config: { whatsapp_channel_session_id: "não-é-uuid" } });
+    expect(res.status).toBe(422);
   });
 });
 

@@ -13,11 +13,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { MarcaDeSaida } from "@/lib/branding/saida";
 import { montarJanela } from "@/lib/channels/webchat/janela-html";
+import { montarCodigoDeOrigemDoSite } from "@/lib/leads/origem-do-site";
 
 vi.mock("@/lib/env", () => ({ env: { NEXT_PUBLIC_APP_URL: "https://crm.example.com" } }));
 vi.mock("@/lib/webhooks/url-publica", () => ({ enderecoDaPropriaMaquina: () => false }));
 
 interface Modulo {
+  montarCodigoDeOrigemDoSiteJs: (utm: Record<string, unknown>) => string | null;
   aceitarMensagemDoPai: (evento: unknown, pai?: unknown) => boolean;
   montarMensagem: (
     texto: string,
@@ -170,13 +172,14 @@ interface ConfigDoHtml {
   [outro: string]: unknown;
 }
 
-function htmlDaJanela(config: ConfigDoHtml): string {
+function htmlDaJanela(config: ConfigDoHtml, whatsappNumero?: string | null): string {
   return montarJanela({
     chave: "wck_teste",
     marca: MARCA,
     config: { titulo: config.titulo, saudacao: config.saudacao, coleta: config.coleta } as never,
     controlador: config.controlador,
     origens: [],
+    whatsappNumero: whatsappNumero ?? null,
   }).html;
 }
 
@@ -285,9 +288,11 @@ async function abrirJanela(
   extras: Record<string, unknown> = {},
   configBruta?: string,
   htmlConfig: ConfigDoHtml = CONFIG_PADRAO,
+  whatsappNumero?: string | null,
 ) {
-  montarDom(htmlDaJanela(htmlConfig));
-  document.getElementById("webchat-config")!.textContent = configBruta ?? JSON.stringify(config);
+  montarDom(htmlDaJanela(htmlConfig, whatsappNumero));
+  document.getElementById("webchat-config")!.textContent =
+    configBruta ?? JSON.stringify(whatsappNumero !== undefined ? { ...config, whatsappNumero } : config);
   const agendados: Agendado[] = [];
   const pai = { postMessage: vi.fn() };
   const armazenamento = memoria();
@@ -1096,5 +1101,124 @@ describe("janela no DOM", () => {
 
     const [primeira] = corposDeMensagens(r.chamadas);
     expect(primeira!.contexto).toEqual({ utm: { utm_campaign: "natal" } });
+  });
+
+  // ---------- F4-B: "Continuar no WhatsApp" ----------
+
+  describe("montarCodigoDeOrigemDoSiteJs (espelho do TypeScript)", () => {
+    it("gera o mesmo [dk1:...] que montarCodigoDeOrigemDoSite do TypeScript", () => {
+      const utm = { utm_source: "ig", utm_campaign: "natal", utm_medium: "social" };
+      const js = modulo.montarCodigoDeOrigemDoSiteJs(utm);
+      const ts = montarCodigoDeOrigemDoSite(utm);
+      expect(js).toBe(ts);
+      expect(js).toMatch(/^\[dk1:[A-Za-z0-9_-]+\]$/);
+    });
+
+    it("devolve null para utm vazio", () => {
+      expect(modulo.montarCodigoDeOrigemDoSiteJs({})).toBeNull();
+      expect(modulo.montarCodigoDeOrigemDoSiteJs(null as never)).toBeNull();
+    });
+
+    it("ignora chaves que não são de UTM", () => {
+      const js = modulo.montarCodigoDeOrigemDoSiteJs({
+        utm_source: "ig",
+        telefone: "+5511999999999",
+        nome: "Ana",
+      });
+      const ts = montarCodigoDeOrigemDoSite({ utm_source: "ig" });
+      expect(js).toBe(ts);
+    });
+
+    it("ordena chaves para o mesmo código independentemente da ordem de entrada", () => {
+      const a = modulo.montarCodigoDeOrigemDoSiteJs({ utm_campaign: "x", utm_source: "y" });
+      const b = modulo.montarCodigoDeOrigemDoSiteJs({ utm_source: "y", utm_campaign: "x" });
+      expect(a).toBe(b);
+    });
+  });
+
+  describe("botão Continuar no WhatsApp", () => {
+    it("aparece no cabeçalho quando whatsappNumero está configurado", async () => {
+      await abrirJanela(roteador().fn, SOMENTE_CONVERSA, {}, undefined, CONFIG_PADRAO, "5511999999999");
+      const btn = Array.from(document.querySelectorAll("button")).find(
+        (b) => b.textContent === "Continuar no WhatsApp",
+      );
+      expect(btn).toBeDefined();
+    });
+
+    it("não aparece quando whatsappNumero é null", async () => {
+      await abrirJanela(roteador().fn, SOMENTE_CONVERSA, {}, undefined, CONFIG_PADRAO, null);
+      const btn = Array.from(document.querySelectorAll("button")).find(
+        (b) => b.textContent === "Continuar no WhatsApp",
+      );
+      expect(btn).toBeUndefined();
+    });
+
+    it("clicar chama window.open com https://wa.me/<digitos>?text=<dk1> e _blank", async () => {
+      const openSpy = vi.spyOn(window, "open").mockReturnValue(null as unknown as Window);
+
+      const { pai } = await abrirJanela(
+        roteador().fn,
+        SOMENTE_CONVERSA,
+        {},
+        undefined,
+        CONFIG_PADRAO,
+        "5511999999999",
+      );
+
+      // Simula que o contexto da página chegou (com UTM) antes do clique.
+      const evento = new Event("message");
+      Object.defineProperty(evento, "data", {
+        value: { tipo: "contexto", utm: { utm_source: "ig", utm_campaign: "natal" } },
+      });
+      Object.defineProperty(evento, "source", { value: pai });
+      window.dispatchEvent(evento);
+      await esperarTudo();
+
+      const btn = Array.from(document.querySelectorAll("button")).find(
+        (b) => b.textContent === "Continuar no WhatsApp",
+      ) as HTMLButtonElement;
+      btn.click();
+      await esperarTudo();
+
+      expect(openSpy).toHaveBeenCalledTimes(1);
+      const url = openSpy.mock.calls[0]![0] as string;
+      expect(url).toContain("https://wa.me/5511999999999");
+      expect(url).toContain("?text=");
+      expect(decodeURIComponent(url)).toContain("[dk1:");
+      expect(openSpy.mock.calls[0]![1]).toBe("_blank");
+
+      openSpy.mockRestore();
+    });
+
+    it("sem UTM, clicar chama window.open com https://wa.me/<digitos> sem ?text", async () => {
+      const openSpy = vi.spyOn(window, "open").mockReturnValue(null as unknown as Window);
+
+      await abrirJanela(
+        roteador().fn,
+        SOMENTE_CONVERSA,
+        {},
+        undefined,
+        CONFIG_PADRAO,
+        "5511999999999",
+      );
+
+      const btn = Array.from(document.querySelectorAll("button")).find(
+        (b) => b.textContent === "Continuar no WhatsApp",
+      ) as HTMLButtonElement;
+      btn.click();
+      await esperarTudo();
+
+      expect(openSpy).toHaveBeenCalledTimes(1);
+      const url = openSpy.mock.calls[0]![0] as string;
+      expect(url).toBe("https://wa.me/5511999999999");
+      expect(url).not.toContain("?text=");
+
+      openSpy.mockRestore();
+    });
+
+    it("o dk1 do JS bate com o dk1 do TypeScript para a mesma UTM", () => {
+      const utm = { utm_source: "ig", utm_campaign: "natal" };
+      expect(modulo.montarCodigoDeOrigemDoSiteJs(utm)).toBe(montarCodigoDeOrigemDoSite(utm));
+    });
   });
 });

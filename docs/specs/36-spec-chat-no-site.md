@@ -370,16 +370,25 @@ Status: **F3 entregue** (Tarefas 1 a 3 da fatia; sem migration e sem variável d
   teto, então a frase sai uma vez por conversa. **Não coberto:** o worker de quem ainda não
   publicou agente (`workers/ai-response-worker.ts`) continua só parando a IA no teto, sem frase nem
   passagem: ali o veto acontece antes de existir a fronteira do atendimento que a passagem exige.
-- **Pendente (F4-B):** "pode ser o mesmo contato" e "Continuar no WhatsApp": se o telefone ou
-  e-mail digitado no chat já é de outra ficha, a tela de Duplicados mostra o par para conferir
-  (nunca junta sozinho), e a janela ganha o botão opcional "Continuar no WhatsApp" com o código
-  `dk1`.
+- **"Pode ser o mesmo contato" (F4-B, Tarefa 1+2).** O telefone ou e-mail que o visitante digita no
+  chat e já é de outra ficha não é descartado: a ingestão grava em `source_metadata.telefone_em_conflito`
+  ou `source_metadata.email_em_conflito` (merge no jsonb, nunca apaga outras chaves), e Duplicados
+  mostra o par com o motivo `email_em_conflito` (além do já existente `telefone_em_conflito`).
+  Nunca junta sozinho — a pessoa decide. Telas e rótulos: `MergeDialog` (`e-mail que o chat deixou
+  em conflito`, traduzido em es, en, tr e zh-CN).
+- **"Continuar no WhatsApp" (F4-B, Tarefa 3+4).** Na aba "Chat no site" em Conexões, a pessoa escolhe
+  um WhatsApp da organização (ou "Nenhum", o padrão). A escolha vira `whatsapp_channel_session_id`
+  (uuid ou `null`) na configuração; a PATCH confere, com a organização da sessão, que a conexão
+  existe, não está arquivada, alcança número (`alcancaNumero`, a lista `PROVIDERS_DE_TELEFONE` de
+  `lib/channels/capabilities.ts`: Telegram e o próprio chat ficam de fora) e tem `phone_number`;
+  senão 422. A página `/chat/<chave>` repete a conferência e manda à janela só os dígitos. A janela
+  mostra o botão, que abre `https://wa.me/<digitos>?text=<dk1>` em nova aba e zera o `opener`. O
+  código `dk1` é o de `montarCodigoDeOrigemDoSite` (`lib/leads/origem-do-site.ts`), repetido em JS
+  no `webchat-janela.js` (que não importa TypeScript), com teste que compara os dois.
 - **Contato deixado no chat.** O telefone e o e-mail que o visitante digita entram na ficha do
   contato do chat. O CRM **nunca** junta fichas sozinho, porque qualquer um pode digitar o telefone
   de outra pessoa. Se o dado bater com outra ficha, a tela de Duplicados mostra o par como motivo
   forte (Spec 31), e a pessoa decide.
-- **"Continuar no WhatsApp".** Um botão opcional abre o `wa.me` da conexão escolhida, com o código
-  `dk1` de `lib/leads/origem-do-site.ts`, que leva a página e as UTMs junto.
 
 ### F5 — Origem e relatório
 

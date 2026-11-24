@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   chaveDeTelefone,
+  emailEmConflito,
   encontrarContatosDuplicados,
   ligadosPorMotivoForte,
   principalSugerido,
@@ -264,6 +265,76 @@ describe("ligadosPorMotivoForte", () => {
     expect(ligadosPorMotivoForte(contato("a", { cpf_hash: HASH }), contato("b", { cpf_hash: `${HASH}b` }))).toBe(
       false,
     );
+  });
+
+  it("e-mail em conflito de um igual ao e-mail do outro liga o par", () => {
+    const a = contato("a", {
+      email: null,
+      source_metadata: { email_em_conflito: "ana@exemplo.com.br" },
+    });
+    const b = contato("b", { email: "Ana@Exemplo.com.br" });
+    expect(ligadosPorMotivoForte(a, b)).toBe(true);
+  });
+
+  it("e-mail em conflito de ambos, em direções opostas, liga o par", () => {
+    const a = contato("a", { email: "ana@exemplo.com.br" });
+    const b = contato("b", {
+      email: null,
+      source_metadata: { email_em_conflito: "ANA@EXEMPLO.COM.BR" },
+    });
+    expect(ligadosPorMotivoForte(a, b)).toBe(true);
+  });
+});
+
+describe("emailEmConflito", () => {
+  it("devolve a chave canônica do e-mail parkado em source_metadata.email_em_conflito", () => {
+    expect(
+      emailEmConflito(contato("a", { source_metadata: { email_em_conflito: " Ana@Exemplo.com.br " } })),
+    ).toBe("ana@exemplo.com.br");
+  });
+
+  it("devolve vazio quando não há email_em_conflito", () => {
+    expect(emailEmConflito(contato("a"))).toBe("");
+    expect(emailEmConflito(contato("a", { source_metadata: {} }))).toBe("");
+    expect(emailEmConflito(contato("a", { source_metadata: null }))).toBe("");
+  });
+});
+
+describe("encontrarContatosDuplicados: email_em_conflito", () => {
+  it("agrupa o e-mail que a ingestão do chat parkou em conflito com o e-mail principal de outra ficha", () => {
+    // `email_em_conflito` espelha `telefone_em_conflito`: a ingestão não funde,
+    // grava o e-mail em conflito e espera por quem opera. Sem este caminho, o par
+    // nunca chegaria à tela.
+    const grupos = encontrarContatosDuplicados([
+      contato("dono-do-email", { email: "ana@exemplo.com.br" }),
+      contato("chat", {
+        email: null,
+        source_metadata: { email_em_conflito: "Ana@Exemplo.com.br" },
+      }),
+    ]);
+    expect(grupos).toHaveLength(1);
+    expect(grupos[0]!.contatos.map((c) => c.id).sort()).toEqual(["chat", "dono-do-email"]);
+    expect(grupos[0]!.motivos).toContain("email_em_conflito");
+  });
+
+  it("email_em_conflito encadeia com email principal: A-B pelo conflito e B-C pelo e-mail = UM grupo", () => {
+    const grupos = encontrarContatosDuplicados([
+      contato("a", { email: "ana@exemplo.com.br" }),
+      contato("b", { email: null, source_metadata: { email_em_conflito: "Ana@Exemplo.com.br" } }),
+      contato("c", { email: "ANA@EXEMPLO.COM.BR" }),
+    ]);
+    expect(grupos).toHaveLength(1);
+    expect(grupos[0]!.contatos.map((c) => c.id).sort()).toEqual(["a", "b", "c"]);
+    expect(grupos[0]!.motivos).toEqual(["email", "email_em_conflito"]);
+  });
+
+  it("e-mail em conflito vazio ou ausente não une — vazio não é e-mail", () => {
+    const grupos = encontrarContatosDuplicados([
+      contato("a"),
+      contato("b", { source_metadata: { email_em_conflito: "" } }),
+      contato("c", { source_metadata: { email_em_conflito: "  " } }),
+    ]);
+    expect(grupos).toEqual([]);
   });
 });
 

@@ -18,6 +18,7 @@ import {
 } from "@/lib/channels/webchat/conexao";
 import { chatNoSiteLigado } from "@/lib/channels/webchat/modulo";
 import { requireSupportWrite } from "@/lib/impersonate/support";
+import { alcancaNumero } from "@/lib/channels/capabilities";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -181,6 +182,29 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
 
   // A configuração MESCLA com a atual: quem manda só o título não apaga a cor nem a coleta.
   const configDepois: ConfiguracaoDoChat = { ...conexao.config, ...parsed.data.config };
+
+  // Validação do `whatsapp_channel_session_id`: mesma organização, provedor de mensagem
+  // que não seja `webchat` e `phone_number` preenchido. Tudo do servidor, nunca do corpo.
+  // `null` desliga o botão; só um id precisa de conferência.
+  if (typeof parsed.data.config?.whatsapp_channel_session_id === "string") {
+    const { data: sessao, error: erroSessao } = await admin
+      .from("channel_sessions")
+      .select("id, organization_id, provider, phone_number")
+      .eq("id", parsed.data.config.whatsapp_channel_session_id)
+      .eq("organization_id", orgId)
+      .is("archived_at", null)
+      .maybeSingle();
+    if (erroSessao || !sessao) {
+      return fail("invalid_request", "Conexão do WhatsApp não encontrada nesta organização.", 422, { requestId });
+    }
+    if (!alcancaNumero(sessao.provider as string | null)) {
+      return fail("invalid_request", "A conexão escolhida não é de WhatsApp.", 422, { requestId });
+    }
+    if (!(sessao.phone_number as string | null)) {
+      return fail("invalid_request", "A conexão do WhatsApp não tem número de telefone.", 422, { requestId });
+    }
+  }
+
   const patch: Record<string, unknown> = {};
   if (parsed.data.allowed_origins !== undefined) patch.webchat_allowed_origins = parsed.data.allowed_origins;
   if (parsed.data.config !== undefined) {
