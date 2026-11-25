@@ -1188,6 +1188,7 @@ jobs:
         inbox-quem-manda.spec.ts
         inbox-tempo-real.spec.ts
         inbox-rotulo-de-origem.spec.ts
+        chat-no-site-origem-da-pagina.spec.ts
         troca-de-organizacao-tem-volta.spec.ts
         convite-nao-cai-no-onboarding.spec.ts
         organizacoes-criacao-convite-e-cache.spec.ts
