@@ -13,7 +13,8 @@ const credenciais = credenciaisSupabaseDeTeste();
 const db = createClient(credenciais.url, credenciais.serviceRole, { auth: { persistSession: false } });
 
 const CHAVE_MODULO = "MODULO_CANAL_WEBCHAT";
-const PAGINA = "https://example.com/natal?utm_source=instagram&utm_campaign=natal";
+const CAMINHO = "/site-de-teste/natal";
+const QUERY = "?utm_source=instagram&utm_campaign=natal";
 const TEXTO = `Oi, vim pelo Instagram ${Date.now()}`;
 
 test.describe.configure({ timeout: 240_000 });
@@ -43,28 +44,29 @@ test.afterAll(async () => {
 test("C10: a 1ª mensagem de uma página com UTM grava a origem na ficha e a conversa está no Inbox", async ({ page, browser }) => {
   // 1) O operador ativa o chat pela tela.
   await loginComoAdmin(page, creds);
+  // O "site" do cliente é servido no mesmo endereço do app (localhost): o Chrome barra página pública
+  // que busca script em localhost, e o chat aceita http://localhost como domínio em instalação local.
+  const base = new URL(page.url()).origin;
   await page.goto("/app/connections");
   await page.getByRole("tab", { name: /Chat no site/ }).click();
-  await page.getByLabel("Domínios, um por linha").fill("https://example.com");
+  await page.getByLabel("Domínios, um por linha").fill(base);
   await page.getByRole("button", { name: "Ativar chat no site" }).click();
   const codigo = page.locator("#canal-chat-codigo");
   await expect(codigo).toBeVisible({ timeout: 30_000 });
   const trecho = await codigo.inputValue();
   const chave = /wck_[A-Za-z0-9_-]+/.exec(trecho)?.[0];
   expect(chave, "o código para colar tem a chave wck_").toBeTruthy();
-  // O webchat.js só aceita http em "localhost" (não em 127.0.0.1).
-  const base = new URL(page.url()).origin.replace("127.0.0.1", "localhost");
 
   // 2) O visitante abre a página do site (com UTM), que leva o código colado.
   const visitante = await browser.newContext({ viewport: { width: 1200, height: 800 } });
-  await visitante.route("https://example.com/**", (rota) =>
+  await visitante.route(`${base}${CAMINHO}**`, (rota) =>
     rota.fulfill({
       contentType: "text/html",
       body: `<!doctype html><html><body><h1>Natal</h1><script src="${base}/webchat.js?k=${chave}" async></script></body></html>`,
     }),
   );
   const site = await visitante.newPage();
-  await site.goto(PAGINA);
+  await site.goto(`${base}${CAMINHO}${QUERY}`);
   await site.getByRole("button", { name: "Abrir chat" }).click();
   const janela = site.frameLocator("iframe");
   await janela.getByRole("button", { name: "Aceitar e continuar" }).click();
