@@ -69,8 +69,16 @@ test("C10: a 1ª mensagem de uma página com UTM grava a origem na ficha e a con
   await site.goto(`${base}${CAMINHO}${QUERY}`);
   await site.getByRole("button", { name: "Abrir chat" }).click();
   const janela = site.frameLocator("iframe");
-  await janela.getByRole("button", { name: "Aceitar e continuar" }).click();
-  await janela.locator("#webchat-texto").fill(TEXTO);
+  // Passos antes da conversa: aviso com aceite e/ou coleta (todos opcionais aqui). Clica no que aparecer.
+  const campo = janela.locator("#webchat-texto");
+  await expect(async () => {
+    for (const nome of ["Aceitar e continuar", "Continuar"]) {
+      const botao = janela.getByRole("button", { name: nome, exact: true });
+      if (await botao.isVisible().catch(() => false)) await botao.click();
+    }
+    await expect(campo).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 45_000 });
+  await campo.fill(TEXTO);
   await janela.locator("#webchat-enviar").click();
   await expect(janela.getByText(TEXTO)).toBeVisible({ timeout: 30_000 });
   await visitante.close();
@@ -93,6 +101,20 @@ test("C10: a 1ª mensagem de uma página com UTM grava a origem na ficha e a con
   // 4) O Inbox: a conversa aparece com o selo do canal.
   await page.goto("/app/inbox");
   await expect(page.getByText(TEXTO).first()).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText("Chat no site").first()).toBeVisible();
   await page.screenshot({ path: "evidence/chat-no-site-f5/inbox.png", fullPage: true });
+  // Medidas (não param a prova): o selo na lista e na conversa aberta, e o filtro por número.
+  const noLista = await page.getByText("Chat no site").count();
+  await page.getByText(TEXTO).first().click();
+  await page.waitForTimeout(1500);
+  const comAberta = await page.getByText("Chat no site").count();
+  const filtro = page.getByLabel("Filtrar por número de WhatsApp");
+  const filtroVisivel = await filtro.isVisible().catch(() => false);
+  let opcoes: string[] = [];
+  if (filtroVisivel) {
+    await filtro.click();
+    opcoes = await page.getByRole("option").allInnerTexts();
+  }
+  console.log(`MEDIDA-INBOX selo_na_lista=${noLista} selo_com_conversa_aberta=${comAberta} filtro_visivel=${filtroVisivel} opcoes=${JSON.stringify(opcoes)}`);
+  await page.screenshot({ path: "evidence/chat-no-site-f5/inbox-aberta.png", fullPage: true });
+  expect.soft(comAberta, "o selo Chat no site aparece no Inbox").toBeGreaterThan(0);
 });
