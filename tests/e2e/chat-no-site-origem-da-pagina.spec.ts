@@ -114,6 +114,23 @@ test("C10: a 1ª mensagem de uma página com UTM grava a origem na ficha e a con
     await filtro.click();
     opcoes = await page.getByRole("option").allInnerTexts();
   }
+  // O filtro de verdade: escolher o chat mostra a conversa; escolher outro número a esconde.
+  let filtrouNoChat = false;
+  let escondeuNoOutro = false;
+  if (filtroVisivel && opcoes.includes("Chat no site")) {
+    await page.getByRole("option", { name: "Chat no site", exact: true }).click();
+    filtrouNoChat = await page.getByText(TEXTO).first().isVisible({ timeout: 15_000 }).catch(() => false);
+    await filtro.click();
+    const outro = opcoes.find((o) => o !== "Chat no site" && o !== "Todos os números");
+    if (outro) {
+      await page.getByRole("option", { name: outro, exact: true }).click();
+      await page.waitForTimeout(2500);
+      escondeuNoOutro = (await page.getByText(TEXTO).count()) === 0;
+    }
+  }
+  console.log(`MEDIDA-FILTRO escolhendo_chat_mostra=${filtrouNoChat} escolhendo_outro_esconde=${escondeuNoOutro}`);
+  expect.soft(filtrouNoChat, "filtrar pelo chat mostra a conversa").toBe(true);
+  expect.soft(escondeuNoOutro, "filtrar por outro número esconde a conversa").toBe(true);
   console.log(`MEDIDA-INBOX selo_na_lista=${noLista} selo_com_conversa_aberta=${comAberta} filtro_visivel=${filtroVisivel} opcoes=${JSON.stringify(opcoes)}`);
   await page.screenshot({ path: "evidence/chat-no-site-f5/inbox-aberta.png", fullPage: true });
   expect.soft(comAberta, "o selo Chat no site aparece no Inbox").toBeGreaterThan(0);
