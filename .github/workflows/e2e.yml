@@ -33,7 +33,7 @@ name: e2e
 # executado. Verde que não distingue "passou" de "nem rodou" é pior que vermelho.
 on:
   push:
-    branches: [ci/e2e-f5-main]
+    branches: [ci/e2e-f5-tela]
 
 # O GITHUB_TOKEN deste job serve a `actions/checkout` (clone) e a
 # `actions/setup-node` (manifest de `actions/node-versions`, repo público).
