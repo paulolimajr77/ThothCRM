@@ -118,14 +118,21 @@ test("C10: a 1ª mensagem de uma página com UTM grava a origem na ficha e a con
   let filtrouNoChat = false;
   let escondeuNoOutro = false;
   if (filtroVisivel && opcoes.includes("Chat no site")) {
+    // Inbox limpo (sem conversa aberta, que também mostra o texto), e espera de verdade.
+    await page.goto("/app/inbox");
+    const filtro2 = page.getByLabel("Filtrar por número de WhatsApp");
+    await filtro2.click();
     await page.getByRole("option", { name: "Chat no site", exact: true }).click();
-    filtrouNoChat = await page.getByText(TEXTO).first().isVisible({ timeout: 15_000 }).catch(() => false);
-    await filtro.click();
+    filtrouNoChat = await expect(page.getByText(TEXTO).first())
+      .toBeVisible({ timeout: 20_000 })
+      .then(() => true, () => false);
+    await filtro2.click();
     const outro = opcoes.find((o) => o !== "Chat no site" && o !== "Todos os números");
     if (outro) {
       await page.getByRole("option", { name: outro, exact: true }).click();
-      await page.waitForTimeout(2500);
-      escondeuNoOutro = (await page.getByText(TEXTO).count()) === 0;
+      escondeuNoOutro = await expect(page.getByText(TEXTO))
+        .toHaveCount(0, { timeout: 20_000 })
+        .then(() => true, () => false);
     }
   }
   console.log(`MEDIDA-FILTRO escolhendo_chat_mostra=${filtrouNoChat} escolhendo_outro_esconde=${escondeuNoOutro}`);
