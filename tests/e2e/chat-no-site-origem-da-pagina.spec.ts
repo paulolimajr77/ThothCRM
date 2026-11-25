@@ -52,7 +52,8 @@ test("C10: a 1ª mensagem de uma página com UTM grava a origem na ficha e a con
   const trecho = await codigo.inputValue();
   const chave = /wck_[A-Za-z0-9_-]+/.exec(trecho)?.[0];
   expect(chave, "o código para colar tem a chave wck_").toBeTruthy();
-  const base = new URL(page.url()).origin;
+  // O webchat.js só aceita http em "localhost" (não em 127.0.0.1).
+  const base = new URL(page.url()).origin.replace("127.0.0.1", "localhost");
 
   // 2) O visitante abre a página do site (com UTM), que leva o código colado.
   const visitante = await browser.newContext({ viewport: { width: 1200, height: 800 } });
