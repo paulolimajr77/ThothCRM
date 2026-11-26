@@ -314,6 +314,63 @@ describe("responsáveis — isolamento entre organizações", () => {
     );
   });
 
+  it("F.12b: fn_appointment_insert_with_responsibles recusa a sessão de outra organização e aceita a da própria (controle positivo)", async () => {
+    const tipo = randomUUID();
+    await pool.query(
+      "insert into calendar_event_types(id,organization_id,name,slug,duration_minutes) values($1::uuid,$2,'Consulta fictícia',$1::text,60)",
+      [tipo, A.org],
+    );
+    const h = novoHorario();
+    // Mesmo corpo para as duas sessões: só muda QUEM chama.
+    const criaComo = async (user: string, id: string) => {
+      const client = await pool.connect();
+      try {
+        await client.query("begin");
+        await client.query("set local role authenticated");
+        await client.query("select set_config('request.jwt.claims',$1,true)", [
+          JSON.stringify({ sub: user, role: "authenticated", aal: "aal1" }),
+        ]);
+        await client.query("select fn_appointment_insert_with_responsibles($1,$2::jsonb,$3::uuid[])", [
+          A.org,
+          JSON.stringify({
+            id,
+            event_type_id: tipo,
+            title: "Consulta fictícia",
+            starts_at: h.inicio,
+            ends_at: h.fim,
+            time_zone: "America/Sao_Paulo",
+            status: "confirmed",
+            owner_user_id: A.manager,
+            location_kind: "in_person",
+            created_by_kind: "user",
+            source: "ui",
+          }),
+          [X],
+        ]);
+        await client.query("commit");
+      } catch (erro) {
+        await client.query("rollback");
+        throw erro;
+      } finally {
+        client.release();
+      }
+    };
+    const linhas = async (id: string) =>
+      (await pool.query("select count(*)::int n from calendar_appointments where id=$1", [id])).rows[0].n as number;
+
+    const idRecusado = randomUUID();
+    await expect(criaComo(B.manager, idRecusado)).rejects.toMatchObject({
+      code: "42501",
+      message: "appointment_forbidden",
+    });
+    expect(await linhas(idRecusado)).toBe(0);
+
+    const daCasa = randomUUID();
+    await criaComo(A.manager, daCasa); // controle positivo
+    expect(await linhas(daCasa)).toBe(1);
+    expect(await adicionaisDe(daCasa)).toEqual([X]);
+  });
+
   it("F.13: revoked_at mantém a linha (a checagem de membro ativo impede novas); remover o vínculo apaga a linha", async () => {
     const membroDeLinha = randomUUID();
     await criaUsuario(membroDeLinha);
