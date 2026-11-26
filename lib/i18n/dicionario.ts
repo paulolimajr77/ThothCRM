@@ -13075,6 +13075,22 @@ export const DICIONARIO: Traducoes = {
   "Janela de {dias} dias: o relatório por canal cobre no máximo {maximo} dias.": {
     es: "Ventana de {dias} días: el informe por canal cubre como máximo {maximo} días.",
   },
+  "Atrito, funil e desempenho por atendente.": { es: "Fricción, embudo y rendimiento por asesor." },
+  "Atrito, seu funil e seu desempenho.": { es: "Fricción, tu embudo y tu rendimiento." },
+  "Você não tem permissão para consultar as métricas de desempenho.": { es: "No tienes permiso para consultar las métricas de rendimiento." },
+  "Período do desempenho": { es: "Período de rendimiento" },
+  "Período exibido": { es: "Período mostrado" },
+  "Preencha a data inicial e a data final.": { es: "Completa la fecha inicial y la fecha final." },
+  "Informe datas válidas.": { es: "Introduce fechas válidas." },
+  "A data inicial deve ser anterior ou igual à data final.": { es: "La fecha inicial debe ser anterior o igual a la fecha final." },
+  "Escolha um período de até 90 dias.": { es: "Elige un período de hasta 90 días." },
+  "Este período não pode ser usado no fuso da organização. Escolha outras datas.": { es: "Este período no se puede usar en la zona horaria de la organización. Elige otras fechas." },
+  "Tente novamente ou escolha um período menor.": { es: "Vuelve a intentarlo o elige un período más corto." },
+  "Funil atual": { es: "Embudo actual" },
+  "no período.": { es: "en el período." },
+  "em aberto agora.": { es: "abiertas en este momento." },
+  "Ainda sem resposta": { es: "Aún sin respuesta" },
+  "Por mês previsto de fechamento.": { es: "Por mes previsto de cierre." },
   "Atrito, funil e performance por atendente nos últimos 30 dias.": { es: "Fricción, embudo y rendimiento por asesor en los últimos 30 días." },
   "Nenhuma perda na janela.": { es: "Ninguna pérdida en la ventana." },
   "Negócios": { es: "Negocios" },
@@ -16643,7 +16659,6 @@ export const DICIONARIO: Traducoes = {
   "Conectar a conta de anúncios para ler o desempenho das campanhas.": { es: "Conectar la cuenta de anuncios para leer el rendimiento de las campañas." },
   "Conecte a loja para trazer pedidos e clientes para dentro do CRM.": { es: "Conecta la tienda para traer pedidos y clientes al CRM." },
   "Devolver ao anúncio as vendas que ele trouxe, e marcar a origem de quem chega pelo site.": { es: "Devolver al anuncio las ventas que trajo, y marcar el origen de quien llega por el sitio." },
-  "Funil e performance por atendente nos últimos 30 dias.": { es: "Embudo y rendimiento por asesor en los últimos 30 días." },
   "O catálogo da loja, com o preço que o atendente de IA responde.": { es: "El catálogo de la tienda, con el precio que responde el agente de IA." },
   "O que se pode marcar, quanto dura, onde acontece e quem atende.": { es: "Qué se puede programar, cuánto dura, dónde se realiza y quién atiende." },
   "Quanto custou cada resultado das campanhas que trazem gente para cá.": { es: "Cuánto costó cada resultado de las campañas que traen gente aquí." },
@@ -23557,6 +23572,14 @@ export const DICIONARIO: Traducoes = {
   "A configuração da empresa está em um formato inesperado.": {
     es: "La configuración de la empresa está en un formato inesperado.",
   },
+  "Teto de respostas da IA para visitante anônimo": { es: "Límite de respuestas de la IA para visitante anónimo" },
+  "Quantas respostas da IA por conversa": { es: "¿Cuántas respuestas de la IA por conversación?" },
+  "Depois desse número a IA para de responder e a conversa fica para a equipe. Quem deixa telefone ou e-mail sai deste limite.": {
+    es: "Después de ese número la IA deja de responder y la conversación pasa al equipo. Quien deja teléfono o e-mail sale de este límite.",
+  },
+  "Salvar teto": { es: "Guardar límite" },
+  "Use um número inteiro de 1 a 200.": { es: "Usa un número entero entre 1 y 200." },
+  "Deixe em branco para não mudar.": { es: "Déjalo en blanco para no cambiarlo." },
 };
 
 /**
