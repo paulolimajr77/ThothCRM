@@ -405,7 +405,9 @@ describe("gravarCamposDaIa", () => {
       expect(chamada).toBeDefined();
       expect(chamada![3]).toEqual({ custom_fields: { condicao: "hipertensão" } });
       expect(vi.mocked(conferirCamposPersonalizados)).toHaveBeenCalledTimes(1);
-      const ctx = vi.mocked(conferirCamposPersonalizados).mock.calls[0][0];
+      const chamadaConferencia = vi.mocked(conferirCamposPersonalizados).mock.calls[0];
+      expect(chamadaConferencia).toBeDefined();
+      const ctx = chamadaConferencia![0];
       expect(ctx.organizationId).toBe(ORG);
       expect(ctx.role).toBe("ai_operator");
       expect(ctx.contatoDoTurno).toBe(CONTACT);
