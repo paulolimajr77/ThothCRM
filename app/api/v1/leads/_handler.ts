@@ -1127,7 +1127,7 @@ export async function updateLeadHandler(
   ctx: HandlerCtx,
   leadId: string,
   input: UpdateLeadInput,
-  opcoes: { manterForaDaLista?: boolean } = {},
+  opcoes: { manterForaDaLista?: boolean; preenchidoPelaIa?: Record<string, string> } = {},
 ): Promise<Record<string, unknown>> {
   // `*` e nao lista explicita DE PROPOSITO: `camposAlterados` compara o patch
   // contra isto, e uma lista fixa faria todo campo NOVO do patch cair contra
@@ -1501,7 +1501,12 @@ export async function updateLeadHandler(
           // antes-e-depois DE PROPÓSITO: lá o texto é a proposta do PRÓPRIO AGENTE,
           // escrita por máquina. A origem do texto é que decide, não a forma da frase.
           reason: `Alterou ${listaLegivel(fields)}`,
-          payload: { fields },
+          // #5317: escrita feita pela IA preenchendo o cartão leva lastro para a
+          // timeline promover o ator a `ai` (migration 0071). Sem evidence, o
+          // `buildLeadActivityRow` rebaixa para `system` e a autoria some. Só
+          // nesta atividade e só quando a escrita veio do preenchimento.
+          ...(opcoes.preenchidoPelaIa ? { evidence: { run_ids: [ctx.requestId] } } : {}),
+          payload: { fields, ...(opcoes.preenchidoPelaIa ? { ia_preencheu: opcoes.preenchidoPelaIa } : {}) },
         });
   if (!atividadeEdicao.ok) {
     // Rastro de mutação já ocorrida: falha BAIXO, mas contada (ver

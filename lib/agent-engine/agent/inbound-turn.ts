@@ -97,6 +97,8 @@ import { insertInboxItem } from '../db/repository';
 import { criarConferidorDeAfirmacoes } from '@/lib/ai/decisao/afirmacao-de-fato';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { moverLeadParaEtapaDeHandoff } from '@/lib/leads/handoff-stage-move';
+import { blocoDosCamposAPreencher, extrairCamposDoNegocio, gravarCamposDaIa, instrucaoDosCampos, resolverCartaoParaPreencher } from '@/lib/leads/preenchimento-pela-ia';
+import { ApiError } from '@/lib/api/types';
 import { detectUrgencySignal } from '../guardrails/sinal-de-urgencia';
 import { buildNativeMediaParts } from './media-parts';
 import {
@@ -7387,6 +7389,20 @@ async function executarTurnoDoAgente(
       await lerFeriadoDoTurno(pool, tenantId, clock(), fusoDaOrg, runLog),
       { fechadoEmFeriado: agentConfig?.naoAtenderEmFeriadoNacional === true },
     );
+    // ── CAMPOS DO CARTÃO QUE A IA PREENCHE (#5317) ────────────────────────────
+    //
+    // Só turno inbound real (não prévia) com agente publicado. Resolve o negócio
+    // aberto do contato (service role, filtro de org manual) e os campos
+    // marcados `ia_preenche`+`ia_pode_ler`. `null` na dúvida — nada entra no
+    // prompt e nada é gravado no fechamento. NÃO mexe em `CHECKPOINT_INSTRUCTION`.
+    const alvoDosCampos =
+      !preview && job !== null && job.kind === 'inbound_turn' && agentConfig !== null
+        ? await resolverCartaoParaPreencher(deps.crmCfg.supabase, {
+            organizationId: tenantId,
+            contactId: leadId,
+            pipelineIds: agentConfig.pipelineIds,
+          }).catch(() => null)
+        : null;
     const openingSuffixes = [
       agoraBlock,
       feriadoBlock,
@@ -7398,6 +7414,7 @@ async function executarTurnoDoAgente(
       // No SUFIXO por-lead: ele muda quando o acervo muda, e um bloco volátil no
       // prefixo estável derrubaria o cache de prompt de todo mundo.
       indiceDeConhecimentoBlock,
+      blocoDosCamposAPreencher(alvoDosCampos),
       roteiro?.bloco ?? '',
       preview?.feedback ? '## Revisão humana deste atendimento\n' + preview.feedback : '',
     ].filter((b) => b !== '');
@@ -8053,6 +8070,12 @@ async function executarTurnoDoAgente(
     // recusado volta ao modelo com o problema, numa 2ª chamada de fechamento.
     // Recusado de novo num modelo que NÃO é o do agente (binding do ponto), a
     // reserva de formato faz a 3ª chamada no modelo do agente, sem a correção.
+    // #5317: o bloco `campos_do_negocio` NÃO é campo do contrato do
+    // checkpoint — o runtime o extrai do texto cru de cada resposta e o
+    // guarda em `camposPropostos` (a última resposta COM bloco vence; uma
+    // correção SEM bloco não apaga o anterior).
+    let camposPropostos: Record<string, unknown> | null = null;
+
     const pedirOFechamento = async (
       correcao: Array<{ role: 'assistant' | 'user'; content: string }>,
       reservaDeFormato?: true,
@@ -8081,6 +8104,11 @@ async function executarTurnoDoAgente(
               ...responseMessages,
               ...(agendaAtual ? [{ role: 'user' as const, content: agendaAtual }] : []),
               { role: 'user', content: CHECKPOINT_INSTRUCTION },
+              // #5317: a instrução dos campos entra DEPOIS da instrução de
+              // fechamento e ANTES da correção; só quando não vazia.
+              ...(instrucaoDosCampos(alvoDosCampos) !== ''
+                ? [{ role: 'user' as const, content: instrucaoDosCampos(alvoDosCampos) }]
+                : []),
               ...correcao,
             ],
             // #4260, item 1: a instrução de fechamento é a última coisa que o
@@ -8092,6 +8120,8 @@ async function executarTurnoDoAgente(
         },
         { registry: deps.registry, log: runLog },
       );
+      const propostos = extrairCamposDoNegocio(chamada.result.text);
+      if (propostos !== null) camposPropostos = propostos;
       return { text: chamada.result.text, callId: chamada.callId, model: chamada.model };
     };
     const { content, resposta: closing } = await fecharOTurno({
@@ -8113,6 +8143,28 @@ async function executarTurnoDoAgente(
     // faria a seguir.
     const checkpointAnterior = await latestCheckpoint(pool, tenantId, leadId);
     await insertCheckpoint(pool, { tenantId, leadId, jobId: liveJob().id, content });
+
+    // ── CAMPOS DO CARTÃO QUE A IA PREENCHE (#5317) ──────────────────────────
+    //
+    // Depois de o checkpoint existir. Fire-and-forget relativo ao turno: falha
+    // nunca derruba um turno que já respondeu; `gravarCamposDaIa` já não lança,
+    // e o try/catch só loga.
+    if (alvoDosCampos && camposPropostos && agentConfig !== null) {
+      try {
+        await gravarCamposDaIa(deps.crmCfg.supabase, {
+          organizationId: tenantId,
+          contactId: leadId,
+          pipelineIds: agentConfig.pipelineIds,
+          agentId: agentConfig.agentId,
+          requestId: liveJob().id,
+          proposta: camposPropostos,
+        });
+      } catch (err) {
+        runLog.warn('preenchimento-pela-ia: falha ao gravar campos do cartão', {
+          error: err instanceof ApiError ? err.code : err instanceof Error ? err.name : typeof err,
+        });
+      }
+    }
 
     // ── O TURNO DO OPERADOR (spec 16 §3.2) ─────────────────────────────────────
     //
