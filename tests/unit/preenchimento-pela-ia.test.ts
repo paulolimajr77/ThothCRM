@@ -370,7 +370,7 @@ describe("gravarCamposDaIa", () => {
     expect(updateLeadHandler).not.toHaveBeenCalled();
   });
 
-  describe("conferência do modelo (#5317)", () => {
+  describe("sem conferência de fala do cliente (#5317)", () => {
     const comDoisCampos = () => ({
       ...dbComCampo(),
       crm_pipelines: [
@@ -384,13 +384,15 @@ describe("gravarCamposDaIa", () => {
       ],
     });
 
-    it("recusado não grava; o resto grava; contexto leva a organização", async () => {
-      vi.mocked(conferirCamposPersonalizados).mockClear();
+    it("campo marcado dispensa a conferência: com a conferência recusando (mock), não é chamada e grava tudo", async () => {
+      // A conferência está configurada para recusar 'alergia' — se o código a
+      // chamasse, 'alergia' não gravaria. Este caminho não chama e grava os dois.
       vi.mocked(conferirCamposPersonalizados).mockResolvedValue({
         custom_fields: { condicao: "hipertensão" },
         recusados: [{ campo: "alergia", motivo: "cliente_nao_disse", mensagem: "x" }],
         estado: "conferida",
       });
+      vi.mocked(conferirCamposPersonalizados).mockClear();
       const db = comDoisCampos();
       const r = await gravarCamposDaIa(fakeSupabase(db), {
         ...ORG_PARAMS,
@@ -398,36 +400,14 @@ describe("gravarCamposDaIa", () => {
         requestId: "req-1",
         proposta: { condicao: "hipertensão", alergia: "poeira" },
       });
-      expect(r.gravados).toEqual(["condicao"]);
-      expect(r.ignorados).toContain("alergia");
+      expect(r.gravados).toEqual(["condicao", "alergia"]);
       expect(vi.mocked(updateLeadHandler)).toHaveBeenCalledTimes(1);
       const chamada = vi.mocked(updateLeadHandler).mock.calls[0];
-      expect(chamada[3]).toEqual({ custom_fields: { condicao: "hipertensão" } });
-      expect(vi.mocked(conferirCamposPersonalizados)).toHaveBeenCalledTimes(1);
-      const ctx = vi.mocked(conferirCamposPersonalizados).mock.calls[0][0];
-      expect(ctx.organizationId).toBe(ORG);
-      expect(ctx.role).toBe("ai_operator");
-      expect(ctx.contatoDoTurno).toBe(CONTACT);
-      expect(ctx.actor).toEqual({ type: "ai_agent", id: "agent-engine", role: "ai_operator", agent_id: "agent-1" });
-      expect(ctx.requestId).toBe("req-1");
-      expect(ctx.supabase).toBeDefined();
-    });
-
-    it("falha da conferência não lança e grava os valores válidos", async () => {
-      vi.mocked(conferirCamposPersonalizados).mockClear();
-      vi.mocked(conferirCamposPersonalizados).mockRejectedValue(new Error("pifou"));
-      const db = comDoisCampos();
-      const r = await gravarCamposDaIa(fakeSupabase(db), {
-        ...ORG_PARAMS,
-        agentId: "agent-1",
-        requestId: "req-1",
-        proposta: { condicao: "hipertensão" },
+      expect(chamada).toBeDefined();
+      expect(chamada![3]).toEqual({
+        custom_fields: { condicao: "hipertensão", alergia: "poeira" },
       });
-      expect(r.gravados).toEqual(["condicao"]);
-      expect(vi.mocked(updateLeadHandler)).toHaveBeenCalledTimes(1);
-      expect(vi.mocked(updateLeadHandler).mock.calls[0][3]).toEqual({
-        custom_fields: { condicao: "hipertensão" },
-      });
+      expect(vi.mocked(conferirCamposPersonalizados)).not.toHaveBeenCalled();
     });
   });
 
