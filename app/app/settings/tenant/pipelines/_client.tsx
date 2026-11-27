@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { updatePipelineConfig } from "@/app/actions/settings/updatePipelineConfig";
 import type { PipelineConfigPatch } from "@/lib/schemas/settings";
-import { camposDoFunil, escopoDoCampo } from "@/lib/leads/campos-do-funil";
+import { camposDoFunil, escopoDoCampo, tipoQueAIaPreenche } from "@/lib/leads/campos-do-funil";
 import {
   DIAS_MAXIMO_DO_RECORTE,
   DIAS_MINIMO_DO_RECORTE,
@@ -2019,7 +2019,12 @@ function PipelineEditor({
                     checked={f.ia_pode_ler === true}
                     onChange={(ev) => {
                       const next = [...fields];
-                      const { ia_pode_ler: _apagada, ...semOpcao } = f;
+                      const {
+                        ia_pode_ler: _apagada,
+                        ia_preenche: _semPreenche,
+                        ia_orientacao: _semOrientacao,
+                        ...semOpcao
+                      } = f;
                       next[i] = ev.target.checked
                         ? { ...f, ia_pode_ler: true }
                         : (semOpcao as CustomFieldDef);
@@ -2033,6 +2038,55 @@ function PipelineEditor({
                     "Ligado, o valor deste campo pode chegar ao assistente de IA: no follow-up escrito por IA e na leitura que o agente faz do negócio. Desligado, o valor fica só no card. Desligado por padrão.",
                   )}
                 </p>
+              </div>
+            )}
+            {/* ── A IA PREENCHE ESTE CAMPO (issue #5317) ──────────────────
+                A marca que autoriza o agente a GRAVAR o valor deste campo no
+                negócio aberto do contato a partir da conversa. Exige `ia_pode_ler`
+                (marcar aqui liga as duas); desmarcar APAGA `ia_preenche` e
+                `ia_orientacao`, porque a definição é jsonb e a AUSÊNCIA é o
+                desmarcado. Dinheiro e arquivo nunca são preenchidos pela IA.
+                Só campo do NEGÓCIO: é o `crm_leads.custom_fields` gravado. */}
+            {escopoDoCampo(f) === "negocio" && tipoQueAIaPreenche(f.type) && (
+              <div className="space-y-1 lg:col-span-4">
+                <label className="flex items-center gap-1 text-xs">
+                  <input
+                    type="checkbox"
+                    aria-label={`${t("A IA preenche este campo")} — ${f.label || i + 1}`}
+                    checked={f.ia_preenche === true && f.ia_pode_ler === true}
+                    onChange={(ev) => {
+                      const next = [...fields];
+                      const { ia_preenche: _semPreenche, ia_orientacao: _semOrientacao, ...semOpcao } = f;
+                      next[i] = ev.target.checked
+                        ? { ...f, ia_pode_ler: true, ia_preenche: true }
+                        : (semOpcao as CustomFieldDef);
+                      setFields(next);
+                    }}
+                  />
+                  {t("A IA preenche este campo")}
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  {t(
+                    "Ligado, o assistente de IA pode gravar este campo no negócio aberto do cliente a partir da conversa. Ele não troca o que a equipe escreveu. Desligado por padrão. O preenchimento usa o modelo do fechamento do turno, que pode ser diferente do modelo do agente.",
+                  )}
+                </p>
+                {f.ia_preenche === true && f.ia_pode_ler === true && (
+                  <Input
+                    maxLength={500}
+                    value={f.ia_orientacao ?? ""}
+                    placeholder={t("Quando e como preencher este campo (opcional)")}
+                    aria-label={`${t("Orientação para a IA")} — ${f.label || i + 1}`}
+                    onChange={(ev) => {
+                      const next = [...fields];
+                      const { ia_orientacao: _semOrientacao, ...semOpcao } = f;
+                      next[i] =
+                        ev.target.value === ""
+                          ? (semOpcao as CustomFieldDef)
+                          : { ...f, ia_orientacao: ev.target.value };
+                      setFields(next);
+                    }}
+                  />
+                )}
               </div>
             )}
             {/* ── QUANDO ESTE CAMPO APARECE (issues #2728 e #4041) ──────────

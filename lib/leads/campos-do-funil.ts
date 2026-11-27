@@ -92,6 +92,22 @@ export function camposLiberadosParaIa(
   return camposPorEscopo(campos, escopo).filter(campoLiberadoParaIa);
 }
 
+/** Dinheiro e arquivo nunca são preenchidos pela IA (#5317). */
+export function tipoQueAIaPreenche(tipo: CustomFieldDef["type"]): boolean {
+  return tipo !== "currency" && tipo !== "file";
+}
+
+/**
+ * Os campos do NEGÓCIO que a IA pode PREENCHER (#5317): marcados "preenche" E
+ * "pode ler", de um tipo permitido. Régua única da entrega ao modelo e da
+ * gravação.
+ */
+export function camposQueAIaPreenche(campos: CustomFieldDef[]): CustomFieldDef[] {
+  return camposLiberadosParaIa(campos, "negocio").filter(
+    (campo) => campo.ia_preenche === true && tipoQueAIaPreenche(campo.type),
+  );
+}
+
 /**
  * O recorte de `custom_fields` que a IA pode ler (issue #4669) — o que as
  * ferramentas de negócio devolvem DENTRO de um turno de agente.

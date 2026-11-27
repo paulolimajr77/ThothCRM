@@ -1186,6 +1186,14 @@ export const DICIONARIO: Traducoes = {
     {
       es: "Activado, el valor de este campo puede llegar al asistente de IA: en el seguimiento escrito por IA y en la lectura que el agente hace del negocio. Desactivado, el valor queda solo en la tarjeta. Desactivado por defecto.",
     },
+  // ─── CAMPO QUE A IA PREENCHE (issue #5317) ───
+  "A IA preenche este campo": { es: "La IA completa este campo" },
+  "Ligado, o assistente de IA pode gravar este campo no negócio aberto do cliente a partir da conversa. Ele não troca o que a equipe escreveu. Desligado por padrão. O preenchimento usa o modelo do fechamento do turno, que pode ser diferente do modelo do agente.":
+    {
+      es: "Activado, el asistente de IA puede guardar este campo en el negocio abierto del cliente a partir de la conversación. No cambia lo que escribió el equipo. Desactivado por defecto. El llenado usa el modelo del cierre del turno, que puede ser distinto del modelo del agente.",
+    },
+  "Quando e como preencher este campo (opcional)": { es: "Cuándo y cómo completar este campo (opcional)" },
+  "Orientação para a IA": { es: "Orientación para la IA" },
   "Este funil exige alguns dados antes de mover o negócio. Preencha o que falta para continuar.": {
     es: "Este embudo exige algunos datos antes de mover el negocio. Completa lo que falta para continuar.",
   },

@@ -362,6 +362,19 @@ export const customFieldSchema = z.object({
    * é a régua única dos dois caminhos.
    */
   ia_pode_ler: z.boolean().optional(),
+  /**
+   * A IA PREENCHE ESTE CAMPO? (issue #5317)
+   *
+   * LIGADO, o agente recebe a definição do campo (nome, tipo, opções e a
+   * orientação) em cada resposta e o runtime pode gravar o valor no negócio
+   * aberto do contato. Exige `ia_pode_ler`. A AUSÊNCIA é desligado, e a tela
+   * apaga a chave ao desmarcar — sem `.default()`, pela mesma razão de
+   * `ia_pode_ler`. Quem lê é `camposQueAIaPreenche` em
+   * `lib/leads/campos-do-funil.ts`.
+   */
+  ia_preenche: z.boolean().optional(),
+  /** Orientação opcional do dono do funil: quando e como preencher (#5317). */
+  ia_orientacao: z.string().max(500).optional(),
 });
 export type CustomFieldDef = z.infer<typeof customFieldSchema>;
 

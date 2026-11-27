@@ -1750,6 +1750,113 @@ describe("a IA pode ler este campo (#4669)", () => {
     });
     expect(screen.queryByLabelText("A IA pode ler este campo — CPF")).toBeNull();
   });
+
+  // ── A IA PREENCHE ESTE CAMPO (issue #5317) ──
+
+  it("a caixa A IA preenche este campo vem desmarcada", () => {
+    tela(FUNIL_DA_IA);
+    expect(screen.getByLabelText("A IA preenche este campo — Condição de saúde")).not.toBeChecked();
+  });
+
+  it("o texto de ajuda diz que o preenchimento usa o modelo do fechamento do turno", () => {
+    tela(FUNIL_DA_IA);
+    expect(
+      screen.getByText(/O preenchimento usa o modelo do fechamento do turno/),
+    ).toBeInTheDocument();
+  });
+
+  it("marcá-la e salvar grava ia_preenche: true E ia_pode_ler: true", () => {
+    tela(FUNIL_DA_IA);
+    fireEvent.click(screen.getByLabelText("A IA preenche este campo — Condição de saúde"));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar vocabulário e campos" }));
+
+    expect(patchSalvo().fields?.[0]?.ia_preenche).toBe(true);
+    expect(patchSalvo().fields?.[0]?.ia_pode_ler).toBe(true);
+  });
+
+  it("digitar na caixa Orientação para a IA e salvar grava ia_orientacao; apagar o texto remove a chave", async () => {
+    tela(FUNIL_DA_IA);
+    fireEvent.click(screen.getByLabelText("A IA preenche este campo — Condição de saúde"));
+    fireEvent.change(screen.getByLabelText("Orientação para a IA — Condição de saúde"), {
+      target: { value: "Preencha quando o cliente disser a condição." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar vocabulário e campos" }));
+
+    expect(patchSalvo().fields?.[0]?.ia_orientacao).toBe("Preencha quando o cliente disser a condição.");
+
+    await vi.waitFor(() =>
+      expect(screen.getByRole("button", { name: "Salvar vocabulário e campos" })).not.toBeDisabled(),
+    );
+
+    fireEvent.change(screen.getByLabelText("Orientação para a IA — Condição de saúde"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar vocabulário e campos" }));
+
+    expect(patchSalvo().fields?.[0]).not.toHaveProperty("ia_orientacao");
+  });
+
+  it("desmarcar preenche remove ia_preenche e ia_orientacao (e mantém ia_pode_ler)", () => {
+    tela({
+      ...FUNIL_DA_IA,
+      settings: {
+        fields: [
+          {
+            key: "condicao",
+            label: "Condição de saúde",
+            type: "text",
+            ia_pode_ler: true,
+            ia_preenche: true,
+            ia_orientacao: "Preencha quando o cliente disser a condição.",
+          },
+        ],
+      },
+    });
+    fireEvent.click(screen.getByLabelText("A IA preenche este campo — Condição de saúde"));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar vocabulário e campos" }));
+
+    expect(patchSalvo().fields?.[0]).not.toHaveProperty("ia_preenche");
+    expect(patchSalvo().fields?.[0]).not.toHaveProperty("ia_orientacao");
+    expect(patchSalvo().fields?.[0]?.ia_pode_ler).toBe(true);
+  });
+
+  it("desmarcar A IA pode ler remove também ia_preenche e ia_orientacao", () => {
+    tela({
+      ...FUNIL_DA_IA,
+      settings: {
+        fields: [
+          {
+            key: "condicao",
+            label: "Condição de saúde",
+            type: "text",
+            ia_pode_ler: true,
+            ia_preenche: true,
+            ia_orientacao: "Preencha quando o cliente disser a condição.",
+          },
+        ],
+      },
+    });
+    fireEvent.click(screen.getByLabelText("A IA pode ler este campo — Condição de saúde"));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar vocabulário e campos" }));
+
+    expect(patchSalvo().fields?.[0]).not.toHaveProperty("ia_pode_ler");
+    expect(patchSalvo().fields?.[0]).not.toHaveProperty("ia_preenche");
+    expect(patchSalvo().fields?.[0]).not.toHaveProperty("ia_orientacao");
+  });
+
+  it("campo do contato e campo type currency não oferecem a caixa A IA preenche", () => {
+    tela({
+      ...FUNIL_DA_IA,
+      settings: {
+        fields: [
+          { key: "cpf", label: "CPF", type: "text", escopo: "contato" },
+          { key: "valor", label: "Valor", type: "currency" },
+        ],
+      },
+    });
+    expect(screen.queryByLabelText("A IA preenche este campo — CPF")).toBeNull();
+    expect(screen.queryByLabelText("A IA preenche este campo — Valor")).toBeNull();
+  });
 });
 
 /**
