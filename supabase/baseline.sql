@@ -69691,7 +69691,7 @@ create or replace function public.fn_extensions_permissoes_validas(p_permissions
 returns boolean language sql immutable set search_path = public, pg_temp as $$
   select p_permissions is not null
     and jsonb_typeof(p_permissions) = 'array'
-    and jsonb_array_length(p_permissions) between 1 and 26
+    and jsonb_array_length(p_permissions) between 1 and 30
     and not exists (
       select 1 from jsonb_array_elements(p_permissions) e
       where jsonb_typeof(e.value) <> 'string'
@@ -69707,7 +69707,9 @@ returns boolean language sql immutable set search_path = public, pg_temp as $$
               'area.agentes_ia.leitura', 'area.agentes_ia.escrita',
               'area.catalogo.leitura', 'area.catalogo.escrita',
               'area.configuracao.leitura', 'area.configuracao.escrita',
-              'area.analise.leitura', 'area.analise.escrita')
+              'area.analise.leitura', 'area.analise.escrita',
+              'area.tarefas.leitura', 'area.tarefas.escrita',
+              'area.financeiro.leitura', 'area.financeiro.escrita')
     )
     and (select count(distinct e.value) from jsonb_array_elements(p_permissions) e)
         = jsonb_array_length(p_permissions);
@@ -70401,7 +70403,7 @@ notify pgrst, 'reload schema';
 
 -- ---- modulo conectado: consentimento por área (migration 9442) ----
 -- Espelho idempotente da 9442 (racional completo no arquivo da migration): `organization_extensions.consented_areas`
--- (com CHECK nas 18 permissões `area.*`) e `fn_extensions_set_consent`. Fica DEPOIS do apêndice da 9441 e ANTES
+-- (com CHECK nas 22 permissões `area.*`; tarefas e financeiro entraram na migration 9508) e `fn_extensions_set_consent`. Fica DEPOIS do apêndice da 9441 e ANTES
 -- da VARREDURA anon.
 
 alter table public.organization_extensions
@@ -70421,7 +70423,9 @@ begin
       'area.agentes_ia.leitura','area.agentes_ia.escrita',
       'area.catalogo.leitura','area.catalogo.escrita',
       'area.configuracao.leitura','area.configuracao.escrita',
-      'area.analise.leitura','area.analise.escrita'
+      'area.analise.leitura','area.analise.escrita',
+      'area.tarefas.leitura','area.tarefas.escrita',
+      'area.financeiro.leitura','area.financeiro.escrita'
     ]::text[]);
 end
 $consentidas$;
@@ -70462,8 +70466,8 @@ begin
   if exists (select 1 from unnest(p_areas) a where a <> all (v_declaradas)) then
     raise exception using errcode='PT409',message='extension_area_not_declared';
   end if;
-  -- Decisão 5 da spec 33: configuração e agentes de IA só por quem administra a organização.
-  if exists (select 1 from unnest(p_areas) a where a ~ '^area\.(configuracao|agentes_ia)\.') then
+  -- Decisão 5 da spec 33: configuração, agentes de IA e financeiro só por quem administra a organização.
+  if exists (select 1 from unnest(p_areas) a where a ~ '^area\.(configuracao|agentes_ia|financeiro)\.') then
     select u.role into v_role from public.user_organizations u
       where u.user_id=p_actor and u.organization_id=p_organization and u.revoked_at is null and u.accepted_at is not null;
     if v_role is distinct from 'admin' and v_role is distinct from 'owner' then
@@ -70703,6 +70707,9 @@ notify pgrst, 'reload schema';
 
 -- ---- modulo conectado: atraso do módulo (migration 9446) ----
 -- Espelho idempotente da 9446 (racional no arquivo da migration): `fn_extensions_events_lag`.
+-- A 9507 redefiniu a função (rótulo estável por hash do id e fuso da organização, #5097): o corpo
+-- abaixo é o da 9507, a última da cadeia — quem aplica a cadeia e quem aplica este baseline recebem
+-- o mesmo. `md5` está no `pg_catalog` e sobrevive ao `search_path = ''`.
 
 create or replace function public.fn_extensions_events_lag(p_installation uuid)
 returns jsonb language sql stable security invoker set search_path = '' as $$
@@ -70713,7 +70720,7 @@ returns jsonb language sql stable security invoker set search_path = '' as $$
     select c.organization_id from public.extension_module_cursors c
       where c.installation_id = p_installation
   ), linhas as (
-    select o.organization_id, c.last_event_id, c.last_read_at,
+    select o.organization_id, g.timezone, c.last_event_id, c.last_read_at,
            (select count(*) from public.extension_module_events v
               where v.organization_id = o.organization_id and v.id > coalesce(c.last_event_id, 0)
                 and (v.kind <> 'module_disabled' or v.installation_id = p_installation)) as lag,
@@ -70724,10 +70731,12 @@ returns jsonb language sql stable security invoker set search_path = '' as $$
               where v.organization_id = o.organization_id and v.id > coalesce(c.last_event_id, 0)
                 and (v.kind <> 'module_disabled' or v.installation_id = p_installation)) as oldest_unread_at
       from orgs o
+      join public.organizations g on g.id = o.organization_id
       left join public.extension_module_cursors c
         on c.installation_id = p_installation and c.organization_id = o.organization_id
   )
   select coalesce(jsonb_agg(jsonb_build_object(
+           'rotulo', substr(md5(l.organization_id::text), 1, 6), 'fuso', l.timezone,
            'last_event_id', l.last_event_id, 'last_read_at', l.last_read_at, 'lag', l.lag,
            'contacts_pending', l.contacts_pending, 'oldest_unread_at', l.oldest_unread_at
          ) order by l.lag desc, l.last_read_at nulls first), '[]'::jsonb)
