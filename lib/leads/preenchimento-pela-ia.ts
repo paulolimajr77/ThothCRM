@@ -26,6 +26,12 @@
  *    Dinheiro e arquivo nunca são preenchidos.
  * 5. LOG SEM VALOR. Loga só CHAVES; nunca conteúdo do cliente.
  * 6. NÃO LANÇA. Erro vira `logger.warn` e `{ gravados: [], ignorados: [...] }`.
+ * 7. CAMPO MARCADO AUTORIZA A DEDUÇÃO. Todo campo que chega aqui está marcado
+ *    pelo dono do funil (`ia_preenche`, com orientação): grava-se direto no
+ *    negócio aberto sem perguntar de novo ao cliente. Não há conferência de
+ *    fala do cliente nesta gravação; a régua de padrão (`recusasDePadrao`)
+ *    segue dentro de `validarValorDoCampo`, e `crm_update_lead`/`crm_create_lead`
+ *    não mudam por causa disso.
  */
 
 import { createHash } from "node:crypto";
@@ -41,8 +47,6 @@ import { podeOperarNoFunil } from "@/lib/leads/escopo-de-funil";
 import { recusasDePadrao } from "@/lib/leads/padrao-do-campo";
 import { testaComPrazo } from "@/lib/leads/padrao-do-campo-no-servidor";
 import { logger } from "@/lib/logger";
-import { conferirCamposPersonalizados } from "@/lib/mcp/conferencia-de-campos";
-import type { McpContext } from "@/lib/mcp/types";
 import type { CustomFieldDef } from "@/lib/schemas/settings";
 
 export interface AlvoParaPreencher {
@@ -458,40 +462,11 @@ export async function gravarCamposDaIa(
       customFields[chave] = v.valor;
     }
 
-    // C (ordem 5): o dono do funil marca o campo; a conferência do modelo filtra
-    // o que o cliente NÃO disse. Recusados entram em ignorados; falha nunca lança.
-    let finais = customFields;
-    try {
-      const ctxConferencia = {
-        supabase,
-        organizationId: params.organizationId,
-        role: "ai_operator",
-        contatoDoTurno: params.contactId,
-        actor: { type: "ai_agent", id: "agent-engine", role: "ai_operator", agent_id: params.agentId },
-        requestId: params.requestId,
-      } as Pick<McpContext, "supabase" | "organizationId" | "role" | "contatoDoTurno" | "actor" | "requestId">;
-      const resultado = await conferirCamposPersonalizados(
-        ctxConferencia as McpContext,
-        { leadId: alvo.leadId },
-        customFields,
-      );
-      if (resultado.custom_fields !== undefined) finais = resultado.custom_fields;
-      for (const recusado of Array.isArray(resultado.recusados) ? resultado.recusados : []) {
-        if (typeof recusado.campo === "string") ignorados.push(recusado.campo);
-      }
-    } catch (err) {
-      // Falha da conferência NÃO lança: grava o que a validação já aprovou.
-      logger.warn("preenchimento-pela-ia: falha na conferência de campos", {
-        organization_id: params.organizationId,
-        error: err instanceof Error ? err.name : typeof err,
-      });
-    }
-
-    const gravados = Object.keys(finais);
+    const gravados = Object.keys(customFields);
     if (gravados.length === 0) return { gravados: [], ignorados };
 
     const preenchidoPelaIa: Record<string, string> = {};
-    for (const chave of gravados) preenchidoPelaIa[chave] = hashDoValor(finais[chave]);
+    for (const chave of gravados) preenchidoPelaIa[chave] = hashDoValor(customFields[chave]);
 
     try {
       await updateLeadHandler(
@@ -502,7 +477,7 @@ export async function gravarCamposDaIa(
           requestId: params.requestId,
         },
         alvo.leadId,
-        { custom_fields: finais },
+        { custom_fields: customFields },
         { preenchidoPelaIa },
       );
       logger.info("preenchimento-pela-ia: campos gravados", { organization_id: params.organizationId, chaves: gravados });
