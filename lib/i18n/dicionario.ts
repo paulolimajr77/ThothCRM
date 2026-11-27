@@ -1233,6 +1233,19 @@ export const DICIONARIO: Traducoes = {
     es: "Desactivado, ganar no toca el financiero: la tienda con checkout, el infoproducto y la inmobiliaria no viven de cuentas por cobrar. Activado, arrastrar a la etapa de ganado y el botón Ganar abren una orden de servicio con el valor y el contacto del negocio.",
   },
   "Motivo do ganho": { es: "Motivo del negocio ganado" },
+  // #5181 — a caixa que o item "Marcar como ganho" do card abre quando o funil
+  // tem lista de motivos ou exige o motivo. Antes ele fechava sem perguntar.
+  "Escolha o motivo do ganho deste funil.": {
+    es: "Elige el motivo del negocio ganado en este embudo.",
+  },
+  "Informe o motivo do ganho. Essa informação ajuda a entender o que traz resultado.": {
+    es: "Indica el motivo del negocio ganado. Esa información ayuda a entender qué trae resultados.",
+  },
+  "Este funil exige o motivo do ganho para fechar o negócio.": {
+    es: "Este embudo exige el motivo del negocio ganado para cerrar la operación.",
+  },
+  "Fechar sem motivo": { es: "Cerrar sin motivo" },
+  "Confirmar ganho": { es: "Confirmar negocio ganado" },
   "A etapa escolhida exige alguns dados. Preencha para continuar.": {
     es: "La etapa elegida exige algunos datos. Complétalos para continuar.",
   },
@@ -16970,6 +16983,10 @@ export const DICIONARIO: Traducoes = {
   "Alterar as configurações da organização e da equipe.": { es: "Modificar la configuración de la organización y del equipo." },
   "Ver relatórios e números de desempenho.": { es: "Ver informes y cifras de desempeño." },
   "Alterar relatórios e análises.": { es: "Modificar informes y análisis." },
+  "Ver as tarefas da equipe.": { es: "Ver las tareas del equipo." },
+  "Criar e concluir tarefas.": { es: "Crear y completar tareas." },
+  "Ver lançamentos financeiros e comandas.": { es: "Ver asientos financieros y comandas." },
+  "Criar e alterar lançamentos financeiros e comandas.": { es: "Crear y modificar asientos financieros y comandas." },
   "Confira o catálogo admitido e tente a instalação novamente.": { es: "Revisa el catálogo admitido e intenta instalar de nuevo." },
   "Revise o arquivo ou a configuração indicada e tente novamente.": { es: "Revisa el archivo o la configuración indicada e inténtalo de nuevo." },
   "Verificar instalação": { es: "Verificar instalación" },
