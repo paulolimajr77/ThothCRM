@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { listaLegivel, ACTIVITY_LABELS, activityLabel } from "@/lib/leads/activity-vocabulary";
+import { buildLeadActivityRow } from "@/lib/leads/activity-emitter";
 
 /**
  * Editar um campo deixa rastro — e o rastro diz O QUÊ mudou.
@@ -36,6 +37,22 @@ describe("a edição humana na timeline", () => {
 
   it("lista vazia não vira frase quebrada", () => {
     expect(listaLegivel([])).toBe("nada");
+  });
+
+  it("autoria IA com lastro (evidence.run_ids) sai actor_kind 'ai' (#5317)", () => {
+    const row = buildLeadActivityRow({
+      organizationId: "org",
+      leadId: "lead",
+      type: "lead_edited",
+      sourceModule: "crm",
+      sourceId: "lead",
+      actor: { type: "ai_agent", id: "agent-engine", role: "ai_operator", agent_id: "agent-1" },
+      reason: "Alterou campo",
+      evidence: { run_ids: ["req-1"] },
+      payload: { fields: ["custom_fields"], ia_preencheu: { condicao: "h" } },
+    });
+    expect(row.actor_kind).toBe("ai");
+    expect(row.evidence).toEqual({ run_ids: ["req-1"] });
   });
 
   it("nenhum nome legível é igual ao nome da coluna", () => {

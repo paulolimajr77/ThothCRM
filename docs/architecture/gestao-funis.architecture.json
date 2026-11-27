@@ -36,6 +36,7 @@
     { "id": "trigger", "lane": "dados", "col": 1, "type": "service", "label": "trg_seed_default_pipeline_for_org", "sublabel": "semeia 'Pedidos' e-commerce em toda org nova" },
 
     { "id": "leads", "lane": "dependente", "col": 2, "type": "database", "label": "crm_leads", "sublabel": "FK ON DELETE RESTRICT" },
+    { "id": "preenchimento", "lane": "dependente", "col": 5, "type": "service", "label": "preenchimento pela IA (#5317)", "sublabel": "campo marcado ia_preenche no funil → prompt do turno → updateLeadHandler grava no negócio aberto" },
     { "id": "sources", "lane": "dependente", "col": 3, "type": "database", "label": "webhook_sources", "sublabel": "FK ON DELETE **CASCADE** — o perigo" },
     { "id": "rules", "lane": "dependente", "col": 4, "type": "database", "label": "automation_rules", "sublabel": "pipeline_id dentro de jsonb — SEM FK" }
   ],
@@ -69,7 +70,9 @@
     { "id": "e27", "from": "delete", "to": "pipelines", "label": "is_archived=true (ou delete no caso limpo)" },
     { "id": "e28", "from": "trigger", "to": "pipelines", "label": "toda org nova nasce com 'Pedidos' — a razão de a clínica precisar desta tela" },
     { "id": "e29", "from": "trigger", "to": "stages", "label": "8 etapas de e-commerce" },
-    { "id": "e30", "from": "board", "to": "stages", "label": "as colunas do quadro" }
+    { "id": "e30", "from": "board", "to": "stages", "label": "as colunas do quadro" },
+    { "id": "e31", "from": "pipelines", "to": "preenchimento", "label": "settings.fields com ia_preenche + ia_orientacao — a marca nasce no funil" },
+    { "id": "e32", "from": "preenchimento", "to": "leads", "label": "grava custom_fields no negócio aberto via updateLeadHandler (ai_operator)" }
   ],
   "cards": [
     {

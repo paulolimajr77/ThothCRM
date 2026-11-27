@@ -136,7 +136,13 @@ describe("o fechamento do turno corrige antes de repetir o turno", () => {
   it("o turno fecha por aqui — e com a instrução de sempre como primeira pergunta", () => {
     const fonte = readFileSync(join(process.cwd(), "lib/agent-engine/agent/inbound-turn.ts"), "utf8");
     expect(fonte).toContain("await fecharOTurno({");
-    expect(fonte).toMatch(/\{ role: 'user', content: CHECKPOINT_INSTRUCTION \},\s*\.\.\.correcao,/);
+    // #5317: a instrução dos campos (opcional) entra DEPOIS da instrução de
+    // fechamento e ANTES da correção; `CHECKPOINT_INSTRUCTION` não se move.
+    // A expressão aceita SÓ comentários e o bloco condicional entre os dois —
+    // `[\s\S]*` deixava passar qualquer coisa, inclusive a instrução apagada.
+    expect(fonte).toMatch(
+      /\{ role: 'user', content: CHECKPOINT_INSTRUCTION \},\s*(?:\/\/[^\n]*\n\s*)*\.\.\.\(instrucaoDosCampos\(alvoDosCampos\) !== ''\s*\?\s*\[\{ role: 'user' as const, content: instrucaoDosCampos\(alvoDosCampos\) \}\]\s*:\s*\[\]\),\s*\.\.\.correcao,/,
+    );
     expect(CHECKPOINT_INSTRUCTION).toContain("Sem texto fora do JSON.");
   });
   it("corrige o_what no segundo compromisso sem apagar a promessa", async () => {
