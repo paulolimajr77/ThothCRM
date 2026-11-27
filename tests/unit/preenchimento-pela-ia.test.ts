@@ -402,7 +402,8 @@ describe("gravarCamposDaIa", () => {
       expect(r.ignorados).toContain("alergia");
       expect(vi.mocked(updateLeadHandler)).toHaveBeenCalledTimes(1);
       const chamada = vi.mocked(updateLeadHandler).mock.calls[0];
-      expect(chamada[3]).toEqual({ custom_fields: { condicao: "hipertensão" } });
+      expect(chamada).toBeDefined();
+      expect(chamada![3]).toEqual({ custom_fields: { condicao: "hipertensão" } });
       expect(vi.mocked(conferirCamposPersonalizados)).toHaveBeenCalledTimes(1);
       const ctx = vi.mocked(conferirCamposPersonalizados).mock.calls[0][0];
       expect(ctx.organizationId).toBe(ORG);
@@ -425,7 +426,9 @@ describe("gravarCamposDaIa", () => {
       });
       expect(r.gravados).toEqual(["condicao"]);
       expect(vi.mocked(updateLeadHandler)).toHaveBeenCalledTimes(1);
-      expect(vi.mocked(updateLeadHandler).mock.calls[0][3]).toEqual({
+      const chamada2 = vi.mocked(updateLeadHandler).mock.calls[0];
+      expect(chamada2).toBeDefined();
+      expect(chamada2![3]).toEqual({
         custom_fields: { condicao: "hipertensão" },
       });
     });

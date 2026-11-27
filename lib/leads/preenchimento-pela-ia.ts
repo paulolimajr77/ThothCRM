@@ -387,7 +387,8 @@ export function validarValorDoCampo(
   }
 
   // `padrao` (#2730): MESMA régua da criação/edição.
-  if (recusasDePadrao([campo], { [campo.key]: valor }, testaComPrazo).length > 0) return { ok: false };
+  const recusas = recusasDePadrao([campo], { [campo.key]: valor }, testaComPrazo);
+  if (recusas.length > 0) return { ok: false };
 
   return { ok: true, valor };
 }
